@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANT+ Heart Rate Monitor</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            background-color: #e0e0e0;
+        }
+        .sensor-select {
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+        #plot {
+            width: 100%;
+            height: 500px;
+        }
+        .sensor-info {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>ANT+ Heart Rate Monitor</h1>
+            <div class="status" id="status">Статус: Ожидание</div>
+        </div>
+        
+        <select class="sensor-select" id="sensorSelect">
+            <option value="">Выберите датчик</option>
+        </select>
+        
+        <div id="plot"></div>
+        
+        <div class="sensor-info" id="sensorInfo">
+            Текущий пульс: -- уд/мин
+        </div>
+    </div>
+
+    <script>
+        // Инициализация Socket.IO
+        const socket = io();
+        
+        // Данные для графика
+        let plotData = {};
+        let currentSensor = null;
+        
+        // Инициализация графика
+        const layout = {
+            title: 'Пульс в реальном времени',
+            xaxis: {
+                title: 'Время',
+                showgrid: true
+            },
+            yaxis: {
+                title: 'Пульс (уд/мин)',
+                range: [40, 200]
+            },
+            showlegend: true
+        };
+        
+        Plotly.newPlot('plot', [], layout);
+        
+        // Обработка подключения
+        socket.on('connect', () => {
+            document.getElementById('status').textContent = 'Статус: Подключено';
+        });
+        
+        // Обработка отключения
+        socket.on('disconnect', () => {
+            document.getElementById('status').textContent = 'Статус: Отключено';
+        });
+        
+        // Обработка статуса сканирования
+        socket.on('sensor_status', (data) => {
+            if (data.status === 'scanning') {
+                document.getElementById('status').textContent = 'Статус: Поиск датчиков...';
+            } else if (data.status === 'error') {
+                document.getElementById('status').textContent = `Статус: Ошибка - ${data.message}`;
+            }
+        });
+        
+        // Обработка списка активных датчиков
+        socket.on('active_sensors', (data) => {
+            const select = document.getElementById('sensorSelect');
+            select.innerHTML = '<option value="">Выберите датчик</option>';
+            
+            data.sensors.forEach(sensorId => {
+                const option = document.createElement('option');
+                option.value = sensorId;
+                option.textContent = `Датчик ${sensorId}`;
+                select.appendChild(option);
+            });
+        });
+        
+        // Обработка новых данных
+        socket.on('heart_rate_data', (data) => {
+            const sensorId = data.sensor_id;
+            
+            if (!plotData[sensorId]) {
+                plotData[sensorId] = {
+                    times: [],
+                    heart_rates: []
+                };
+            }
+            
+            plotData[sensorId].times.push(new Date(data.time * 1000));
+            plotData[sensorId].heart_rates.push(data.heart_rate);
+            
+            // Ограничиваем количество точек
+            if (plotData[sensorId].times.length > 100) {
+                plotData[sensorId].times.shift();
+                plotData[sensorId].heart_rates.shift();
+            }
+            
+            // Обновляем график, если это текущий выбранный датчик
+            if (sensorId === currentSensor) {
+                updatePlot(sensorId);
+                document.getElementById('sensorInfo').textContent = 
+                    `Текущий пульс: ${data.heart_rate} уд/мин`;
+            }
+        });
+        
+        // Обработка истории данных
+        socket.on('sensor_history', (data) => {
+            const sensorId = data.sensor_id;
+            plotData[sensorId] = {
+                times: data.data.times.map(t => new Date(t * 1000)),
+                heart_rates: data.data.heart_rates
+            };
+            
+            if (sensorId === currentSensor) {
+                updatePlot(sensorId);
+            }
+        });
+        
+        // Обработка выбора датчика
+        document.getElementById('sensorSelect').addEventListener('change', (e) => {
+            currentSensor = e.target.value;
+            if (currentSensor) {
+                updatePlot(currentSensor);
+            } else {
+                Plotly.newPlot('plot', [], layout);
+                document.getElementById('sensorInfo').textContent = 'Текущий пульс: -- уд/мин';
+            }
+        });
+        
+        // Функция обновления графика
+        function updatePlot(sensorId) {
+            const data = [{
+                x: plotData[sensorId].times,
+                y: plotData[sensorId].heart_rates,
+                type: 'scatter',
+                mode: 'lines',
+                name: `Датчик ${sensorId}`,
+                line: {
+                    color: '#ff4444',
+                    width: 2
+                }
+            }];
+            
+            Plotly.react('plot', data, layout);
+        }
+    </script>
+</body>
+</html> 
