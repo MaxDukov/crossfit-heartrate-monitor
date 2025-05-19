@@ -18,17 +18,17 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S'
 )
-LOGGER = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
-APP = Flask(__name__)
-SOCKETIO = SocketIO(APP)
+app = Flask(__name__)
+socketio = SocketIO(app)
 
 # Глобальные переменные
-SENSORS_DATA = defaultdict(lambda: {'times': [], 'heart_rates': []})
+sensors_data = defaultdict(lambda: {'times': [], 'heart_rates': []})
 MAX_POINTS = 100
-ACTIVE_SENSORS = set()
-ANT_NODE = None
-DEVICES = {}
+active_sensors = set()
+ant_node = None
+devices = {}
 INIT_TIMEOUT = 30  # Таймаут инициализации в секундах
 
 class AntInitTimeout(Exception):
@@ -41,130 +41,134 @@ def timeout_handler(signum, frame):
 
 def setup_ant_device():
     """Инициализация ANT+ устройства"""
-    global ANT_NODE
+    global ant_node
     try:
-        LOGGER.info("Начало инициализации ANT+ устройства...")        
+        logger.info("Начало инициализации ANT+ устройства...")        
         # Устанавливаем обработчик таймаута
         signal.signal(signal.SIGALRM, timeout_handler)
         signal.alarm(INIT_TIMEOUT)
         try:
-            ANT_NODE = Node()
-            ANT_NODE.start()
-            LOGGER.info("ANT+ устройство успешно инициализировано")
+            ant_node = Node()
+            ant_node.set_network_key(0x00, ANTPLUS_NETWORK_KEY)
+            ant_node.start()
+            logger.info("ANT+ устройство успешно инициализировано")
         finally:
             # Отключаем таймер
             signal.alarm(0)
     except AntInitTimeout as e:
-        LOGGER.error(f"Ошибка: {str(e)}")
-        if ANT_NODE:
+        logger.error(f"Ошибка: {str(e)}")
+        if ant_node:
             try:
-                ANT_NODE.stop()
+                ant_node.stop()
             except:
                 pass
         raise
     except Exception as e:
-        LOGGER.error(f"Ошибка при инициализации ANT+ устройства: {e}")
-        if ANT_NODE:
+        logger.error(f"Ошибка при инициализации ANT+ устройства: {e}")
+        if ant_node:
             try:
-                ANT_NODE.stop()
+                ant_node.stop()
             except:
                 pass
         raise
 
 def on_heart_rate_data(data):
     """Callback для обработки данных с датчика сердечного ритма"""
-    SENSOR_ID = data.device_number
-    HEART_RATE = data.heart_rate
+    sensor_id = data.device_number
+    heart_rate = data.heart_rate
     
-    LOGGER.debug(f"Получены данные с датчика {SENSOR_ID}: пульс = {HEART_RATE} уд/мин")
+    logger.debug(f"Получены данные с датчика {sensor_id}: пульс = {heart_rate} уд/мин")
   
     # Добавляем данные в соответствующий датчик
-    SENSORS_DATA[SENSOR_ID]['heart_rates'].append(HEART_RATE)
-    SENSORS_DATA[SENSOR_ID]['times'].append(time.time())
+    sensors_data[sensor_id]['heart_rates'].append(heart_rate)
+    sensors_data[sensor_id]['times'].append(time.time())
     
     # Ограничиваем количество точек на графике
-    if len(SENSORS_DATA[SENSOR_ID]['heart_rates']) > MAX_POINTS:
-        SENSORS_DATA[SENSOR_ID]['heart_rates'].pop(0)
-        SENSORS_DATA[SENSOR_ID]['times'].pop(0)
+    if len(sensors_data[sensor_id]['heart_rates']) > MAX_POINTS:
+        sensors_data[sensor_id]['heart_rates'].pop(0)
+        sensors_data[sensor_id]['times'].pop(0)
     
     # Отправляем данные через WebSocket
-    SOCKETIO.emit('heart_rate_data', {
-        'sensor_id': SENSOR_ID,
-        'heart_rate': HEART_RATE,
+    socketio.emit('heart_rate_data', {
+        'sensor_id': sensor_id,
+        'heart_rate': heart_rate,
         'time': time.time()
     })
     
     # Добавляем новый датчик в список, если его там еще нет
-    if SENSOR_ID not in ACTIVE_SENSORS:
-        LOGGER.info(f"Обнаружен новый датчик: {SENSOR_ID}")
-        ACTIVE_SENSORS.add(SENSOR_ID)
-        SOCKETIO.emit('new_sensor', {'sensor_id': SENSOR_ID})
+    if sensor_id not in active_sensors:
+        logger.info(f"Обнаружен новый датчик: {sensor_id}")
+        active_sensors.add(sensor_id)
+        socketio.emit('new_sensor', {'sensor_id': sensor_id})
 
 def continuous_scan():
     """Непрерывный поиск датчиков"""
-    global DEVICES
-    LOGGER.info("Запуск процесса сканирования датчиков...")
+    global devices
+    logger.info("Запуск процесса сканирования датчиков...")
     
     while True:
         try:
             # Очищаем предыдущие устройства
-            for DEVICE in DEVICES.values():
-                DEVICE.close()
-            DEVICES.clear()
+            for device in devices.values():
+                device.close()
+            devices.clear()
             
-            LOGGER.info("Поиск новых датчиков сердечного ритма...")
+            logger.info("Поиск новых датчиков сердечного ритма...")
             
             # Создаем новый датчик сердечного ритма
-            DEVICE = HeartRate(ANT_NODE)
-            DEVICE.on_heart_rate_data = on_heart_rate_data
-            DEVICE.open()
+            device = HeartRate(ant_node)
+            device.on_heart_rate_data = on_heart_rate_data
+            device.open()
             
-            DEVICES[0] = DEVICE
-            SOCKETIO.emit('sensor_status', {'status': 'scanning'})
-            LOGGER.info("Сканирование запущено")
+            devices[0] = device
+            socketio.emit('sensor_status', {'status': 'scanning'})
+            logger.info("Сканирование запущено")
             
+            # Ждем данные от датчика
+            while True:
+                time.sleep(1)
+                
         except Exception as e:
-            ERROR_MSG = f"Ошибка при сканировании: {e}"
-            LOGGER.error(ERROR_MSG)
-            SOCKETIO.emit('sensor_status', {'status': 'error', 'message': str(e)})
-        
-        time.sleep(5)  # Пауза между сканированиями
+            error_msg = f"Ошибка при сканировании: {e}"
+            logger.error(error_msg)
+            socketio.emit('sensor_status', {'status': 'error', 'message': str(e)})
+            time.sleep(5)  # Пауза перед повторной попыткой
 
-def get_sensor_data(SENSOR_ID):
+def get_sensor_data(sensor_id):
     """Получение данных конкретного датчика"""
-    return SENSORS_DATA[SENSOR_ID]
+    return sensors_data[sensor_id]
 
 def get_active_sensors():
     """Получение списка активных датчиков"""
-    return list(ACTIVE_SENSORS)
+    return list(active_sensors)
 
 def cleanup():
     """Очистка ресурсов"""
-    LOGGER.info("Начало очистки ресурсов...")
+    logger.info("Начало очистки ресурсов...")
     try:
-        for DEVICE in DEVICES.values():
-            DEVICE.close()
-        if ANT_NODE:
-            ANT_NODE.stop()
-        LOGGER.info("Ресурсы успешно очищены")
+        for device in devices.values():
+            device.close()
+        if ant_node:
+            ant_node.stop()
+        logger.info("Ресурсы успешно очищены")
     except Exception as e:
-        LOGGER.error(f"Ошибка при очистке ресурсов: {e}")
+        logger.error(f"Ошибка при очистке ресурсов: {e}")
 
 def main():
     try:
-        LOGGER.info("Запуск приложения мониторинга сердечного ритма...")
+        logger.info("Запуск приложения мониторинга сердечного ритма...")
         setup_ant_device()
-        SCAN_THREAD = threading.Thread(target=continuous_scan, daemon=True)
-        SCAN_THREAD.start()
-        LOGGER.info("Поток сканирования запущен")
+        scan_thread = threading.Thread(target=continuous_scan, daemon=True)
+        scan_thread.start()
+        logger.info("Поток сканирования запущен")
         
-        LOGGER.info("Запуск веб-сервера на порту 5000...")
-        SOCKETIO.run(APP, host='0.0.0.0', port=5000, debug=True)
+        logger.info("Запуск веб-сервера на порту 5000...")
+        socketio.run(app, host='0.0.0.0', port=5000, debug=True)
     except AntInitTimeout as e:
-        LOGGER.error(f"Критическая ошибка: {str(e)}")
+        logger.error(f"Критическая ошибка: {str(e)}")
         sys.exit(1)
     except Exception as e:
-        LOGGER.error(f"Ошибка при запуске веб-сервера: {e}")
+        logger.error(f"Ошибка при запуске веб-сервера: {e}")
     finally:
         cleanup()
 
