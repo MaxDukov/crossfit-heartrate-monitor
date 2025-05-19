@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import sys
 import time
-import json
 import threading
 import logging
 import signal
@@ -43,7 +42,7 @@ def setup_ant_device():
     """Инициализация ANT+ устройства"""
     global ant_node
     try:
-        logger.info("Начало инициализации ANT+ устройства...")        
+        logger.info("Начало инициализации ANT+ устройства...")
         # Устанавливаем обработчик таймаута
         signal.signal(signal.SIGALRM, timeout_handler)
         signal.alarm(INIT_TIMEOUT)
@@ -76,25 +75,25 @@ def on_heart_rate_data(data):
     """Callback для обработки данных с датчика сердечного ритма"""
     sensor_id = data.device_number
     heart_rate = data.heart_rate
-    
+
     logger.debug(f"Получены данные с датчика {sensor_id}: пульс = {heart_rate} уд/мин")
-  
+
     # Добавляем данные в соответствующий датчик
     sensors_data[sensor_id]['heart_rates'].append(heart_rate)
     sensors_data[sensor_id]['times'].append(time.time())
-    
+
     # Ограничиваем количество точек на графике
     if len(sensors_data[sensor_id]['heart_rates']) > MAX_POINTS:
         sensors_data[sensor_id]['heart_rates'].pop(0)
         sensors_data[sensor_id]['times'].pop(0)
-    
+
     # Отправляем данные через WebSocket
     socketio.emit('heart_rate_data', {
         'sensor_id': sensor_id,
         'heart_rate': heart_rate,
         'time': time.time()
     })
-    
+
     # Добавляем новый датчик в список, если его там еще нет
     if sensor_id not in active_sensors:
         logger.info(f"Обнаружен новый датчик: {sensor_id}")
@@ -105,29 +104,29 @@ def continuous_scan():
     """Непрерывный поиск датчиков"""
     global devices
     logger.info("Запуск процесса сканирования датчиков...")
-    
+
     while True:
         try:
             # Очищаем предыдущие устройства
             for device in devices.values():
                 device.close()
             devices.clear()
-            
+
             logger.info("Поиск новых датчиков сердечного ритма...")
-            
+
             # Создаем новый датчик сердечного ритма
             device = HeartRate(ant_node)
             device.on_heart_rate_data = on_heart_rate_data
             device.open()
-            
+
             devices[0] = device
             socketio.emit('sensor_status', {'status': 'scanning'})
             logger.info("Сканирование запущено")
-            
+
             # Ждем данные от датчика
             while True:
                 time.sleep(1)
-                
+
         except Exception as e:
             error_msg = f"Ошибка при сканировании: {e}"
             logger.error(error_msg)
@@ -161,7 +160,7 @@ def main():
         scan_thread = threading.Thread(target=continuous_scan, daemon=True)
         scan_thread.start()
         logger.info("Поток сканирования запущен")
-        
+
         logger.info("Запуск веб-сервера на порту 5000...")
         socketio.run(app, host='0.0.0.0', port=5000, debug=True)
     except AntInitTimeout as e:
@@ -174,4 +173,3 @@ def main():
 
 if __name__ == '__main__':
     main()
- 
