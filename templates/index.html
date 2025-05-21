@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ru" data-theme="light">
+<html lang="en" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Монитор сердечного ритма</title>
+    <title>Heart Rate Monitor</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -213,33 +213,33 @@
     </div>
 
     <div class="container">
-        <a href="/athletes" class="btn btn-back">Управление спортсменами</a>
-        <h1>Монитор сердечного ритма</h1>
+        <a href="/athletes" class="btn btn-back">Athlete Management</a>
+        <h1>Heart Rate Monitor</h1>
         <div id="status" class="status"></div>
         
         <div id="sensors"></div>
     </div>
 
-    <!-- Модальное окно для добавления/редактирования спортсмена -->
+    <!-- Modal for adding/editing athlete -->
     <div id="athleteModal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeAthleteModal()">&times;</span>
-            <h2 id="modalTitle">Добавить спортсмена</h2>
+            <h2 id="modalTitle">Add Athlete</h2>
             <form id="athleteForm">
                 <input type="hidden" id="athleteId">
                 <div class="form-group">
-                    <label for="firstName">Имя:</label>
+                    <label for="firstName">First Name:</label>
                     <input type="text" id="firstName" required>
                 </div>
                 <div class="form-group">
-                    <label for="lastName">Фамилия:</label>
+                    <label for="lastName">Last Name:</label>
                     <input type="text" id="lastName" required>
                 </div>
                 <div class="form-group">
-                    <label for="maxHr">Пороговое ЧСС:</label>
+                    <label for="maxHr">Max Heart Rate:</label>
                     <input type="number" id="maxHr" required min="40" max="220">
                 </div>
-                <button type="submit" class="btn btn-primary">Сохранить</button>
+                <button type="submit" class="btn btn-primary">Save</button>
             </form>
         </div>
     </div>
@@ -370,12 +370,12 @@
         // Существующий код для работы с датчиками
         socket.on('connect', () => {
             console.log('Connected to server');
-            document.getElementById('status').textContent = 'Подключено к серверу';
+            document.getElementById('status').textContent = 'Connected to server';
         });
         
         socket.on('disconnect', () => {
             console.log('Disconnected from server');
-            document.getElementById('status').textContent = 'Отключено от сервера';
+            document.getElementById('status').textContent = 'Disconnected from server';
             document.getElementById('status').className = 'status error';
         });
         
@@ -386,15 +386,15 @@
 
             switch(data.status) {
                 case 'scanning':
-                    statusText = 'Поиск датчиков...';
+                    statusText = 'Scanning for sensors...';
                     statusClass = 'scanning';
                     break;
                 case 'connected':
-                    statusText = `Датчик ${data.sensor_id} подключен`;
+                    statusText = `Sensor ${data.sensor_id} connected`;
                     statusClass = 'connected';
                     break;
                 case 'error':
-                    statusText = `Ошибка: ${data.message}`;
+                    statusText = `Error: ${data.message}`;
                     statusClass = 'error';
                     break;
                 default:
@@ -434,11 +434,11 @@
             
             const title = document.createElement('h2');
             title.id = `sensor-title-${sensorId}`;
-            title.textContent = `Датчик ${sensorId}`;
+            title.textContent = `Sensor ${sensorId}`;
             
             const bindButton = document.createElement('button');
             bindButton.className = 'btn btn-primary';
-            bindButton.textContent = 'Привязать к спортсмену';
+            bindButton.textContent = 'Bind to Athlete';
             bindButton.onclick = () => showBindSensorModal(sensorId);
             
             header.appendChild(title);
@@ -447,7 +447,7 @@
             const currentValue = document.createElement('div');
             currentValue.className = 'current-value';
             currentValue.id = `current-value-${sensorId}`;
-            currentValue.textContent = 'Ожидание данных...';
+            currentValue.textContent = 'Waiting for data...';
             
             const chartContainer = document.createElement('div');
             chartContainer.className = 'chart-container';
@@ -466,7 +466,7 @@
                 data: {
                     labels: [],
                     datasets: [{
-                        label: 'Пульс',
+                        label: 'Heart Rate',
                         data: [],
                         borderColor: 'rgb(75, 192, 192)',
                         backgroundColor: 'rgba(75, 192, 192, 0.1)',
@@ -551,7 +551,7 @@
                 athlete: null
             };
             
-            // Проверяем, привязан ли датчик к спортсмену
+            // Check if sensor is bound to an athlete
             fetch(`/api/sensor/${sensorId}/athlete`)
                 .then(response => response.json())
                 .then(athlete => {
@@ -575,7 +575,7 @@
             closeBtn.onclick = () => modal.remove();
             
             const title = document.createElement('h2');
-            title.textContent = 'Привязать датчик к спортсмену';
+            title.textContent = 'Bind Sensor to Athlete';
             
             const form = document.createElement('form');
             form.onsubmit = (e) => {
@@ -596,7 +596,7 @@
             
             const defaultOption = document.createElement('option');
             defaultOption.value = '';
-            defaultOption.textContent = 'Выберите спортсмена';
+            defaultOption.textContent = 'Select an athlete';
             select.appendChild(defaultOption);
             
             fetch('/api/athletes')
@@ -613,7 +613,7 @@
             const submitBtn = document.createElement('button');
             submitBtn.type = 'submit';
             submitBtn.className = 'btn btn-primary';
-            submitBtn.textContent = 'Привязать';
+            submitBtn.textContent = 'Bind';
             
             form.appendChild(select);
             form.appendChild(submitBtn);
@@ -655,7 +655,7 @@
             title.textContent = `${athlete.last_name} ${athlete.first_name}`;
             
             const bindButton = title.nextElementSibling;
-            bindButton.textContent = 'Отвязать';
+            bindButton.textContent = 'Unbind';
             bindButton.onclick = () => unbindSensor(sensorId);
         }
 
@@ -669,10 +669,10 @@
                 .then(data => {
                     if (data.message) {
                         const title = document.getElementById(`sensor-title-${sensorId}`);
-                        title.textContent = `Датчик ${sensorId}`;
+                        title.textContent = `Sensor ${sensorId}`;
                         
                         const bindButton = title.nextElementSibling;
-                        bindButton.textContent = 'Привязать к спортсмену';
+                        bindButton.textContent = 'Bind to Athlete';
                         bindButton.onclick = () => showBindSensorModal(sensorId);
                         
                         sensor.athlete = null;

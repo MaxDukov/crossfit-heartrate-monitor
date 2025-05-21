@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ru" data-theme="light">
+<html lang="en" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Управление спортсменами</title>
+    <title>Athlete Management</title>
     <style>
         :root[data-theme="light"] {
             --bg-color: #f5f5f5;
@@ -166,35 +166,35 @@
     </div>
 
     <div class="container">
-        <a href="/" class="btn btn-back">← Назад к мониторингу</a>
-        <h1>Управление спортсменами</h1>
+        <a href="/" class="btn btn-back">← Back to Monitor</a>
+        <h1>Athlete Management</h1>
         
         <div class="athletes-section">
-            <button class="btn btn-primary" onclick="showAddAthleteModal()">Добавить спортсмена</button>
+            <button class="btn btn-primary" onclick="showAddAthleteModal()">Add Athlete</button>
             <div id="athletes-list" class="athletes-list"></div>
         </div>
     </div>
 
-    <!-- Модальное окно для добавления/редактирования спортсмена -->
+    <!-- Modal for adding/editing athlete -->
     <div id="athleteModal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeAthleteModal()">&times;</span>
-            <h2 id="modalTitle">Добавить спортсмена</h2>
+            <h2 id="modalTitle">Add Athlete</h2>
             <form id="athleteForm">
                 <input type="hidden" id="athleteId">
                 <div class="form-group">
-                    <label for="firstName">Имя:</label>
+                    <label for="firstName">First Name:</label>
                     <input type="text" id="firstName" required>
                 </div>
                 <div class="form-group">
-                    <label for="lastName">Фамилия:</label>
+                    <label for="lastName">Last Name:</label>
                     <input type="text" id="lastName" required>
                 </div>
                 <div class="form-group">
-                    <label for="maxHr">Пороговое ЧСС:</label>
+                    <label for="maxHr">Max Heart Rate:</label>
                     <input type="number" id="maxHr" required min="40" max="220">
                 </div>
-                <button type="submit" class="btn btn-primary">Сохранить</button>
+                <button type="submit" class="btn btn-primary">Save</button>
             </form>
         </div>
     </div>
@@ -231,14 +231,14 @@
                             <div>
                                 <strong>${athlete.last_name} ${athlete.first_name}</strong>
                                 <br>
-                                <small>Пороговое ЧСС: ${athlete.max_hr}</small>
+                                <small>Max Heart Rate: ${athlete.max_hr}</small>
                                 ${athlete.sensor_id ? 
-                                    `<div class="sensor-info">Привязан к датчику ${athlete.sensor_id}</div>` : 
+                                    `<div class="sensor-info">Bound to sensor ${athlete.sensor_id}</div>` : 
                                     ''}
                             </div>
                             <div>
-                                <button class="btn btn-edit" onclick="editAthlete(${JSON.stringify(athlete)})">Редактировать</button>
-                                <button class="btn btn-danger" onclick="deleteAthlete(${athlete.id})">Удалить</button>
+                                <button class="btn btn-edit" onclick="editAthlete(${JSON.stringify(athlete)})">Edit</button>
+                                <button class="btn btn-danger" onclick="deleteAthlete(${athlete.id})">Delete</button>
                             </div>
                         `;
                         list.appendChild(div);
@@ -247,7 +247,7 @@
         }
 
         function showAddAthleteModal() {
-            document.getElementById('modalTitle').textContent = 'Добавить спортсмена';
+            document.getElementById('modalTitle').textContent = 'Add Athlete';
             document.getElementById('athleteForm').reset();
             document.getElementById('athleteId').value = '';
             document.getElementById('athleteModal').style.display = 'block';
@@ -258,7 +258,7 @@
         }
 
         function editAthlete(athlete) {
-            document.getElementById('modalTitle').textContent = 'Редактировать спортсмена';
+            document.getElementById('modalTitle').textContent = 'Edit Athlete';
             document.getElementById('athleteId').value = athlete.id;
             document.getElementById('firstName').value = athlete.first_name;
             document.getElementById('lastName').value = athlete.last_name;
@@ -267,14 +267,14 @@
         }
 
         function deleteAthlete(id) {
-            if (confirm('Вы уверены, что хотите удалить этого спортсмена?')) {
+            if (confirm('Are you sure you want to delete this athlete?')) {
                 fetch(`/api/athletes/${id}`, { method: 'DELETE' })
                     .then(response => response.json())
                     .then(data => {
                         if (data.message) {
                             loadAthletes();
                         } else {
-                            alert('Ошибка при удалении спортсмена');
+                            alert('Error deleting athlete');
                         }
                     });
             }
@@ -305,7 +305,7 @@
                     closeAthleteModal();
                     loadAthletes();
                 } else {
-                    alert('Ошибка при сохранении спортсмена');
+                    alert('Error saving athlete');
                 }
             });
         };

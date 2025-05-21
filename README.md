@@ -1,106 +1,135 @@
-# Монитор сердечного ритма для CrossFit
+# CrossFit Heart Rate Monitor
 
-Веб-приложение для мониторинга сердечного ритма спортсменов в режиме реального времени с использованием ANT+ датчиков.
+A real-time heart rate monitoring system for CrossFit training sessions. The application supports multiple ANT+ heart rate sensors and provides real-time visualization of heart rate data for multiple athletes.
 
-## Функциональность
+## Features
 
-- Мониторинг сердечного ритма в реальном времени
-- Поддержка нескольких ANT+ датчиков
-- Управление спортсменами (добавление, редактирование, удаление)
-- Привязка датчиков к спортсменам
-- Визуализация данных с цветовой индикацией интенсивности нагрузки
-- Сохранение данных в SQLite базе данных
+- Real-time heart rate monitoring
+- Support for multiple ANT+ sensors
+- Athlete management with individual maximum heart rate thresholds
+- Sensor binding to athletes
+- Real-time data visualization with color-coded heart rate zones
+- Data storage in SQLite database
+- Dark/Light theme support
+- Lightweight and resource-efficient design
+- Cross-platform compatibility
+- Raspberry Pi ready
 
-## Требования
+## Key Advantages
 
-- Python 3.8 или выше (протестировано в 3.11)
-- ANT+ USB адаптер
-- Датчики сердечного ритма с поддержкой ANT+
+- **Lightweight**: The application is designed to run efficiently on low-power devices like Raspberry Pi, making it perfect for small gyms and training facilities
+- **Cross-Platform**: Works seamlessly on Linux, Windows, and macOS
+- **Resource Efficient**: Minimal system requirements and optimized performance
+- **Easy Deployment**: Simple setup process with no complex dependencies
+- **Scalable**: Can handle multiple sensors simultaneously without performance degradation
+- **Web-Based Interface**: Accessible from any device with a web browser
+- **Offline Capable**: Works without internet connection once deployed
 
-## Зависимости
+## Requirements
 
-```
-flask
-flask-socketio
-openant
-```
+- Python 3.7+
+- ANT+ USB adapter
+- Compatible heart rate sensors
+- Dependencies:
+  - flask
+  - flask-socketio
+  - openant
 
-## Установка
+## Installation
 
-1. Клонируйте репозиторий:
+1. Clone the repository:
 ```bash
-git clone https://github.com/maxdukov/crossfit-hr-monitor.git
+git clone https://github.com/yourusername/crossfit-hr-monitor.git
 cd crossfit-hr-monitor
 ```
 
-2. Создайте виртуальное окружение и активируйте его:
+2. Create a virtual environment and activate it:
 ```bash
 python -m venv venv
-source venv/bin/activate  # для Linux/Mac
-# или
-venv\Scripts\activate  # для Windows
+source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
 
-3. Установите зависимости:
+3. Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
-## Запуск
+## Usage
 
-1. Подключите ANT+ USB адаптер к компьютеру
-2. Включите датчик сердечного ритма
-3. Запустите приложение:
+1. Connect your ANT+ USB adapter
+2. Run the application:
 ```bash
 python hr.py
 ```
-3. Откройте браузер и перейдите по адресу: `http://localhost:5000`
 
-## Использование
+3. Open your web browser and navigate to `http://localhost:5000`
 
-### Мониторинг сердечного ритма
+4. Add athletes through the "Athlete Management" page:
+   - Enter first name, last name, and maximum heart rate
+   - The maximum heart rate is used to calculate heart rate zones
 
-- На главной странице отображаются все активные датчики
-- Для каждого датчика показывается:
-  - Текущее значение ЧСС
-  - График изменения ЧСС
-  - Цветовая индикация интенсивности нагрузки:
-    - Зеленый: ≤ 60% от максимального ЧСС
-    - Желтый: 60-85% от максимального ЧСС
-    - Красный: > 85% от максимального ЧСС
+5. Monitor heart rates:
+   - The system automatically detects and connects to available ANT+ sensors
+   - Bind sensors to athletes using the "Bind to Athlete" button
+   - Real-time heart rate data is displayed with color coding:
+     - Green: 0-60% of max heart rate
+     - Yellow: 60-85% of max heart rate
+     - Red: >85% of max heart rate
 
-### Управление спортсменами
+## Raspberry Pi Setup
 
-1. Нажмите кнопку "Управление спортсменами" на главной странице
-2. На странице управления спортсменами вы можете:
-   - Добавить нового спортсмена
-   - Редактировать существующих спортсменов
-   - Удалить спортсмена
-   - Привязать датчик к спортсмену
+The application is optimized for Raspberry Pi deployment:
 
-### Привязка датчика к спортсмену
-
-1. На главной странице нажмите кнопку "Привязать к спортсмену" на карточке датчика
-2. Выберите спортсмена из списка
-3. После привязки на карточке датчика будет отображаться имя спортсмена вместо номера датчика
-
-## Структура проекта
-
+1. Install Raspberry Pi OS (preferably Lite version)
+2. Install required packages:
+```bash
+sudo apt-get update
+sudo apt-get install python3-pip python3-venv
 ```
-crossfit-hr-monitor/
-├── hr.py              # Основной файл приложения
-├── requirements.txt   # Зависимости проекта
-├── athletes.db        # База данных SQLite
-└── templates/         # HTML шаблоны
-    ├── index.html     # Главная страница
-    └── athletes.html  # Страница управления спортсменами
+
+3. Follow the standard installation steps above
+4. For automatic startup on boot, create a systemd service:
+```bash
+sudo nano /etc/systemd/system/hr-monitor.service
 ```
-## ToDo
- - Кастомизация интерфейса, возможность добавление лого
- - Dockerfile для сборки и запуска в виде контейнера
- - Интерфейс для добавление спортсменов с установкой персональной предельной ЧСС  (Done)
- - Цветовая градация зон пульса (Done)
 
-## Лицензия
+Add the following content:
+```ini
+[Unit]
+Description=CrossFit Heart Rate Monitor
+After=network.target
 
-GNU GPL V2
+[Service]
+User=pi
+WorkingDirectory=/path/to/crossfit-hr-monitor
+ExecStart=/path/to/crossfit-hr-monitor/venv/bin/python hr.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Enable and start the service:
+```bash
+sudo systemctl enable hr-monitor
+sudo systemctl start hr-monitor
+```
+
+## Project Structure
+
+- `hr.py` - Main application file
+- `templates/` - HTML templates
+  - `index.html` - Main monitoring page
+  - `athletes.html` - Athlete management page
+- `static/` - Static files (CSS, JavaScript)
+- `database.db` - SQLite database file
+
+## ToDo list
+- To create docker to make setup more comfortable
+- To add customisation function (club logo)
+- To add photo upload function (athlet photo)
+- To add training history function
+
+## License
+
+GPL License

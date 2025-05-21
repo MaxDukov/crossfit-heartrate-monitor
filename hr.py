@@ -33,6 +33,7 @@ running = True
 
 # Инициализация базы данных
 def init_db():
+    """Initialize the SQLite database with required tables"""
     conn = sqlite3.connect('athletes.db')
     c = conn.cursor()
     c.execute('''
@@ -51,12 +52,12 @@ def init_db():
 # Маршруты Flask
 @app.route('/')
 def index():
-    """Главная страница"""
+    """Render main monitoring page"""
     return render_template('index.html')
 
 @app.route('/athletes')
 def athletes():
-    """Страница управления спортсменами"""
+    """Render athlete management page"""
     return render_template('athletes.html')
 
 @app.route('/api/sensors')
@@ -73,7 +74,7 @@ def get_sensor(sensor_id):
 
 @app.route('/api/athletes', methods=['GET'])
 def get_athletes():
-    """Получение списка спортсменов"""
+    """Get list of all athletes"""
     conn = sqlite3.connect('athletes.db')
     c = conn.cursor()
     c.execute('SELECT * FROM athletes ORDER BY last_name, first_name')
@@ -84,7 +85,7 @@ def get_athletes():
 
 @app.route('/api/athletes', methods=['POST'])
 def add_athlete():
-    """Добавление нового спортсмена"""
+    """Add new athlete"""
     data = request.json
     if not all(k in data for k in ('first_name', 'last_name', 'max_hr')):
         return jsonify({'error': 'Missing required fields'}), 400
@@ -106,7 +107,7 @@ def add_athlete():
 
 @app.route('/api/athletes/<int:athlete_id>', methods=['PUT'])
 def update_athlete(athlete_id):
-    """Обновление данных спортсмена"""
+    """Update athlete information"""
     data = request.json
     if not all(k in data for k in ('first_name', 'last_name', 'max_hr')):
         return jsonify({'error': 'Missing required fields'}), 400
@@ -128,7 +129,7 @@ def update_athlete(athlete_id):
 
 @app.route('/api/athletes/<int:athlete_id>', methods=['DELETE'])
 def delete_athlete(athlete_id):
-    """Удаление спортсмена"""
+    """Delete athlete"""
     conn = sqlite3.connect('athletes.db')
     c = conn.cursor()
     try:
@@ -142,7 +143,7 @@ def delete_athlete(athlete_id):
 
 @app.route('/api/athletes/<int:athlete_id>/sensor', methods=['POST'])
 def bind_sensor(athlete_id):
-    """Привязка датчика к спортсмену"""
+    """Bind sensor to athlete"""
     data = request.json
     if 'sensor_id' not in data:
         return jsonify({'error': 'Missing sensor_id'}), 400
@@ -150,9 +151,9 @@ def bind_sensor(athlete_id):
     conn = sqlite3.connect('athletes.db')
     c = conn.cursor()
     try:
-        # Сначала отвязываем датчик от других спортсменов
+        # First, unbind the sensor from any athlete
         c.execute('UPDATE athletes SET sensor_id = NULL WHERE sensor_id = ?', (data['sensor_id'],))
-        # Привязываем датчик к выбранному спортсмену
+        # Then bind it to the new athlete
         c.execute('UPDATE athletes SET sensor_id = ? WHERE id = ?', (data['sensor_id'], athlete_id))
         conn.commit()
         conn.close()
@@ -163,7 +164,7 @@ def bind_sensor(athlete_id):
 
 @app.route('/api/athletes/<int:athlete_id>/sensor', methods=['DELETE'])
 def unbind_sensor(athlete_id):
-    """Отвязка датчика от спортсмена"""
+    """Unbind sensor from athlete"""
     conn = sqlite3.connect('athletes.db')
     c = conn.cursor()
     try:
@@ -177,7 +178,7 @@ def unbind_sensor(athlete_id):
 
 @app.route('/api/sensor/<int:sensor_id>/athlete')
 def get_sensor_athlete(sensor_id):
-    """Получение информации о спортсмене, привязанном к датчику"""
+    """Get athlete bound to sensor"""
     conn = sqlite3.connect('athletes.db')
     c = conn.cursor()
     c.execute('SELECT id, first_name, last_name, max_hr FROM athletes WHERE sensor_id = ?', (sensor_id,))
@@ -201,7 +202,7 @@ def on_found():
         socketio.emit('sensor_status', {'status': 'scanning'})
 
 def on_device_data(page: int, page_name: str, data):
-    """Callback для обработки данных с датчика сердечного ритма"""
+    """Handle incoming data from heart rate sensor"""
     if isinstance(data, HeartRateData):
         sensor_id = 1  # data.device_number
         heart_rate = data.heart_rate
