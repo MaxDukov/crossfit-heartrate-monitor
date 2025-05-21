@@ -40,7 +40,7 @@ A real-time heart rate monitoring system for CrossFit training sessions. The app
 1. Clone the repository:
 ```bash
 git clone https://github.com/MaxDukov/crossfit-heartrate-monitor.git
-cd crossfit-hr-monitor
+cd crossfit-heartrate-monitor
 ```
 
 2. Create a virtual environment and activate it:
