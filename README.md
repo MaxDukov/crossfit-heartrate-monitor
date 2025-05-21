@@ -39,7 +39,7 @@ A real-time heart rate monitoring system for CrossFit training sessions. The app
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/crossfit-hr-monitor.git
+git clone https://github.com/MaxDukov/crossfit-heartrate-monitor.git
 cd crossfit-hr-monitor
 ```
 
@@ -62,7 +62,7 @@ pip install -r requirements.txt
 python hr.py
 ```
 
-3. Open your web browser and navigate to `http://localhost:5000`
+3. Open your web browser and navigate to `http://[your-device-ip]:5000`
 
 4. Add athletes through the "Athlete Management" page:
    - Enter first name, last name, and maximum heart rate
