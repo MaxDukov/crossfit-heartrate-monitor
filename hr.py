@@ -12,7 +12,7 @@ from openant.easy.node import Node
 from openant.devices import ANTPLUS_NETWORK_KEY
 from openant.devices.heart_rate import HeartRate, HeartRateData
 
-# Настройка логирования
+# Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 socketio = SocketIO(app, async_mode='threading')
 
-# Глобальные переменные
+# Global variables
 sensors_data = defaultdict(lambda: {'times': [], 'heart_rates': []})
 MAX_POINTS = 100
 active_sensors = set()
@@ -31,7 +31,7 @@ node = None
 device = None
 running = True
 
-# Инициализация базы данных
+# Initialize database
 def init_db():
     """Initialize the SQLite database with required tables"""
     conn = sqlite3.connect('athletes.db')
@@ -49,7 +49,7 @@ def init_db():
     conn.commit()
     conn.close()
 
-# Маршруты Flask
+# Flask routes
 @app.route('/')
 def index():
     """Render main monitoring page"""
@@ -62,12 +62,12 @@ def athletes():
 
 @app.route('/api/sensors')
 def get_sensors():
-    """API endpoint для получения списка активных датчиков"""
+    """API endpoint to get list of active sensors"""
     return jsonify(list(active_sensors))
 
 @app.route('/api/sensor/<int:sensor_id>')
 def get_sensor(sensor_id):
-    """API endpoint для получения данных конкретного датчика"""
+    """API endpoint to get data for specific sensor"""
     if sensor_id not in sensors_data:
         return jsonify({'error': 'Sensor not found'}), 404
     return jsonify(sensors_data[sensor_id])
@@ -195,10 +195,10 @@ def get_sensor_athlete(sensor_id):
     return jsonify(None)
 
 def on_found():
-    """Callback при обнаружении датчика"""
+    """Callback when sensor is found"""
     global device
     if device:
-        logger.info(f"Датчик {device} обнаружен и принимает данные")
+        logger.info(f"Sensor {device} found and receiving data")
         socketio.emit('sensor_status', {'status': 'scanning'})
 
 def on_device_data(page: int, page_name: str, data):
@@ -207,34 +207,34 @@ def on_device_data(page: int, page_name: str, data):
         sensor_id = 1  # data.device_number
         heart_rate = data.heart_rate
 
-        logger.debug(f"Получены данные с датчика {sensor_id}: пульс = {heart_rate} уд/мин")
+        logger.debug(f"Received data from sensor {sensor_id}: heart rate = {heart_rate} bpm")
 
-        # Добавляем данные в соответствующий датчик
+        # Add data to corresponding sensor
         sensors_data[sensor_id]['heart_rates'].append(heart_rate)
         sensors_data[sensor_id]['times'].append(time.time())
 
-        # Ограничиваем количество точек на графике
+        # Limit number of points on graph
         if len(sensors_data[sensor_id]['heart_rates']) > MAX_POINTS:
             sensors_data[sensor_id]['heart_rates'].pop(0)
             sensors_data[sensor_id]['times'].pop(0)
 
-        # Отправляем данные через WebSocket
+        # Send data through WebSocket
         socketio.emit('heart_rate_data', {
             'sensor_id': sensor_id,
             'heart_rate': heart_rate,
             'time': time.time()
         })
 
-        # Добавляем новый датчик в список, если его там еще нет
+        # Add new sensor to list if not already present
         if sensor_id not in active_sensors:
-            logger.info(f"Обнаружен новый датчик: {sensor_id}")
+            logger.info(f"New sensor detected: {sensor_id}")
             active_sensors.add(sensor_id)
-            # Отправляем событие только один раз при первом обнаружении
+            # Send event only once on first detection
             socketio.emit('new_sensor', {'sensor_id': sensor_id})
-            # Отправляем начальные данные датчика
+            # Send initial sensor data
             socketio.emit('sensor_status', {'status': 'connected', 'sensor_id': sensor_id})
             
-            # Проверяем, привязан ли датчик к спортсмену
+            # Check if sensor is bound to athlete
             conn = sqlite3.connect('athletes.db')
             c = conn.cursor()
             c.execute('SELECT first_name, last_name FROM athletes WHERE sensor_id = ?', (sensor_id,))
@@ -251,11 +251,11 @@ def on_device_data(page: int, page_name: str, data):
                 })
 
 def ant_worker():
-    """Функция для работы с ANT+ в отдельном потоке"""
+    """Function for ANT+ work in separate thread"""
     global node, device, running
     
     try:
-        logger.info("Инициализация ANT+ устройства...")
+        logger.info("Initializing ANT+ device...")
         node = Node()
         node.set_network_key(0x00, ANTPLUS_NETWORK_KEY)
         
@@ -263,56 +263,56 @@ def ant_worker():
         device.on_found = on_found
         device.on_device_data = on_device_data
         
-        logger.info("Запуск ANT+ устройства...")
+        logger.info("Starting ANT+ device...")
         node.start()
         
-        # Держим поток активным
+        # Keep thread active
         while running:
             time.sleep(0.1)
             
     except Exception as e:
-        logger.error(f"Ошибка в работе ANT+ устройства: {e}")
+        logger.error(f"Error in ANT+ device operation: {e}")
         socketio.emit('sensor_status', {'status': 'error', 'message': str(e)})
     finally:
         cleanup()
 
 def cleanup():
-    """Очистка ресурсов при завершении"""
+    """Clean up resources on exit"""
     global running
     running = False
     
-    logger.info("Очистка ресурсов...")
+    logger.info("Cleaning up resources...")
     if device:
         device.close_channel()
     if node:
         node.stop()
 
 def signal_handler(signum, frame):
-    """Обработчик сигналов завершения"""
-    logger.info("Получен сигнал завершения работы...")
+    """Signal handler for graceful shutdown"""
+    logger.info("Received shutdown signal...")
     cleanup()
     sys.exit(0)
 
 def main():
-    # Инициализация базы данных
+    # Initialize database
     init_db()
     
-    # Устанавливаем обработчики сигналов
+    # Set up signal handlers
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
     
     try:
-        # Запускаем ANT+ в отдельном потоке
+        # Start ANT+ in separate thread
         ant_thread = threading.Thread(target=ant_worker, daemon=True)
         ant_thread.start()
-        logger.info("ANT+ поток запущен")
+        logger.info("ANT+ thread started")
 
-        # Запускаем веб-сервер
-        logger.info("Запуск веб-сервера на порту 5000...")
+        # Start web server
+        logger.info("Starting web server on port 5000...")
         socketio.run(app, host='0.0.0.0', port=5000, debug=False)
         
     except Exception as e:
-        logger.error(f"Ошибка при запуске приложения: {e}")
+        logger.error(f"Error starting application: {e}")
     finally:
         cleanup()
 
