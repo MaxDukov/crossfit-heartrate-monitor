@@ -1,29 +1,51 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Управление спортсменами</title>
     <style>
+        :root[data-theme="light"] {
+            --bg-color: #f5f5f5;
+            --card-bg: white;
+            --text-color: #333;
+            --text-secondary: #666;
+            --border-color: #eee;
+            --shadow-color: rgba(0,0,0,0.1);
+        }
+
+        :root[data-theme="dark"] {
+            --bg-color: #1a1a1a;
+            --card-bg: #2d2d2d;
+            --text-color: #ffffff;
+            --text-secondary: #b0b0b0;
+            --border-color: #404040;
+            --shadow-color: rgba(0,0,0,0.3);
+        }
+
         body {
             font-family: Arial, sans-serif;
             margin: 20px;
-            background-color: #f5f5f5;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s, color 0.3s;
         }
         .container {
             max-width: 1200px;
             margin: 0 auto;
         }
         h1 {
-            color: #333;
+            color: var(--text-color);
             text-align: center;
+            transition: color 0.3s;
         }
         .athletes-section {
-            background: white;
+            background: var(--card-bg);
             border-radius: 8px;
             padding: 20px;
             margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px var(--shadow-color);
+            transition: background-color 0.3s, box-shadow 0.3s;
         }
         .athletes-list {
             margin-top: 20px;
@@ -33,7 +55,8 @@
             justify-content: space-between;
             align-items: center;
             padding: 10px;
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid var(--border-color);
+            transition: border-color 0.3s;
         }
         .athlete-item:last-child {
             border-bottom: none;
@@ -44,13 +67,17 @@
         .form-group label {
             display: block;
             margin-bottom: 5px;
-            color: #666;
+            color: var(--text-secondary);
+            transition: color 0.3s;
         }
         .form-group input {
             width: 100%;
             padding: 8px;
-            border: 1px solid #ddd;
+            border: 1px solid var(--border-color);
             border-radius: 4px;
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            transition: background-color 0.3s, color 0.3s, border-color 0.3s;
         }
         .btn {
             padding: 8px 16px;
@@ -60,6 +87,7 @@
             font-weight: bold;
             text-decoration: none;
             display: inline-block;
+            transition: background-color 0.3s, color 0.3s;
         }
         .btn-primary {
             background-color: #1976d2;
@@ -88,26 +116,55 @@
             background-color: rgba(0,0,0,0.5);
         }
         .modal-content {
-            background-color: white;
+            background-color: var(--card-bg);
             margin: 15% auto;
             padding: 20px;
             border-radius: 8px;
             width: 50%;
             max-width: 500px;
+            transition: background-color 0.3s;
         }
         .close {
             float: right;
             cursor: pointer;
             font-size: 24px;
+            color: var(--text-color);
+            transition: color 0.3s;
         }
         .sensor-info {
             font-size: 0.9em;
-            color: #666;
+            color: var(--text-secondary);
             margin-top: 5px;
+            transition: color 0.3s;
+        }
+        .theme-switch {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        .theme-switch input {
+            display: none;
+        }
+        .theme-switch label {
+            cursor: pointer;
+            padding: 8px 16px;
+            background-color: var(--card-bg);
+            border-radius: 4px;
+            box-shadow: 0 2px 4px var(--shadow-color);
+            transition: background-color 0.3s, box-shadow 0.3s;
+        }
+        .theme-switch label:hover {
+            box-shadow: 0 4px 8px var(--shadow-color);
         }
     </style>
 </head>
 <body>
+    <div class="theme-switch">
+        <input type="checkbox" id="theme-toggle">
+        <label for="theme-toggle">🌙</label>
+    </div>
+
     <div class="container">
         <a href="/" class="btn btn-back">← Назад к мониторингу</a>
         <h1>Управление спортсменами</h1>
@@ -143,6 +200,23 @@
     </div>
 
     <script>
+        // Переключение темы
+        const themeToggle = document.getElementById('theme-toggle');
+        const themeLabel = themeToggle.nextElementSibling;
+        
+        // Загружаем сохраненную тему
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        themeToggle.checked = savedTheme === 'dark';
+        themeLabel.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+        
+        themeToggle.addEventListener('change', function() {
+            const theme = this.checked ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('theme', theme);
+            themeLabel.textContent = theme === 'dark' ? '☀️' : '🌙';
+        });
+
         // Функции для работы со спортсменами
         function loadAthletes() {
             fetch('/api/athletes')

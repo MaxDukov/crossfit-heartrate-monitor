@@ -13,7 +13,7 @@
 
 ## Требования
 
-- Python 3.7+
+- Python 3.8 или выше (протестировано в 3.11)
 - ANT+ USB адаптер
 - Датчики сердечного ритма с поддержкой ANT+
 
@@ -29,7 +29,7 @@ openant
 
 1. Клонируйте репозиторий:
 ```bash
-git clone https://github.com/yourusername/crossfit-hr-monitor.git
+git clone https://github.com/maxdukov/crossfit-hr-monitor.git
 cd crossfit-hr-monitor
 ```
 
@@ -49,7 +49,8 @@ pip install -r requirements.txt
 ## Запуск
 
 1. Подключите ANT+ USB адаптер к компьютеру
-2. Запустите приложение:
+2. Включите датчик сердечного ритма
+3. Запустите приложение:
 ```bash
 python hr.py
 ```
@@ -94,7 +95,12 @@ crossfit-hr-monitor/
     ├── index.html     # Главная страница
     └── athletes.html  # Страница управления спортсменами
 ```
+## ToDo
+ - Кастомизация интерфейса, возможность добавление лого
+ - Dockerfile для сборки и запуска в виде контейнера
+ - Интерфейс для добавление спортсменов с установкой персональной предельной ЧСС  (Done)
+ - Цветовая градация зон пульса (Done)
 
 ## Лицензия
 
-MIT
+GNU GPL V2

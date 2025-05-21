@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,21 +7,44 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
+        :root[data-theme="light"] {
+            --bg-color: #f5f5f5;
+            --card-bg: white;
+            --text-color: #333;
+            --text-secondary: #666;
+            --border-color: #eee;
+            --shadow-color: rgba(0,0,0,0.1);
+            --chart-grid: rgba(0, 0, 0, 0.1);
+        }
+
+        :root[data-theme="dark"] {
+            --bg-color: #1a1a1a;
+            --card-bg: #2d2d2d;
+            --text-color: #ffffff;
+            --text-secondary: #b0b0b0;
+            --border-color: #404040;
+            --shadow-color: rgba(0,0,0,0.3);
+            --chart-grid: rgba(255, 255, 255, 0.1);
+        }
+
         body {
             font-family: Arial, sans-serif;
             margin: 20px;
-            background-color: #f5f5f5;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s, color 0.3s;
         }
         .container {
             max-width: 1200px;
             margin: 0 auto;
         }
         .sensor-card {
-            background: white;
+            background: var(--card-bg);
             border-radius: 8px;
             padding: 20px;
             margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px var(--shadow-color);
+            transition: background-color 0.3s, box-shadow 0.3s;
         }
         .chart-container {
             position: relative;
@@ -29,14 +52,16 @@
             width: 100%;
         }
         h1 {
-            color: #333;
+            color: var(--text-color);
             text-align: center;
+            transition: color 0.3s;
         }
         .status {
             text-align: center;
             margin: 20px 0;
             padding: 10px;
             border-radius: 4px;
+            transition: background-color 0.3s, color 0.3s;
         }
         .status.scanning {
             background-color: #e3f2fd;
@@ -55,6 +80,7 @@
             text-align: center;
             margin: 20px 0;
             font-weight: bold;
+            transition: color 0.3s;
         }
         .current-value.safe {
             color: #2e7d32;
@@ -105,6 +131,9 @@
             border-radius: 4px;
             cursor: pointer;
             font-weight: bold;
+            text-decoration: none;
+            display: inline-block;
+            transition: background-color 0.3s, color 0.3s;
         }
         .btn-primary {
             background-color: #1976d2;
@@ -122,8 +151,6 @@
             background-color: #757575;
             color: white;
             margin-bottom: 20px;
-            text-decoration: none;
-            display: inline-block;
         }
         .modal {
             display: none;
@@ -147,9 +174,34 @@
             cursor: pointer;
             font-size: 24px;
         }
+        .theme-switch {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        .theme-switch input {
+            display: none;
+        }
+        .theme-switch label {
+            cursor: pointer;
+            padding: 8px 16px;
+            background-color: var(--card-bg);
+            border-radius: 4px;
+            box-shadow: 0 2px 4px var(--shadow-color);
+            transition: background-color 0.3s, box-shadow 0.3s;
+        }
+        .theme-switch label:hover {
+            box-shadow: 0 4px 8px var(--shadow-color);
+        }
     </style>
 </head>
 <body>
+    <div class="theme-switch">
+        <input type="checkbox" id="theme-toggle">
+        <label for="theme-toggle">🌙</label>
+    </div>
+
     <div class="container">
         <a href="/athletes" class="btn btn-back">Управление спортсменами</a>
         <h1>Монитор сердечного ритма</h1>
@@ -183,6 +235,30 @@
     </div>
 
     <script>
+        // Переключение темы
+        const themeToggle = document.getElementById('theme-toggle');
+        const themeLabel = themeToggle.nextElementSibling;
+        
+        // Загружаем сохраненную тему
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        themeToggle.checked = savedTheme === 'dark';
+        themeLabel.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+        
+        themeToggle.addEventListener('change', function() {
+            const theme = this.checked ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('theme', theme);
+            themeLabel.textContent = theme === 'dark' ? '☀️' : '🌙';
+            
+            // Обновляем цвета графиков
+            Object.values(charts).forEach(chart => {
+                chart.options.scales.x.grid.color = getComputedStyle(document.documentElement).getPropertyValue('--chart-grid');
+                chart.options.scales.y.grid.color = getComputedStyle(document.documentElement).getPropertyValue('--chart-grid');
+                chart.update('none');
+            });
+        });
+
         // Существующий код для работы с датчиками
         const socket = io();
         const sensors = {};
@@ -400,22 +476,24 @@
                             suggestedMin: 40,
                             suggestedMax: 200,
                             grid: {
-                                color: 'rgba(0, 0, 0, 0.1)'
+                                color: getComputedStyle(document.documentElement).getPropertyValue('--chart-grid')
                             },
                             ticks: {
                                 font: {
                                     size: 8
-                                }
+                                },
+                                color: getComputedStyle(document.documentElement).getPropertyValue('--text-color')
                             }
                         },
                         x: {
                             grid: {
-                                color: 'rgba(0, 0, 0, 0.1)'
+                                color: getComputedStyle(document.documentElement).getPropertyValue('--chart-grid')
                             },
                             ticks: {
                                 font: {
                                     size: 8
-                                }
+                                },
+                                color: getComputedStyle(document.documentElement).getPropertyValue('--text-color')
                             }
                         }
                     },
