@@ -3,193 +3,609 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ANT+ Heart Rate Monitor</title>
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <title>Монитор сердечного ритма</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
+            margin: 20px;
             background-color: #f5f5f5;
         }
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            background-color: white;
-            padding: 20px;
+        }
+        .sensor-card {
+            background: white;
             border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        .header {
+        .chart-container {
+            position: relative;
+            height: 50px;
+            width: 100%;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .status {
+            text-align: center;
+            margin: 20px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .status.scanning {
+            background-color: #e3f2fd;
+            color: #1976d2;
+        }
+        .status.connected {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+        }
+        .status.error {
+            background-color: #ffebee;
+            color: #c62828;
+        }
+        .current-value {
+            font-size: 144px;
+            text-align: center;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+        .current-value.safe {
+            color: #2e7d32;
+        }
+        .current-value.warning {
+            color: #f57f17;
+        }
+        .current-value.danger {
+            color: #c62828;
+        }
+        .athletes-section {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .athletes-list {
+            margin-top: 20px;
+        }
+        .athlete-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
-        }
-        .status {
             padding: 10px;
-            border-radius: 4px;
-            background-color: #e0e0e0;
+            border-bottom: 1px solid #eee;
         }
-        .sensor-select {
-            padding: 10px;
-            border-radius: 4px;
-            border: 1px solid #ccc;
+        .athlete-item:last-child {
+            border-bottom: none;
         }
-        #plot {
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #666;
+        }
+        .form-group input {
             width: 100%;
-            height: 500px;
-        }
-        .sensor-info {
-            margin-top: 20px;
-            padding: 10px;
-            background-color: #f8f9fa;
+            padding: 8px;
+            border: 1px solid #ddd;
             border-radius: 4px;
+        }
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .btn-primary {
+            background-color: #1976d2;
+            color: white;
+        }
+        .btn-danger {
+            background-color: #c62828;
+            color: white;
+        }
+        .btn-edit {
+            background-color: #2e7d32;
+            color: white;
+        }
+        .btn-back {
+            background-color: #757575;
+            color: white;
+            margin-bottom: 20px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            background-color: white;
+            margin: 15% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 50%;
+            max-width: 500px;
+        }
+        .close {
+            float: right;
+            cursor: pointer;
+            font-size: 24px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>ANT+ Heart Rate Monitor</h1>
-            <div class="status" id="status">Статус: Ожидание</div>
-        </div>
+        <a href="/athletes" class="btn btn-back">Управление спортсменами</a>
+        <h1>Монитор сердечного ритма</h1>
+        <div id="status" class="status"></div>
         
-        <select class="sensor-select" id="sensorSelect">
-            <option value="">Выберите датчик</option>
-        </select>
-        
-        <div id="plot"></div>
-        
-        <div class="sensor-info" id="sensorInfo">
-            Текущий пульс: -- уд/мин
+        <div id="sensors"></div>
+    </div>
+
+    <!-- Модальное окно для добавления/редактирования спортсмена -->
+    <div id="athleteModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeAthleteModal()">&times;</span>
+            <h2 id="modalTitle">Добавить спортсмена</h2>
+            <form id="athleteForm">
+                <input type="hidden" id="athleteId">
+                <div class="form-group">
+                    <label for="firstName">Имя:</label>
+                    <input type="text" id="firstName" required>
+                </div>
+                <div class="form-group">
+                    <label for="lastName">Фамилия:</label>
+                    <input type="text" id="lastName" required>
+                </div>
+                <div class="form-group">
+                    <label for="maxHr">Пороговое ЧСС:</label>
+                    <input type="number" id="maxHr" required min="40" max="220">
+                </div>
+                <button type="submit" class="btn btn-primary">Сохранить</button>
+            </form>
         </div>
     </div>
 
     <script>
-        // Инициализация Socket.IO
+        // Существующий код для работы с датчиками
         const socket = io();
-        
-        // Данные для графика
-        let plotData = {};
-        let currentSensor = null;
-        
-        // Инициализация графика
-        const layout = {
-            title: 'Пульс в реальном времени',
-            xaxis: {
-                title: 'Время',
-                showgrid: true
-            },
-            yaxis: {
-                title: 'Пульс (уд/мин)',
-                range: [40, 200]
-            },
-            showlegend: true
+        const sensors = {};
+        const charts = {};
+
+        // Функции для работы со спортсменами
+        function loadAthletes() {
+            fetch('/api/athletes')
+                .then(response => response.json())
+                .then(athletes => {
+                    const list = document.getElementById('athletes-list');
+                    list.innerHTML = '';
+                    athletes.forEach(athlete => {
+                        const div = document.createElement('div');
+                        div.className = 'athlete-item';
+                        div.innerHTML = `
+                            <div>
+                                <strong>${athlete.last_name} ${athlete.first_name}</strong>
+                                <br>
+                                <small>Пороговое ЧСС: ${athlete.max_hr}</small>
+                            </div>
+                            <div>
+                                <button class="btn btn-edit" onclick="editAthlete(${JSON.stringify(athlete)})">Редактировать</button>
+                                <button class="btn btn-danger" onclick="deleteAthlete(${athlete.id})">Удалить</button>
+                            </div>
+                        `;
+                        list.appendChild(div);
+                    });
+                });
+        }
+
+        function showAddAthleteModal() {
+            document.getElementById('modalTitle').textContent = 'Добавить спортсмена';
+            document.getElementById('athleteForm').reset();
+            document.getElementById('athleteId').value = '';
+            document.getElementById('athleteModal').style.display = 'block';
+        }
+
+        function closeAthleteModal() {
+            document.getElementById('athleteModal').style.display = 'none';
+        }
+
+        function editAthlete(athlete) {
+            document.getElementById('modalTitle').textContent = 'Редактировать спортсмена';
+            document.getElementById('athleteId').value = athlete.id;
+            document.getElementById('firstName').value = athlete.first_name;
+            document.getElementById('lastName').value = athlete.last_name;
+            document.getElementById('maxHr').value = athlete.max_hr;
+            document.getElementById('athleteModal').style.display = 'block';
+        }
+
+        function deleteAthlete(id) {
+            if (confirm('Вы уверены, что хотите удалить этого спортсмена?')) {
+                fetch(`/api/athletes/${id}`, { method: 'DELETE' })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.message) {
+                            loadAthletes();
+                        } else {
+                            alert('Ошибка при удалении спортсмена');
+                        }
+                    });
+            }
+        }
+
+        document.getElementById('athleteForm').onsubmit = function(e) {
+            e.preventDefault();
+            const athleteId = document.getElementById('athleteId').value;
+            const data = {
+                first_name: document.getElementById('firstName').value,
+                last_name: document.getElementById('lastName').value,
+                max_hr: parseInt(document.getElementById('maxHr').value)
+            };
+
+            const method = athleteId ? 'PUT' : 'POST';
+            const url = athleteId ? `/api/athletes/${athleteId}` : '/api/athletes';
+
+            fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message || data.id) {
+                    closeAthleteModal();
+                    loadAthletes();
+                } else {
+                    alert('Ошибка при сохранении спортсмена');
+                }
+            });
         };
-        
-        Plotly.newPlot('plot', [], layout);
-        
-        // Обработка подключения
+
+        // Загружаем список спортсменов при загрузке страницы
+        document.addEventListener('DOMContentLoaded', loadAthletes);
+
+        // Существующий код для работы с датчиками
         socket.on('connect', () => {
-            document.getElementById('status').textContent = 'Статус: Подключено';
+            console.log('Connected to server');
+            document.getElementById('status').textContent = 'Подключено к серверу';
         });
-        
-        // Обработка отключения
+
         socket.on('disconnect', () => {
-            document.getElementById('status').textContent = 'Статус: Отключено';
+            console.log('Disconnected from server');
+            document.getElementById('status').textContent = 'Отключено от сервера';
+            document.getElementById('status').className = 'status error';
         });
-        
-        // Обработка статуса сканирования
+
         socket.on('sensor_status', (data) => {
-            if (data.status === 'scanning') {
-                document.getElementById('status').textContent = 'Статус: Поиск датчиков...';
-            } else if (data.status === 'error') {
-                document.getElementById('status').textContent = `Статус: Ошибка - ${data.message}`;
+            const statusDiv = document.getElementById('status');
+            let statusText = '';
+            let statusClass = '';
+
+            switch(data.status) {
+                case 'scanning':
+                    statusText = 'Поиск датчиков...';
+                    statusClass = 'scanning';
+                    break;
+                case 'connected':
+                    statusText = `Датчик ${data.sensor_id} подключен`;
+                    statusClass = 'connected';
+                    break;
+                case 'error':
+                    statusText = `Ошибка: ${data.message}`;
+                    statusClass = 'error';
+                    break;
+                default:
+                    statusText = data.status;
+            }
+
+            statusDiv.textContent = statusText;
+            statusDiv.className = `status ${statusClass}`;
+        });
+
+        socket.on('new_sensor', (data) => {
+            const sensorId = data.sensor_id;
+            if (!sensors[sensorId]) {
+                createSensorCard(sensorId);
             }
         });
-        
-        // Обработка списка активных датчиков
-        socket.on('active_sensors', (data) => {
-            const select = document.getElementById('sensorSelect');
-            select.innerHTML = '<option value="">Выберите датчик</option>';
-            
-            data.sensors.forEach(sensorId => {
-                const option = document.createElement('option');
-                option.value = sensorId;
-                option.textContent = `Датчик ${sensorId}`;
-                select.appendChild(option);
-            });
-        });
-        
-        // Обработка новых данных
+
         socket.on('heart_rate_data', (data) => {
             const sensorId = data.sensor_id;
-            
-            if (!plotData[sensorId]) {
-                plotData[sensorId] = {
-                    times: [],
-                    heart_rates: []
-                };
+            if (!sensors[sensorId]) {
+                createSensorCard(sensorId);
             }
-            
-            plotData[sensorId].times.push(new Date(data.time * 1000));
-            plotData[sensorId].heart_rates.push(data.heart_rate);
-            
-            // Ограничиваем количество точек
-            if (plotData[sensorId].times.length > 100) {
-                plotData[sensorId].times.shift();
-                plotData[sensorId].heart_rates.shift();
-            }
-            
-            // Обновляем график, если это текущий выбранный датчик
-            if (sensorId === currentSensor) {
-                updatePlot(sensorId);
-                document.getElementById('sensorInfo').textContent = 
-                    `Текущий пульс: ${data.heart_rate} уд/мин`;
-            }
+            updateSensorData(sensorId, data);
         });
-        
-        // Обработка истории данных
-        socket.on('sensor_history', (data) => {
-            const sensorId = data.sensor_id;
-            plotData[sensorId] = {
-                times: data.data.times.map(t => new Date(t * 1000)),
-                heart_rates: data.data.heart_rates
+
+        function createSensorCard(sensorId) {
+            const sensorsDiv = document.getElementById('sensors');
+            const card = document.createElement('div');
+            card.className = 'sensor-card';
+            card.id = `sensor-${sensorId}`;
+            
+            const header = document.createElement('div');
+            header.style.display = 'flex';
+            header.style.justifyContent = 'space-between';
+            header.style.alignItems = 'center';
+            header.style.marginBottom = '15px';
+            
+            const title = document.createElement('h2');
+            title.id = `sensor-title-${sensorId}`;
+            title.textContent = `Датчик ${sensorId}`;
+            
+            const bindButton = document.createElement('button');
+            bindButton.className = 'btn btn-primary';
+            bindButton.textContent = 'Привязать к спортсмену';
+            bindButton.onclick = () => showBindSensorModal(sensorId);
+            
+            header.appendChild(title);
+            header.appendChild(bindButton);
+            
+            const currentValue = document.createElement('div');
+            currentValue.className = 'current-value';
+            currentValue.id = `current-value-${sensorId}`;
+            currentValue.textContent = 'Ожидание данных...';
+            
+            const chartContainer = document.createElement('div');
+            chartContainer.className = 'chart-container';
+            const canvas = document.createElement('canvas');
+            canvas.id = `chart-${sensorId}`;
+            chartContainer.appendChild(canvas);
+            
+            card.appendChild(header);
+            card.appendChild(currentValue);
+            card.appendChild(chartContainer);
+            sensorsDiv.appendChild(card);
+            
+            const ctx = canvas.getContext('2d');
+            charts[sensorId] = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Пульс (уд/мин)',
+                        data: [],
+                        borderColor: 'rgb(75, 192, 192)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: {
+                        duration: 0
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            suggestedMin: 40,
+                            suggestedMax: 200,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            },
+                            ticks: {
+                                font: {
+                                    size: 8
+                                }
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            },
+                            ticks: {
+                                font: {
+                                    size: 8
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+            
+            sensors[sensorId] = {
+                times: [],
+                heartRates: [],
+                athlete: null
             };
             
-            if (sensorId === currentSensor) {
-                updatePlot(sensorId);
-            }
-        });
-        
-        // Обработка выбора датчика
-        document.getElementById('sensorSelect').addEventListener('change', (e) => {
-            currentSensor = e.target.value;
-            if (currentSensor) {
-                updatePlot(currentSensor);
-            } else {
-                Plotly.newPlot('plot', [], layout);
-                document.getElementById('sensorInfo').textContent = 'Текущий пульс: -- уд/мин';
-            }
-        });
-        
-        // Функция обновления графика
-        function updatePlot(sensorId) {
-            const data = [{
-                x: plotData[sensorId].times,
-                y: plotData[sensorId].heart_rates,
-                type: 'scatter',
-                mode: 'lines',
-                name: `Датчик ${sensorId}`,
-                line: {
-                    color: '#ff4444',
-                    width: 2
-                }
-            }];
+            // Проверяем, привязан ли датчик к спортсмену
+            fetch(`/api/sensor/${sensorId}/athlete`)
+                .then(response => response.json())
+                .then(athlete => {
+                    if (athlete) {
+                        updateSensorAthlete(sensorId, athlete);
+                    }
+                });
+        }
+
+        function showBindSensorModal(sensorId) {
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.style.display = 'block';
             
-            Plotly.react('plot', data, layout);
+            const content = document.createElement('div');
+            content.className = 'modal-content';
+            
+            const closeBtn = document.createElement('span');
+            closeBtn.className = 'close';
+            closeBtn.innerHTML = '&times;';
+            closeBtn.onclick = () => modal.remove();
+            
+            const title = document.createElement('h2');
+            title.textContent = 'Привязать датчик к спортсмену';
+            
+            const form = document.createElement('form');
+            form.onsubmit = (e) => {
+                e.preventDefault();
+                const athleteId = document.getElementById('athleteSelect').value;
+                if (athleteId) {
+                    bindSensorToAthlete(sensorId, athleteId);
+                    modal.remove();
+                }
+            };
+            
+            const select = document.createElement('select');
+            select.id = 'athleteSelect';
+            select.className = 'form-group';
+            select.style.width = '100%';
+            select.style.padding = '8px';
+            select.style.marginBottom = '15px';
+            
+            const defaultOption = document.createElement('option');
+            defaultOption.value = '';
+            defaultOption.textContent = 'Выберите спортсмена';
+            select.appendChild(defaultOption);
+            
+            fetch('/api/athletes')
+                .then(response => response.json())
+                .then(athletes => {
+                    athletes.forEach(athlete => {
+                        const option = document.createElement('option');
+                        option.value = athlete.id;
+                        option.textContent = `${athlete.last_name} ${athlete.first_name}`;
+                        select.appendChild(option);
+                    });
+                });
+            
+            const submitBtn = document.createElement('button');
+            submitBtn.type = 'submit';
+            submitBtn.className = 'btn btn-primary';
+            submitBtn.textContent = 'Привязать';
+            
+            form.appendChild(select);
+            form.appendChild(submitBtn);
+            
+            content.appendChild(closeBtn);
+            content.appendChild(title);
+            content.appendChild(form);
+            modal.appendChild(content);
+            document.body.appendChild(modal);
+        }
+
+        function bindSensorToAthlete(sensorId, athleteId) {
+            fetch(`/api/athletes/${athleteId}/sensor`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ sensor_id: sensorId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message) {
+                    fetch(`/api/sensor/${sensorId}/athlete`)
+                        .then(response => response.json())
+                        .then(athlete => {
+                            if (athlete) {
+                                updateSensorAthlete(sensorId, athlete);
+                            }
+                        });
+                }
+            });
+        }
+
+        function updateSensorAthlete(sensorId, athlete) {
+            const sensor = sensors[sensorId];
+            sensor.athlete = athlete;
+            
+            const title = document.getElementById(`sensor-title-${sensorId}`);
+            title.textContent = `${athlete.last_name} ${athlete.first_name}`;
+            
+            const bindButton = title.nextElementSibling;
+            bindButton.textContent = 'Отвязать';
+            bindButton.onclick = () => unbindSensor(sensorId);
+        }
+
+        function unbindSensor(sensorId) {
+            const sensor = sensors[sensorId];
+            if (sensor.athlete) {
+                fetch(`/api/athletes/${sensor.athlete.id}/sensor`, {
+                    method: 'DELETE'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.message) {
+                        const title = document.getElementById(`sensor-title-${sensorId}`);
+                        title.textContent = `Датчик ${sensorId}`;
+                        
+                        const bindButton = title.nextElementSibling;
+                        bindButton.textContent = 'Привязать к спортсмену';
+                        bindButton.onclick = () => showBindSensorModal(sensorId);
+                        
+                        sensor.athlete = null;
+                    }
+                });
+            }
+        }
+
+        socket.on('sensor_athlete', (data) => {
+            const sensorId = data.sensor_id;
+            if (sensors[sensorId]) {
+                updateSensorAthlete(sensorId, data.athlete);
+            }
+        });
+
+        function updateSensorData(sensorId, data) {
+            const sensor = sensors[sensorId];
+            const chart = charts[sensorId];
+            
+            const time = new Date(data.time * 1000).toLocaleTimeString();
+            
+            sensor.times.push(time);
+            sensor.heartRates.push(data.heart_rate);
+            
+            if (sensor.times.length > 100) {
+                sensor.times.shift();
+                sensor.heartRates.shift();
+            }
+            
+            // Обновляем текущее значение
+            const currentValueDiv = document.getElementById(`current-value-${sensorId}`);
+            currentValueDiv.textContent = `${data.heart_rate} уд/мин`;
+            
+            // Обновляем цвет в зависимости от процента от максимального ЧСС
+            if (sensor.athlete && sensor.athlete.max_hr) {
+                const percentage = (data.heart_rate / sensor.athlete.max_hr) * 100;
+                currentValueDiv.className = 'current-value';
+                
+                if (percentage <= 60) {
+                    currentValueDiv.classList.add('safe');
+                } else if (percentage <= 85) {
+                    currentValueDiv.classList.add('warning');
+                } else {
+                    currentValueDiv.classList.add('danger');
+                }
+            }
+            
+            // Обновляем график
+            chart.data.labels = sensor.times;
+            chart.data.datasets[0].data = sensor.heartRates;
+            chart.update('none'); // Отключаем анимацию для плавного обновления
         }
     </script>
 </body>

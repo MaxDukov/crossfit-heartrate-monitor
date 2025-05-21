@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Управление спортсменами</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .athletes-section {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .athletes-list {
+            margin-top: 20px;
+        }
+        .athlete-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .athlete-item:last-child {
+            border-bottom: none;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #666;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn-primary {
+            background-color: #1976d2;
+            color: white;
+        }
+        .btn-danger {
+            background-color: #c62828;
+            color: white;
+        }
+        .btn-edit {
+            background-color: #2e7d32;
+            color: white;
+        }
+        .btn-back {
+            background-color: #757575;
+            color: white;
+            margin-bottom: 20px;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            background-color: white;
+            margin: 15% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 50%;
+            max-width: 500px;
+        }
+        .close {
+            float: right;
+            cursor: pointer;
+            font-size: 24px;
+        }
+        .sensor-info {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/" class="btn btn-back">← Назад к мониторингу</a>
+        <h1>Управление спортсменами</h1>
+        
+        <div class="athletes-section">
+            <button class="btn btn-primary" onclick="showAddAthleteModal()">Добавить спортсмена</button>
+            <div id="athletes-list" class="athletes-list"></div>
+        </div>
+    </div>
+
+    <!-- Модальное окно для добавления/редактирования спортсмена -->
+    <div id="athleteModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeAthleteModal()">&times;</span>
+            <h2 id="modalTitle">Добавить спортсмена</h2>
+            <form id="athleteForm">
+                <input type="hidden" id="athleteId">
+                <div class="form-group">
+                    <label for="firstName">Имя:</label>
+                    <input type="text" id="firstName" required>
+                </div>
+                <div class="form-group">
+                    <label for="lastName">Фамилия:</label>
+                    <input type="text" id="lastName" required>
+                </div>
+                <div class="form-group">
+                    <label for="maxHr">Пороговое ЧСС:</label>
+                    <input type="number" id="maxHr" required min="40" max="220">
+                </div>
+                <button type="submit" class="btn btn-primary">Сохранить</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Функции для работы со спортсменами
+        function loadAthletes() {
+            fetch('/api/athletes')
+                .then(response => response.json())
+                .then(athletes => {
+                    const list = document.getElementById('athletes-list');
+                    list.innerHTML = '';
+                    athletes.forEach(athlete => {
+                        const div = document.createElement('div');
+                        div.className = 'athlete-item';
+                        div.innerHTML = `
+                            <div>
+                                <strong>${athlete.last_name} ${athlete.first_name}</strong>
+                                <br>
+                                <small>Пороговое ЧСС: ${athlete.max_hr}</small>
+                                ${athlete.sensor_id ? 
+                                    `<div class="sensor-info">Привязан к датчику ${athlete.sensor_id}</div>` : 
+                                    ''}
+                            </div>
+                            <div>
+                                <button class="btn btn-edit" onclick="editAthlete(${JSON.stringify(athlete)})">Редактировать</button>
+                                <button class="btn btn-danger" onclick="deleteAthlete(${athlete.id})">Удалить</button>
+                            </div>
+                        `;
+                        list.appendChild(div);
+                    });
+                });
+        }
+
+        function showAddAthleteModal() {
+            document.getElementById('modalTitle').textContent = 'Добавить спортсмена';
+            document.getElementById('athleteForm').reset();
+            document.getElementById('athleteId').value = '';
+            document.getElementById('athleteModal').style.display = 'block';
+        }
+
+        function closeAthleteModal() {
+            document.getElementById('athleteModal').style.display = 'none';
+        }
+
+        function editAthlete(athlete) {
+            document.getElementById('modalTitle').textContent = 'Редактировать спортсмена';
+            document.getElementById('athleteId').value = athlete.id;
+            document.getElementById('firstName').value = athlete.first_name;
+            document.getElementById('lastName').value = athlete.last_name;
+            document.getElementById('maxHr').value = athlete.max_hr;
+            document.getElementById('athleteModal').style.display = 'block';
+        }
+
+        function deleteAthlete(id) {
+            if (confirm('Вы уверены, что хотите удалить этого спортсмена?')) {
+                fetch(`/api/athletes/${id}`, { method: 'DELETE' })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.message) {
+                            loadAthletes();
+                        } else {
+                            alert('Ошибка при удалении спортсмена');
+                        }
+                    });
+            }
+        }
+
+        document.getElementById('athleteForm').onsubmit = function(e) {
+            e.preventDefault();
+            const athleteId = document.getElementById('athleteId').value;
+            const data = {
+                first_name: document.getElementById('firstName').value,
+                last_name: document.getElementById('lastName').value,
+                max_hr: parseInt(document.getElementById('maxHr').value)
+            };
+
+            const method = athleteId ? 'PUT' : 'POST';
+            const url = athleteId ? `/api/athletes/${athleteId}` : '/api/athletes';
+
+            fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message || data.id) {
+                    closeAthleteModal();
+                    loadAthletes();
+                } else {
+                    alert('Ошибка при сохранении спортсмена');
+                }
+            });
+        };
+
+        // Загружаем список спортсменов при загрузке страницы
+        document.addEventListener('DOMContentLoaded', loadAthletes);
+    </script>
+</body>
+</html> 
