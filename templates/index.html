@@ -45,11 +45,19 @@
             margin-bottom: 20px;
             box-shadow: 0 2px 4px var(--shadow-color);
             transition: background-color 0.3s, box-shadow 0.3s;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            aspect-ratio: 4/3;
+            display: flex;
+            flex-direction: column;
         }
         .chart-container {
             position: relative;
-            height: 50px;
+            flex-grow: 1;
             width: 100%;
+            min-height: 0;
         }
         h1 {
             color: var(--text-color);
@@ -76,11 +84,13 @@
             color: #c62828;
         }
         .current-value {
-            font-size: 144px;
+            font-size: 200px;
             text-align: center;
-            margin: 20px 0;
+            margin: 10px 0;
             font-weight: bold;
             transition: color 0.3s;
+            flex-shrink: 0;
+            line-height: 1;
         }
         .current-value.safe {
             color: #2e7d32;
@@ -362,13 +372,13 @@
             console.log('Connected to server');
             document.getElementById('status').textContent = 'Подключено к серверу';
         });
-
+        
         socket.on('disconnect', () => {
             console.log('Disconnected from server');
             document.getElementById('status').textContent = 'Отключено от сервера';
             document.getElementById('status').className = 'status error';
         });
-
+        
         socket.on('sensor_status', (data) => {
             const statusDiv = document.getElementById('status');
             let statusText = '';
@@ -456,7 +466,7 @@
                 data: {
                     labels: [],
                     datasets: [{
-                        label: 'Пульс (уд/мин)',
+                        label: 'Пульс',
                         data: [],
                         borderColor: 'rgb(75, 192, 192)',
                         backgroundColor: 'rgba(75, 192, 192, 0.1)',
@@ -500,6 +510,36 @@
                     plugins: {
                         legend: {
                             display: false
+                        },
+                        annotation: {
+                            annotations: {
+                                line60: {
+                                    type: 'line',
+                                    yMin: 0,
+                                    yMax: 0,
+                                    borderColor: '#2e7d32',
+                                    borderWidth: 1,
+                                    borderDash: [5, 5],
+                                    label: {
+                                        content: '60%',
+                                        enabled: true,
+                                        position: 'start'
+                                    }
+                                },
+                                line85: {
+                                    type: 'line',
+                                    yMin: 0,
+                                    yMax: 0,
+                                    borderColor: '#f57f17',
+                                    borderWidth: 1,
+                                    borderDash: [5, 5],
+                                    label: {
+                                        content: '85%',
+                                        enabled: true,
+                                        position: 'start'
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -664,7 +704,7 @@
             
             // Обновляем текущее значение
             const currentValueDiv = document.getElementById(`current-value-${sensorId}`);
-            currentValueDiv.textContent = `${data.heart_rate} уд/мин`;
+            currentValueDiv.textContent = `${data.heart_rate}`;
             
             // Обновляем цвет в зависимости от процента от максимального ЧСС
             if (sensor.athlete && sensor.athlete.max_hr) {
@@ -678,12 +718,21 @@
                 } else {
                     currentValueDiv.classList.add('danger');
                 }
+
+                // Обновляем позиции горизонтальных линий
+                const line60 = sensor.athlete.max_hr * 0.6;
+                const line85 = sensor.athlete.max_hr * 0.85;
+                
+                chart.options.plugins.annotation.annotations.line60.yMin = line60;
+                chart.options.plugins.annotation.annotations.line60.yMax = line60;
+                chart.options.plugins.annotation.annotations.line85.yMin = line85;
+                chart.options.plugins.annotation.annotations.line85.yMax = line85;
             }
             
             // Обновляем график
             chart.data.labels = sensor.times;
             chart.data.datasets[0].data = sensor.heartRates;
-            chart.update('none'); // Отключаем анимацию для плавного обновления
+            chart.update('none');
         }
     </script>
 </body>
