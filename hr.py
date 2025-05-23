@@ -205,21 +205,21 @@ def on_found():
 def check_sensor_timeouts():
     """Check for sensor timeouts and send zero readings if needed"""
     current_time = time.time()
-    for sensor_id in active_sensors:
-        if current_time - sensors_data[sensor_id]['last_update'] > HEARTBEAT_INTERVAL:
+    for sensor_id, sensor_data in sensors_data.items():
+        if current_time - sensor_data['last_update'] > HEARTBEAT_INTERVAL:
             socketio.emit('heart_rate_data', {
                 'sensor_id': sensor_id,
                 'heart_rate': 0,
                 'time': current_time
             })
-            sensors_data[sensor_id]['heart_rates'].append(0)
-            sensors_data[sensor_id]['times'].append(current_time)
-            sensors_data[sensor_id]['last_update'] = current_time
+            sensor_data['heart_rates'].append(0)
+            sensor_data['times'].append(current_time)
+            sensor_data['last_update'] = current_time
 
             # Limit number of points on graph
-            if len(sensors_data[sensor_id]['heart_rates']) > MAX_POINTS:
-                sensors_data[sensor_id]['heart_rates'].pop(0)
-                sensors_data[sensor_id]['times'].pop(0)
+            if len(sensor_data['heart_rates']) > MAX_POINTS:
+                sensor_data['heart_rates'].pop(0)
+                sensor_data['times'].pop(0)
 
 def on_device_data(page: int, page_name: str, data):
     """Handle incoming data from heart rate sensor"""
