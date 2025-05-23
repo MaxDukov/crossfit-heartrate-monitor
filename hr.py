@@ -24,12 +24,13 @@ app = Flask(__name__)
 socketio = SocketIO(app, async_mode='threading')
 
 # Global variables
-sensors_data = defaultdict(lambda: {'times': [], 'heart_rates': []})
+sensors_data = defaultdict(lambda: {'times': [], 'heart_rates': [], 'last_update': 0})
 MAX_POINTS = 100
 active_sensors = set()
 node = None
 device = None
 running = True
+HEARTBEAT_INTERVAL = 3  # seconds
 
 # Initialize database
 def init_db():
@@ -201,17 +202,38 @@ def on_found():
         logger.info(f"Sensor {device} found and receiving data")
         socketio.emit('sensor_status', {'status': 'scanning'})
 
+def check_sensor_timeouts():
+    """Check for sensor timeouts and send zero readings if needed"""
+    current_time = time.time()
+    for sensor_id in active_sensors:
+        if current_time - sensors_data[sensor_id]['last_update'] > HEARTBEAT_INTERVAL:
+            socketio.emit('heart_rate_data', {
+                'sensor_id': sensor_id,
+                'heart_rate': 0,
+                'time': current_time
+            })
+            sensors_data[sensor_id]['heart_rates'].append(0)
+            sensors_data[sensor_id]['times'].append(current_time)
+            sensors_data[sensor_id]['last_update'] = current_time
+
+            # Limit number of points on graph
+            if len(sensors_data[sensor_id]['heart_rates']) > MAX_POINTS:
+                sensors_data[sensor_id]['heart_rates'].pop(0)
+                sensors_data[sensor_id]['times'].pop(0)
+
 def on_device_data(page: int, page_name: str, data):
     """Handle incoming data from heart rate sensor"""
     if isinstance(data, HeartRateData):
         sensor_id = 1  # data.device_number
         heart_rate = data.heart_rate
+        current_time = time.time()
 
         logger.debug(f"Received data from sensor {sensor_id}: heart rate = {heart_rate} bpm")
 
         # Add data to corresponding sensor
         sensors_data[sensor_id]['heart_rates'].append(heart_rate)
-        sensors_data[sensor_id]['times'].append(time.time())
+        sensors_data[sensor_id]['times'].append(current_time)
+        sensors_data[sensor_id]['last_update'] = current_time
 
         # Limit number of points on graph
         if len(sensors_data[sensor_id]['heart_rates']) > MAX_POINTS:
@@ -222,7 +244,7 @@ def on_device_data(page: int, page_name: str, data):
         socketio.emit('heart_rate_data', {
             'sensor_id': sensor_id,
             'heart_rate': heart_rate,
-            'time': time.time()
+            'time': current_time
         })
 
         # Add new sensor to list if not already present
@@ -266,8 +288,9 @@ def ant_worker():
         logger.info("Starting ANT+ device...")
         node.start()
         
-        # Keep thread active
+        # Keep thread active and check for timeouts
         while running:
+            check_sensor_timeouts()
             time.sleep(0.1)
             
     except Exception as e:
