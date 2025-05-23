@@ -125,10 +125,14 @@ sudo systemctl start hr-monitor
 - `database.db` - SQLite database file
 
 ## ToDo list
-- To create docker to make setup more comfortable
+- To create docker to make setup more comfortable. (in progress)
 - To add customisation function (club logo)
 - To add photo upload function (athlet photo)
-- To add training history function
+- To add training history function, probably with export.
+
+## Known bugs
+- Backend didn't send "zero heartrate" when lost sensor. In progress
+- WSGI server should be used in normal way. 
 
 ## License
 
