@@ -224,7 +224,8 @@ def check_sensor_timeouts():
 def on_device_data(page: int, page_name: str, data):
     """Handle incoming data from heart rate sensor"""
     if isinstance(data, HeartRateData):
-        sensor_id = 1  # data.device_number
+        # Получаем ID датчика из имени устройства
+        sensor_id = int(str(device).split('_')[-1])  # Извлекаем ID из имени устройства (например, heart_rate_52881 -> 52881)
         heart_rate = data.heart_rate
         current_time = time.time()
 
