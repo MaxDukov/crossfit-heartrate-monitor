@@ -237,7 +237,7 @@
                                     ''}
                             </div>
                             <div>
-                                <button class="btn btn-edit" onclick="editAthlete(${JSON.stringify(athlete)})">Edit</button>
+                                <button class="btn btn-edit" onclick="editAthlete(${athlete.id}, '${athlete.first_name}', '${athlete.last_name}', ${athlete.max_hr})">Edit</button>
                                 <button class="btn btn-danger" onclick="deleteAthlete(${athlete.id})">Delete</button>
                             </div>
                         `;
@@ -257,12 +257,12 @@
             document.getElementById('athleteModal').style.display = 'none';
         }
 
-        function editAthlete(athlete) {
+        function editAthlete(id, firstName, lastName, maxHr) {
             document.getElementById('modalTitle').textContent = 'Edit Athlete';
-            document.getElementById('athleteId').value = athlete.id;
-            document.getElementById('firstName').value = athlete.first_name;
-            document.getElementById('lastName').value = athlete.last_name;
-            document.getElementById('maxHr').value = athlete.max_hr;
+            document.getElementById('athleteId').value = id;
+            document.getElementById('firstName').value = firstName;
+            document.getElementById('lastName').value = lastName;
+            document.getElementById('maxHr').value = maxHr;
             document.getElementById('athleteModal').style.display = 'block';
         }
 
@@ -280,7 +280,8 @@
             }
         }
 
-        document.getElementById('athleteForm').onsubmit = function(e) {
+        // Добавляем обработчик отправки формы
+        document.getElementById('athleteForm').addEventListener('submit', function(e) {
             e.preventDefault();
             const athleteId = document.getElementById('athleteId').value;
             const data = {
@@ -308,7 +309,7 @@
                     alert('Error saving athlete');
                 }
             });
-        };
+        });
 
         // Загружаем список спортсменов при загрузке страницы
         document.addEventListener('DOMContentLoaded', loadAthletes);

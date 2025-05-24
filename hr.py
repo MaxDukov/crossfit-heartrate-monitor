@@ -37,6 +37,8 @@ def init_db():
     """Initialize the SQLite database with required tables"""
     conn = sqlite3.connect('athletes.db')
     c = conn.cursor()
+    
+    # Проверяем существование таблицы
     c.execute('''
         CREATE TABLE IF NOT EXISTS athletes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -47,6 +49,16 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
+    
+    # Проверяем наличие всех необходимых колонок
+    c.execute("PRAGMA table_info(athletes)")
+    columns = {row[1] for row in c.fetchall()}
+    required_columns = {'id', 'first_name', 'last_name', 'max_hr', 'sensor_id', 'created_at'}
+    
+    if not required_columns.issubset(columns):
+        logger.error(f"Missing columns in athletes table. Required: {required_columns}, Found: {columns}")
+        raise Exception("Database structure is invalid")
+    
     conn.commit()
     conn.close()
 
@@ -78,8 +90,8 @@ def get_athletes():
     """Get list of all athletes"""
     conn = sqlite3.connect('athletes.db')
     c = conn.cursor()
-    c.execute('SELECT * FROM athletes ORDER BY last_name, first_name')
-    athletes = [{'id': row[0], 'first_name': row[1], 'last_name': row[2], 'max_hr': row[3]} 
+    c.execute('SELECT id, first_name, last_name, max_hr, sensor_id FROM athletes ORDER BY last_name, first_name')
+    athletes = [{'id': row[0], 'first_name': row[1], 'last_name': row[2], 'max_hr': row[3], 'sensor_id': row[4]} 
                for row in c.fetchall()]
     conn.close()
     return jsonify(athletes)
@@ -116,11 +128,21 @@ def update_athlete(athlete_id):
     conn = sqlite3.connect('athletes.db')
     c = conn.cursor()
     try:
+        # Получаем текущий sensor_id перед обновлением
+        c.execute('SELECT sensor_id FROM athletes WHERE id = ?', (athlete_id,))
+        current_sensor = c.fetchone()
+        
+        # Обновляем данные спортсмена
         c.execute('''
             UPDATE athletes 
             SET first_name = ?, last_name = ?, max_hr = ?
             WHERE id = ?
         ''', (data['first_name'], data['last_name'], data['max_hr'], athlete_id))
+        
+        # Если у спортсмена был привязан датчик, сохраняем эту привязку
+        if current_sensor and current_sensor[0]:
+            c.execute('UPDATE athletes SET sensor_id = ? WHERE id = ?', (current_sensor[0], athlete_id))
+            
         conn.commit()
         conn.close()
         return jsonify({'message': 'Athlete updated successfully'})
