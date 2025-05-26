@@ -132,6 +132,7 @@ sudo systemctl start hr-monitor
 
 ## Known bugs
 - Backend didn't send "zero heartrate" when lost sensor. In progress
+- No multiple sensors, only 1 at one time. In progress
 - WSGI server should be used in normal way. 
 
 ## License
