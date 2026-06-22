@@ -1,140 +1,266 @@
-# CrossFit Heart Rate Monitor
+# CF-Monitor — CrossFit Heart Rate Monitoring System
 
-A real-time heart rate monitoring system for CrossFit training sessions. The application supports multiple ANT+ heart rate sensors and provides real-time visualization of heart rate data for multiple athletes.
+Real-time heart rate monitoring for CrossFit gyms. ANT+ USB sensors feed live HR data to a FastAPI backend, which broadcasts to a React dashboard optimized for large TV displays.
 
 ## Features
 
-- Real-time heart rate monitoring
-- Support for multiple ANT+ sensors
-- Athlete management with individual maximum heart rate thresholds
-- Sensor binding to athletes
-- Real-time data visualization with color-coded heart rate zones
-- Data storage in SQLite database
-- Dark/Light theme support
-- Lightweight and resource-efficient design
-- Cross-platform compatibility
-- Raspberry Pi ready
+- **Live HR monitoring** — up to 8 ANT+ heart rate sensors simultaneously
+- **Adaptive grid layout** — 1 sensor (full screen), 2–3 (horizontal row), 4 (2×2), 5–8 (3×3 without center cell)
+- **HR zones** — 4 color-coded zones (blue/green/amber/red) based on percentage of athlete's max HR
+- **Speedometer gauge** — semicircle dial with zone segments and needle for each athlete
+- **15-minute HR history chart** — real-time area chart per sensor
+- **Athlete management** — create, edit, delete athletes with custom max HR
+- **Sensor assignment** — pair ANT+ sensors to athletes; auto-detection of new sensors
+- **Training sessions** — start/end sessions, add/remove athletes, track duration
+- **Analytics** — per-athlete stats (avg HR, max HR, total sessions, zone distribution)
+- **Kiosk mode** — auto-launches Chromium full-screen on boot (no keyboard/mouse needed)
 
-## Key Advantages
+## Architecture
 
-- **Lightweight**: The application is designed to run efficiently on low-power devices like Raspberry Pi, making it perfect for small gyms and training facilities
-- **Cross-Platform**: Works seamlessly on Linux, Windows, and macOS
-- **Resource Efficient**: Minimal system requirements and optimized performance
-- **Easy Deployment**: Simple setup process with no complex dependencies
-- **Scalable**: Can handle multiple sensors simultaneously without performance degradation
-- **Web-Based Interface**: Accessible from any device with a web browser
-- **Offline Capable**: Works without internet connection once deployed
-
-## Requirements
-
-- Python 3.7+
-- ANT+ USB adapter
-- Compatible heart rate sensors
-- Dependencies:
-  - flask
-  - flask-socketio
-  - openant
-
-## Installation
-
-1. Clone the repository:
-```bash
-git clone https://github.com/MaxDukov/crossfit-heartrate-monitor.git
-cd crossfit-heartrate-monitor
+```
+ANT+ Sensor → USB Dongle → AntCollector (thread) → WebSocket → React Dashboard
+                                      ↓
+                               SQLite (HR readings, sessions)
 ```
 
-2. Create a virtual environment and activate it:
-```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+### Backend (FastAPI + SQLite)
+
+- **ANT+ Collector** — background thread running `openant` Node with up to 8 HR channels (auto-discovery via wildcard `device_id=0`); dispatches data to the asyncio event loop via `run_coroutine_threadsafe`
+- **REST API** — 15 endpoints for athletes, sensors, sessions, and analytics
+- **WebSocket** — broadcasts `hr_update` and `new_sensor` events to all connected clients
+- **HR Zones** — Zone 1 (≤60%, blue/Recovery), Zone 2 (61–80%, green/Moderate), Zone 3 (81–100%, amber/High), Zone 4 (>100%, red/Critical)
+
+### Frontend (React + TypeScript + Vite + Tailwind)
+
+- **Zustand store** — manages WebSocket connection (auto-reconnect), live HR data, 15-minute history buffer, and sensor list
+- **Recharts** — area charts for HR history
+- **Responsive grid** — CSS Grid with dynamic columns/rows based on active sensor count
+- **Dark theme** — optimized for 55"+ TV displays with large fonts
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Backend | FastAPI, Uvicorn, SQLAlchemy, SQLite |
+| ANT+ | openant 1.3.4, ANTUSB2 stick |
+| Frontend | React 19, TypeScript, Vite 8, Tailwind CSS 4 |
+| State | Zustand 5 |
+| Charts | Recharts 3 |
+| Deployment | systemd (production), Docker Compose (optional) |
+
+## Project Structure
+
+```
+cf/
+├── ant_hr_monitor.py              # Standalone CLI monitor (reference prototype)
+├── docker-compose.yml             # Optional Docker deployment
+├── backend/
+│   ├── Dockerfile
+│   ├── requirements.txt
+│   └── app/
+│       ├── main.py                # FastAPI app, lifespan, WebSocket, callbacks
+│       ├── database.py            # SQLAlchemy engine & session (SQLite)
+│       ├── models.py              # Athlete, Sensor, Session, SessionAthlete, HrReading
+│       ├── schemas.py             # Pydantic request/response models
+│       ├── hr_zones.py            # Zone & percentage calculation
+│       ├── routers/
+│       │   ├── athletes.py        # GET/POST/PUT/DELETE /api/athletes
+│       │   ├── sensors.py         # GET /api/sensors, POST/DELETE assign
+│       │   ├── sessions.py        # Session lifecycle management
+│       │   └── analytics.py       # Per-athlete stats & history
+│       └── services/
+│           ├── ant_collector.py   # Background ANT+ collector (thread)
+│           └── ws_manager.py      # WebSocket connection manager
+└── frontend/
+    ├── Dockerfile
+    ├── nginx.conf                 # Reverse proxy for Docker deployment
+    └── src/
+        ├── App.tsx                # Router (Dashboard, Athletes, Sensors, Sessions, Analytics)
+        ├── components/
+        │   ├── AthleteCard.tsx     # HR card with gauge, BPM, history chart
+        │   ├── Layout.tsx          # Nav bar, WebSocket init
+        │   └── NewSensorAlert.tsx  # Sensor auto-detection notification
+        ├── lib/
+        │   ├── api.ts             # REST API client
+        │   ├── store.ts           # Zustand store (WebSocket + HR data + history)
+        │   └── zones.ts           # Zone colors, names, gradients
+        ├── pages/
+        │   ├── Dashboard.tsx      # Live HR grid monitor
+        │   ├── AthletesPage.tsx   # Athlete CRUD
+        │   ├── SensorsPage.tsx    # Sensor list & assignment
+        │   ├── SessionsPage.tsx   # Training session management
+        │   └── AnalyticsPage.tsx  # Per-athlete analytics
+        └── types/index.ts         # TypeScript interfaces
 ```
 
-3. Install dependencies:
+## API Reference
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/health` | Health check |
+| GET | `/api/athletes` | List all athletes |
+| POST | `/api/athletes` | Create athlete `{name, max_hr}` |
+| PUT | `/api/athletes/{id}` | Update athlete |
+| DELETE | `/api/athletes/{id}` | Delete athlete |
+| GET | `/api/sensors` | List all detected sensors |
+| POST | `/api/sensors/{device_id}/assign` | Assign sensor to athlete `{athlete_id}` |
+| DELETE | `/api/sensors/{device_id}/assign` | Unassign sensor |
+| GET | `/api/sessions` | List sessions |
+| POST | `/api/sessions` | Create session `{name?}` |
+| GET | `/api/sessions/active` | Get active session |
+| POST | `/api/sessions/{id}/end` | End session |
+| POST | `/api/sessions/{id}/athletes` | Add athlete to session |
+| DELETE | `/api/sessions/{id}/athletes/{athlete_id}` | Remove athlete from session |
+| GET | `/api/analytics/athletes/{id}/stats` | Athlete aggregate stats |
+| GET | `/api/analytics/athletes/{id}/history` | Athlete session history |
+| WS | `/ws` | Real-time HR updates & sensor events |
+
+## Getting Started
+
+### Prerequisites
+
+- Python 3.11+
+- Node.js 18+
+- ANT+ USB stick (e.g., ANTUSB2)
+- ANT+ heart rate chest straps
+- Linux host with USB access (for systemd deployment)
+
+### Backend
+
 ```bash
+cd backend
 pip install -r requirements.txt
+
+# Set environment variables
+export CF_DB_PATH=./cf_monitor.db         # SQLite database path
+export CF_FRONTEND_DIR=../frontend/dist    # Optional: serve frontend from backend
+
+# Run
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
-## Usage
+### Frontend
 
-1. Connect your ANT+ USB adapter
-2. Run the application:
 ```bash
-python hr.py
+cd frontend
+npm install
+npm run dev          # Development (proxies API to localhost:8000)
+npm run build        # Production build → dist/
 ```
 
-3. Open your web browser and navigate to `http://[your-device-ip]:5000`
+### Docker (Optional)
 
-4. Add athletes through the "Athlete Management" page:
-   - Enter first name, last name, and maximum heart rate
-   - The maximum heart rate is used to calculate heart rate zones
-
-5. Monitor heart rates:
-   - The system automatically detects and connects to available ANT+ sensors
-   - Bind sensors to athletes using the "Bind to Athlete" button
-   - Real-time heart rate data is displayed with color coding:
-     - Green: 0-60% of max heart rate
-     - Yellow: 60-85% of max heart rate
-     - Red: >85% of max heart rate
-
-## Raspberry Pi Setup
-
-The application is optimized for Raspberry Pi deployment:
-
-1. Install Raspberry Pi OS (preferably Lite version)
-2. Install required packages:
 ```bash
-sudo apt-get update
-sudo apt-get install python3-pip python3-venv
+docker-compose up -d
+# Backend on :8000, Frontend on :80
 ```
 
-3. Follow the standard installation steps above
-4. For automatic startup on boot, create a systemd service:
-```bash
-sudo nano /etc/systemd/system/hr-monitor.service
-```
+## Production Deployment (systemd + Kiosk)
 
-Add the following content:
+Designed for a Raspberry Pi or similar Linux device connected to a TV display.
+
+### 1. Backend service (`/etc/systemd/system/cf-monitor.service`)
+
 ```ini
 [Unit]
-Description=CrossFit Heart Rate Monitor
+Description=CF-Monitor Backend
 After=network.target
 
 [Service]
-User=pi
-WorkingDirectory=/path/to/crossfit-hr-monitor
-ExecStart=/path/to/crossfit-hr-monitor/venv/bin/python hr.py
-Restart=always
+Type=simple
+User=ma.dukov
+Environment=CF_FRONTEND_DIR=/home/ma.dukov/cf-frontend
+Environment=CF_DB_PATH=/home/ma.dukov/cf_monitor.db
+Environment=PYTHONPATH=/home/ma.dukov
+ExecStart=/usr/bin/python3 -u -m uvicorn cf_backend.app.main:app --host 0.0.0.0 --port 8000
+Restart=on-failure
+RestartSec=5
 
 [Install]
 WantedBy=multi-user.target
 ```
 
-Enable and start the service:
-```bash
-sudo systemctl enable hr-monitor
-sudo systemctl start hr-monitor
+### 2. Kiosk service (`/etc/systemd/system/cf-kiosk.service`)
+
+Launches Xorg + Openbox + Chromium in kiosk mode on tty1.
+
+```ini
+[Unit]
+Description=CF-Monitor Kiosk Browser
+After=cf-monitor.service
+Requires=cf-monitor.service
+Conflicts=getty@tty1.service
+
+[Service]
+Type=simple
+User=ma.dukov
+Environment=DISPLAY=:0
+Environment=HOME=/home/ma.dukov
+TTYPath=/dev/tty1
+TTYReset=yes
+TTYVHangup=yes
+StandardInput=tty
+ExecStartPre=/bin/sh -c "while ! curl -s http://localhost:8000/api/health >/dev/null 2>&1; do sleep 2; done"
+ExecStart=/usr/bin/xinit /usr/bin/openbox-session -- /usr/bin/Xorg :0 vt1 -nocursor -nolisten tcp
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=graphical.target
 ```
 
-## Project Structure
+### 3. Openbox autostart (`~/.config/openbox/autostart`)
 
-- `hr.py` - Main application file
-- `templates/` - HTML templates
-  - `index.html` - Main monitoring page
-  - `athletes.html` - Athlete management page
-- `static/` - Static files (CSS, JavaScript)
-- `database.db` - SQLite database file
+```bash
+xset s off
+xset -dpms
+xset s noblank
 
-## ToDo list
-- To create docker to make setup more comfortable. (in progress)
-- To add customisation function (club logo)
-- To add photo upload function (athlet photo)
-- To add training history function, probably with export.
+( while ! curl -s http://localhost:8000/api/health >/dev/null 2>&1; do
+  sleep 2
+done
+chromium --kiosk --noerrdialogs --disable-translate --no-first-run --incognito \
+  --disable-features=TranslateUI http://localhost:8000/ ) &
+```
 
-## Known bugs
-- Backend didn't send "zero heartrate" when lost sensor. In progress
-- No multiple sensors, only 1 at one time. In progress
-- WSGI server should be used in normal way. 
+### 4. Enable & start
 
-## License
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable cf-monitor cf-kiosk
+sudo systemctl start cf-monitor cf-kiosk
+```
 
-GPL License
+## Hardware
+
+- **ANT+ USB Stick** — Dynastream ANTUSB2 (`0fcf:1008`) or ANTUSB-m (`0fcf:1009`)
+- **Sensors** — Any ANT+ heart rate chest strap (Garmin, Polar, etc.)
+- **Display** — 55"+ TV via HDMI
+- **Host** — Raspberry Pi 4/5 (ARM64) or any Linux x86_64
+
+### udev rules
+
+Ensure the USB stick is accessible without root:
+
+```bash
+# /etc/udev/rules.d/99-ant-usb.rules
+SUBSYSTEM=="usb", ATTRS{idVendor}=="0fcf", ATTRS{idProduct}=="1008", MODE="0666", GROUP="plugdev"
+SUBSYSTEM=="usb", ATTRS{idVendor}=="0fcf", ATTRS{idProduct}=="1009", MODE="0666", GROUP="plugdev"
+```
+
+## Configuration
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `CF_DB_PATH` | `/tmp/cf_monitor.db` | SQLite database file path |
+| `CF_FRONTEND_DIR` | *(empty)* | If set, backend serves static frontend from this directory |
+
+## Updating Frontend
+
+Since the kiosk has no keyboard, redeploy and restart the browser remotely:
+
+```bash
+cd frontend && npm run build
+scp -r dist/* user@host:~/cf-frontend/
+ssh user@host "sudo systemctl restart cf-kiosk"
+```

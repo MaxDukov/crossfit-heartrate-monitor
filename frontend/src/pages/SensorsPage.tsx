@@ -1,0 +1,114 @@
+import { useEffect, useState, useCallback } from "react";
+import type { Sensor, Athlete } from "../types";
+import { api } from "../lib/api";
+
+export default function SensorsPage() {
+  const [sensors, setSensors] = useState<Sensor[]>([]);
+  const [athletes, setAthletes] = useState<Athlete[]>([]);
+  const [assignMap, setAssignMap] = useState<Record<number, string>>({});
+
+  const load = useCallback(async () => {
+    const [s, a] = await Promise.all([api.sensors.list(), api.athletes.list()]);
+    setSensors(s);
+    setAthletes(a);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const handleAssign = async (deviceId: number) => {
+    const athleteId = assignMap[deviceId];
+    if (!athleteId) return;
+    await api.sensors.assign(deviceId, athleteId);
+    setAssignMap((m) => ({ ...m, [deviceId]: "" }));
+    load();
+  };
+
+  const handleUnassign = async (deviceId: number) => {
+    await api.sensors.unassign(deviceId);
+    load();
+  };
+
+  const unassignedAthletes = (currentDeviceId: number) =>
+    athletes.filter(
+      (a) =>
+        !sensors.some(
+          (s) => s.athlete_id === a.id && s.device_id !== currentDeviceId
+        )
+    );
+
+  return (
+    <div className="max-w-3xl mx-auto p-6">
+      <h1 className="text-2xl font-bold mb-6">Датчики</h1>
+
+      <div className="space-y-3">
+        {sensors.map((s) => (
+          <div
+            key={s.device_id}
+            className={`border rounded-lg p-4 flex items-center justify-between ${
+              s.athlete_id
+                ? "bg-slate-800/50 border-slate-700"
+                : "bg-amber-950/30 border-amber-500/30"
+            }`}
+          >
+            <div>
+              <div className="font-medium">ID: {s.device_id}</div>
+              <div className="text-sm text-slate-400">
+                {s.last_hr != null ? `${s.last_hr} bpm` : "нет данных"}
+                {s.battery_level != null && ` · Батарея: ${s.battery_level}%`}
+                {s.athlete_name && (
+                  <span className="text-emerald-400 ml-2">
+                    → {s.athlete_name}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {s.athlete_id ? (
+                <button
+                  className="text-sm bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded"
+                  onClick={() => handleUnassign(s.device_id)}
+                >
+                  Отвязать
+                </button>
+              ) : (
+                <>
+                  <select
+                    className="bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-sm"
+                    value={assignMap[s.device_id] || ""}
+                    onChange={(e) =>
+                      setAssignMap((m) => ({
+                        ...m,
+                        [s.device_id]: e.target.value,
+                      }))
+                    }
+                  >
+                    <option value="">Привязать к...</option>
+                    {unassignedAthletes(s.device_id).map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.name}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    className="bg-emerald-600 hover:bg-emerald-500 px-3 py-1.5 rounded text-sm disabled:opacity-40"
+                    disabled={!assignMap[s.device_id]}
+                    onClick={() => handleAssign(s.device_id)}
+                  >
+                    OK
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        ))}
+
+        {sensors.length === 0 && (
+          <div className="text-slate-500 text-center py-12">
+            Датчики не обнаружены. Подключите ANT+ стик и включите датчики.
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
