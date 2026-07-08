@@ -56,7 +56,7 @@ export default function AthleteCard({ data, history }: Props) {
     <div
       className={`bg-gradient-to-br ${gradient} border rounded-xl flex flex-col relative overflow-hidden min-h-0 p-2 sm:p-3`}
     >
-      <div className="text-center shrink-0 font-medium text-slate-200" style={{ fontSize: "clamp(0.75rem, 1.2vw, 1.5rem)" }}>
+      <div className="text-center shrink-0 font-bold text-slate-100" style={{ fontSize: "clamp(3.2rem, 11.2vw, 14.4rem)" }}>
         {data.athlete_name || `Sensor #${data.device_id}`}
       </div>
 

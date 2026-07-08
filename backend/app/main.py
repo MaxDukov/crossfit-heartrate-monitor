@@ -15,6 +15,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
 from .database import init_db
+from .data.seed import seed_db
 from .models import Sensor, Athlete
 from .database import SessionLocal
 from .hr_zones import calc_zone, calc_percent
@@ -79,7 +80,8 @@ async def lifespan(app: FastAPI):
     global collector, _main_loop
     _main_loop = asyncio.get_running_loop()
     init_db()
-    _logger.info("Database initialized")
+    seed_db()
+    _logger.info("Database initialized and seeded")
 
     collector = AntCollector(
         max_sensors=8,
@@ -111,12 +113,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-from .routers import athletes, sensors, sessions, analytics
+from .routers import athletes, sensors, sessions, analytics, equipment, wods
 
 app.include_router(athletes.router)
 app.include_router(sensors.router)
 app.include_router(sessions.router)
 app.include_router(analytics.router)
+app.include_router(equipment.router)
+app.include_router(wods.router)
 
 
 @app.get("/api/health")
