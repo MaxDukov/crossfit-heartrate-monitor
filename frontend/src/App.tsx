@@ -5,6 +5,8 @@ import AthletesPage from "./pages/AthletesPage";
 import SensorsPage from "./pages/SensorsPage";
 import SessionsPage from "./pages/SessionsPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
+import EquipmentPage from "./pages/EquipmentPage";
+import WodBuilderPage from "./pages/WodBuilderPage";
 
 export default function App() {
   return (
@@ -16,6 +18,8 @@ export default function App() {
           <Route path="/sensors" element={<SensorsPage />} />
           <Route path="/sessions" element={<SessionsPage />} />
           <Route path="/analytics/:id" element={<AnalyticsPage />} />
+          <Route path="/equipment" element={<EquipmentPage />} />
+          <Route path="/wod-builder" element={<WodBuilderPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

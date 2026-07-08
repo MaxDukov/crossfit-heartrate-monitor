@@ -3,7 +3,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import String, Integer, ForeignKey, Text, Index
+from sqlalchemy import String, Integer, Boolean, ForeignKey, Text, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .database import Base
@@ -101,3 +101,123 @@ class HrReading(Base):
 
     athlete: Mapped["Athlete"] = relationship(back_populates="readings")
     session: Mapped["Session | None"] = relationship(back_populates="readings")
+
+
+# ── WoD / Тренировки ────────────────────────────────────────
+
+class Equipment(Base):
+    """Каталог инвентаря."""
+    __tablename__ = "equipment"
+
+    key: Mapped[str] = mapped_column(String(50), primary_key=True)
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    category: Mapped[str] = mapped_column(String(50), nullable=False)
+    icon: Mapped[str] = mapped_column(String(10), nullable=False, default="📦")
+
+
+class GymInventory(Base):
+    """Инвентарь, доступный в зале."""
+    __tablename__ = "gym_inventory"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    equipment_key: Mapped[str] = mapped_column(
+        String(50), ForeignKey("equipment.key", ondelete="CASCADE"), nullable=False
+    )
+    quantity: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+
+
+class Movement(Base):
+    """Каталог движений."""
+    __tablename__ = "movements"
+
+    key: Mapped[str] = mapped_column(String(80), primary_key=True)
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    modality: Mapped[str] = mapped_column(String(30), nullable=False)
+    muscle_group: Mapped[str] = mapped_column(String(30), nullable=False)
+    themes: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    equipment_keys: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    difficulty: Mapped[str] = mapped_column(String(20), nullable=False, default="intermediate")
+    scaling_beginner: Mapped[str | None] = mapped_column(Text, nullable=True)
+    scaling_intermediate: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
+class WodTemplate(Base):
+    """Шаблон тренировки."""
+    __tablename__ = "wod_templates"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    format: Mapped[str] = mapped_column(String(30), nullable=False)
+    duration_min: Mapped[int] = mapped_column(Integer, nullable=False)
+    intensity: Mapped[str] = mapped_column(String(20), nullable=False, default="medium")
+    theme: Mapped[str] = mapped_column(String(30), nullable=False)
+    is_benchmark: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    movements: Mapped[list["WodTemplateMovement"]] = relationship(
+        back_populates="template", cascade="all, delete-orphan",
+        order_by="WodTemplateMovement.sort_order",
+    )
+
+
+class WodTemplateMovement(Base):
+    """Движение в шаблоне тренировки."""
+    __tablename__ = "wod_template_movements"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    template_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("wod_templates.id", ondelete="CASCADE"), nullable=False
+    )
+    movement_key: Mapped[str] = mapped_column(String(80), nullable=False)
+    movement_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    reps: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    weight_male: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    weight_female: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    rounds_note: Mapped[str | None] = mapped_column(String(100), nullable=True)
+
+    template: Mapped["WodTemplate"] = relationship(back_populates="movements")
+
+
+class Wod(Base):
+    """Выбранная тренировка дня."""
+    __tablename__ = "wods"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    format: Mapped[str] = mapped_column(String(30), nullable=False)
+    duration_min: Mapped[int] = mapped_column(Integer, nullable=False)
+    intensity: Mapped[str] = mapped_column(String(20), nullable=False, default="medium")
+    theme: Mapped[str] = mapped_column(String(30), nullable=False)
+    group_level: Mapped[str] = mapped_column(String(20), nullable=False, default="intermediate")
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    created_at: Mapped[datetime] = mapped_column(default=_now)
+    session_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("sessions.id", ondelete="SET NULL"), nullable=True
+    )
+
+    movements: Mapped[list["WodMovement"]] = relationship(
+        back_populates="wod", cascade="all, delete-orphan",
+        order_by="WodMovement.sort_order",
+    )
+
+
+class WodMovement(Base):
+    """Движение в выбранной тренировке."""
+    __tablename__ = "wod_movements"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    wod_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("wods.id", ondelete="CASCADE"), nullable=False
+    )
+    movement_key: Mapped[str] = mapped_column(String(80), nullable=False)
+    movement_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    reps: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    weight_male: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    weight_female: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    scaling_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    rounds_note: Mapped[str | None] = mapped_column(String(100), nullable=True)
+
+    wod: Mapped["Wod"] = relationship(back_populates="movements")

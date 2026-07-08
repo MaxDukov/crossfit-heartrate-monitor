@@ -1,4 +1,4 @@
-import type { Athlete, Sensor, Session, SessionStats, AthleteStats } from "../types";
+import type { Athlete, Sensor, Session, SessionStats, AthleteStats, Equipment, GymInventoryItem, Wod, WodVariant } from "../types";
 
 const BASE = "/api";
 
@@ -53,5 +53,29 @@ export const api = {
   analytics: {
     athleteStats: (id: string) => request<AthleteStats>(`/analytics/athletes/${id}/stats`),
     athleteHistory: (id: string) => request<SessionStats[]>(`/analytics/athletes/${id}/history`),
+  },
+  equipment: {
+    list: () => request<Equipment[]>("/equipment"),
+    inventory: () => request<GymInventoryItem[]>("/equipment/inventory"),
+    updateInventory: (items: GymInventoryItem[]) =>
+      request<GymInventoryItem[]>("/equipment/inventory", {
+        method: "PUT",
+        body: JSON.stringify({ items }),
+      }),
+  },
+  wods: {
+    generate: (theme: string, groupLevel: string) =>
+      request<WodVariant[]>("/wods/generate", {
+        method: "POST",
+        body: JSON.stringify({ theme, group_level: groupLevel }),
+      }),
+    select: (templateId: string, groupLevel: string) =>
+      request<Wod>("/wods/select", {
+        method: "POST",
+        body: JSON.stringify({ template_id: templateId, group_level: groupLevel }),
+      }),
+    active: () => request<Wod | null>("/wods/active"),
+    endActive: () => request<void>("/wods/active/end", { method: "POST" }),
+    history: (limit = 20) => request<Wod[]>(`/wods/history?limit=${limit}`),
   },
 };

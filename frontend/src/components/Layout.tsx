@@ -4,9 +4,11 @@ import { useEffect } from "react";
 
 const navItems = [
   { to: "/", label: "Монитор" },
+  { to: "/wod-builder", label: "WoD" },
   { to: "/athletes", label: "Спортсмены" },
   { to: "/sensors", label: "Датчики" },
   { to: "/sessions", label: "Тренировки" },
+  { to: "/equipment", label: "Инвентарь" },
 ];
 
 export default function Layout() {
@@ -20,7 +22,10 @@ export default function Layout() {
 
   return (
     <div className="h-screen bg-slate-950 text-slate-100 flex flex-col overflow-hidden">
-      <nav className="bg-slate-900 border-b border-slate-800 px-6 py-3 flex items-center gap-8 shrink-0">
+      <main className="flex-1 overflow-hidden min-h-0">
+        <Outlet />
+      </main>
+      <nav className="bg-slate-900 border-t border-slate-800 px-6 py-3 flex items-center gap-8 shrink-0">
         <span className="text-xl font-bold tracking-tight text-white">
           CF-Monitor
         </span>
@@ -43,9 +48,6 @@ export default function Layout() {
           ))}
         </div>
       </nav>
-      <main className="flex-1 overflow-hidden min-h-0">
-        <Outlet />
-      </main>
     </div>
   );
 }

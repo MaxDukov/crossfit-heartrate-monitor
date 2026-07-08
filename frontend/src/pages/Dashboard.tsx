@@ -1,6 +1,7 @@
 import { useHrStore } from "../lib/store";
 import AthleteCard from "../components/AthleteCard";
 import NewSensorAlert from "../components/NewSensorAlert";
+import WodPanel from "../components/WodPanel";
 import { Fragment } from "react";
 
 export default function Dashboard() {
@@ -29,6 +30,7 @@ export default function Dashboard() {
 
   return (
     <div className="h-full flex flex-col">
+      <WodPanel />
       <div className={`flex-1 grid ${gridClass} gap-3 p-4`}>
         {entries.map((data, i) => (
           <Fragment key={data.device_id}>
