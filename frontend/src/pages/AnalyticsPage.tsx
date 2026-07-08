@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import type { AthleteStats, SessionStats } from "../types";
 import { api } from "../lib/api";
-import { ZONE_COLORS, ZONE_NAMES } from "../lib/zones";
+import { getZoneColors, ZONE_NAMES } from "../lib/zones";
+import { useTheme } from "../lib/theme";
 import {
   LineChart,
   Line,
@@ -17,6 +18,8 @@ import {
 
 export default function AnalyticsPage() {
   const { id } = useParams<{ id: string }>();
+  const { theme } = useTheme();
+  const ZONE_COLORS = getZoneColors(theme);
   const [stats, setStats] = useState<AthleteStats | null>(null);
   const [history, setHistory] = useState<SessionStats[]>([]);
   const [athleteName, setAthleteName] = useState("");
@@ -35,7 +38,7 @@ export default function AnalyticsPage() {
     });
   }, [id]);
 
-  if (!stats) return <div className="p-6 text-slate-500">Загрузка...</div>;
+  if (!stats) return <div className="p-6 text-slate-400 dark:text-slate-500">Загрузка...</div>;
 
   const pieData = history.reduce(
     (acc, s) => {
@@ -56,10 +59,10 @@ export default function AnalyticsPage() {
   return (
     <div className="max-w-4xl mx-auto p-6">
       <div className="flex items-center gap-4 mb-6">
-        <Link to="/athletes" className="text-slate-400 hover:text-white text-sm">
+        <Link to="/athletes" className="text-slate-400 hover:text-slate-900 dark:hover:text-white text-sm">
           ← Спортсмены
         </Link>
-        <h1 className="text-2xl font-bold">{athleteName}</h1>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{athleteName}</h1>
       </div>
 
       <div className="grid grid-cols-4 gap-4 mb-8">
@@ -76,17 +79,17 @@ export default function AnalyticsPage() {
         ].map((c) => (
           <div
             key={c.label}
-            className="bg-slate-800/50 border border-slate-700 rounded-lg p-4"
+            className="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg p-4"
           >
-            <div className="text-sm text-slate-400">{c.label}</div>
-            <div className="text-2xl font-bold mt-1">{c.value}</div>
+            <div className="text-sm text-slate-500 dark:text-slate-400">{c.label}</div>
+            <div className="text-2xl font-bold mt-1 text-slate-900 dark:text-slate-100">{c.value}</div>
           </div>
         ))}
       </div>
 
       <div className="grid grid-cols-2 gap-6 mb-8">
-        <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
-          <h2 className="text-lg font-semibold mb-4">Распределение по зонам</h2>
+        <div className="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg p-4">
+          <h2 className="text-lg font-semibold mb-4 text-slate-900 dark:text-slate-100">Распределение по зонам</h2>
           <ResponsiveContainer width="100%" height={200}>
             <PieChart>
               <Pie data={pieData} dataKey="value" innerRadius={50} outerRadius={80}>
@@ -104,14 +107,14 @@ export default function AnalyticsPage() {
                   className="w-3 h-3 rounded-full"
                   style={{ backgroundColor: ZONE_COLORS[i + 1] }}
                 />
-                <span className="text-slate-400">{d.name}</span>
+                <span className="text-slate-500 dark:text-slate-400">{d.name}</span>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
-          <h2 className="text-lg font-semibold mb-4">Пульс по тренировкам</h2>
+        <div className="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg p-4">
+          <h2 className="text-lg font-semibold mb-4 text-slate-900 dark:text-slate-100">Пульс по тренировкам</h2>
           <ResponsiveContainer width="100%" height={200}>
             <LineChart
               data={history.slice().reverse().map((s, i) => ({
@@ -130,18 +133,18 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
-      <h2 className="text-lg font-semibold mb-3">История тренировок</h2>
+      <h2 className="text-lg font-semibold mb-3 text-slate-900 dark:text-slate-100">История тренировок</h2>
       <div className="space-y-2">
         {history.map((s) => (
           <div
             key={s.session_id}
-            className="bg-slate-800/50 border border-slate-700 rounded-lg p-3"
+            className="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg p-3"
           >
             <div className="flex justify-between">
-              <span className="font-medium">
+              <span className="font-medium text-slate-900 dark:text-slate-100">
                 {s.session_name || "Тренировка"}
               </span>
-              <span className="text-sm text-slate-400">
+              <span className="text-sm text-slate-500 dark:text-slate-400">
                 {Math.floor(s.duration_seconds / 60)} мин · Средн: {Math.round(s.avg_hr)} · Макс:{" "}
                 {s.max_hr} · Мин: {s.min_hr}
               </span>

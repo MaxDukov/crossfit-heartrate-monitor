@@ -42,7 +42,7 @@ export default function Dashboard() {
           </Fragment>
         ))}
         {entries.length === 0 && (
-          <div className="col-span-full flex items-center justify-center text-slate-500 text-lg">
+          <div className="col-span-full flex items-center justify-center text-slate-400 dark:text-slate-500 text-lg">
             Ожидание данных с датчиков...
           </div>
         )}

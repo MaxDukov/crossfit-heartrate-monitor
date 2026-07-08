@@ -29,17 +29,17 @@ export default function NewSensorAlert() {
       {newSensors.map((deviceId) => (
         <div
           key={deviceId}
-          className="bg-slate-800 border border-amber-500/40 rounded-lg p-4 shadow-xl"
+          className="bg-white dark:bg-slate-800 border border-amber-500/40 rounded-lg p-4 shadow-xl"
         >
           <div className="flex items-center gap-2 mb-2">
             <span className="w-2 h-2 bg-amber-400 rounded-full animate-pulse" />
-            <span className="text-sm font-medium">
+            <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
               Новый датчик: ID {deviceId}
             </span>
           </div>
           <div className="flex gap-2">
             <select
-              className="flex-1 bg-slate-700 text-sm rounded px-2 py-1 border border-slate-600"
+              className="flex-1 bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100 text-sm rounded px-2 py-1 border border-slate-300 dark:border-slate-600"
               value={assignMap[deviceId] || ""}
               onClick={loadAthletes}
               onChange={(e) =>
@@ -61,7 +61,7 @@ export default function NewSensorAlert() {
               OK
             </button>
             <button
-              className="text-slate-400 hover:text-white text-sm px-2"
+              className="text-slate-400 hover:text-slate-900 dark:hover:text-white text-sm px-2"
               onClick={() => dismissNewSensor(deviceId)}
             >
               ✕

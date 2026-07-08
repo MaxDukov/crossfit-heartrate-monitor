@@ -38,7 +38,7 @@ export default function SensorsPage() {
 
   return (
     <div className="max-w-3xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-6">Датчики</h1>
+      <h1 className="text-2xl font-bold mb-6 text-slate-900 dark:text-slate-100">Датчики</h1>
 
       <div className="space-y-3">
         {sensors.map((s) => (
@@ -46,17 +46,17 @@ export default function SensorsPage() {
             key={s.device_id}
             className={`border rounded-lg p-4 flex items-center justify-between ${
               s.athlete_id
-                ? "bg-slate-800/50 border-slate-700"
-                : "bg-amber-950/30 border-amber-500/30"
+                ? "bg-white dark:bg-slate-800/50 border-slate-200 dark:border-slate-700"
+                : "bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-500/30"
             }`}
           >
             <div>
-              <div className="font-medium">ID: {s.device_id}</div>
-              <div className="text-sm text-slate-400">
+              <div className="font-medium text-slate-900 dark:text-slate-100">ID: {s.device_id}</div>
+              <div className="text-sm text-slate-500 dark:text-slate-400">
                 {s.last_hr != null ? `${s.last_hr} bpm` : "нет данных"}
                 {s.battery_level != null && ` · Батарея: ${s.battery_level}%`}
                 {s.athlete_name && (
-                  <span className="text-emerald-400 ml-2">
+                  <span className="text-emerald-600 dark:text-emerald-400 ml-2">
                     → {s.athlete_name}
                   </span>
                 )}
@@ -66,7 +66,7 @@ export default function SensorsPage() {
             <div className="flex items-center gap-2">
               {s.athlete_id ? (
                 <button
-                  className="text-sm bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded"
+                  className="text-sm bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 px-3 py-1.5 rounded text-slate-700 dark:text-slate-200"
                   onClick={() => handleUnassign(s.device_id)}
                 >
                   Отвязать
@@ -74,7 +74,7 @@ export default function SensorsPage() {
               ) : (
                 <>
                   <select
-                    className="bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-sm"
+                    className="bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded px-2 py-1.5 text-sm text-slate-900 dark:text-white"
                     value={assignMap[s.device_id] || ""}
                     onChange={(e) =>
                       setAssignMap((m) => ({
@@ -104,7 +104,7 @@ export default function SensorsPage() {
         ))}
 
         {sensors.length === 0 && (
-          <div className="text-slate-500 text-center py-12">
+          <div className="text-slate-400 dark:text-slate-500 text-center py-12">
             Датчики не обнаружены. Подключите ANT+ стик и включите датчики.
           </div>
         )}

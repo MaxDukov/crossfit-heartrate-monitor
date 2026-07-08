@@ -60,10 +60,10 @@ export default function WorkoutTimer({ format, durationMin }: WorkoutTimerProps)
   const timerColor = isFinished
     ? "text-red-500"
     : !running && elapsed === 0
-    ? "text-slate-300"
+    ? "text-slate-400 dark:text-slate-300"
     : isCountdown && totalSec - elapsed <= 10
-    ? "text-amber-400"
-    : "text-white";
+    ? "text-amber-500 dark:text-amber-400"
+    : "text-slate-900 dark:text-white";
 
   return (
     <div className="flex items-center gap-4">
@@ -110,9 +110,9 @@ export default function WorkoutTimer({ format, durationMin }: WorkoutTimerProps)
         >
           {running ? "Пауза" : isFinished ? "Готово" : "Старт"}
         </button>
-        <button
+          <button
           onClick={reset}
-          className="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg font-medium text-sm text-slate-200 transition-colors"
+          className="px-3 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 rounded-lg font-medium text-sm text-slate-700 dark:text-slate-200 transition-colors"
         >
           Сброс
         </button>

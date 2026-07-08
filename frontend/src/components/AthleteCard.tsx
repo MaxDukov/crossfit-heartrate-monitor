@@ -1,5 +1,6 @@
 import type { HrUpdate } from "../types";
-import { ZONE_GRADIENT, ZONE_NAMES, ZONE_COLORS } from "../lib/zones";
+import { ZONE_NAMES, getZoneColors, getZoneGradient } from "../lib/zones";
+import { useTheme } from "../lib/theme";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -31,10 +32,13 @@ function arc(cx: number, cy: number, r: number, startDeg: number, endDeg: number
 }
 
 export default function AthleteCard({ data, history }: Props) {
+  const { theme } = useTheme();
   const zone = data.zone;
-  const gradient = ZONE_GRADIENT[zone] || ZONE_GRADIENT[1];
+  const colors = getZoneColors(theme);
+  const gradients = getZoneGradient(theme);
   const zoneName = ZONE_NAMES[zone] || "—";
-  const zoneColor = ZONE_COLORS[zone] || "#94A3B8";
+  const zoneColor = colors[zone] || "#94A3B8";
+  const gradient = gradients[zone] || gradients[1];
   const maxHr = data.max_hr || 190;
   const pct = Math.min(data.zone_percent, 120);
   const needleDeg = (pct / 120) * 180;
@@ -44,19 +48,23 @@ export default function AthleteCard({ data, history }: Props) {
   const r = 88;
 
   const zones = [
-    { from: 0, to: 50, color: ZONE_COLORS[1] },
-    { from: 50, to: 66.67, color: ZONE_COLORS[2] },
-    { from: 66.67, to: 83.33, color: ZONE_COLORS[3] },
-    { from: 83.33, to: 100, color: ZONE_COLORS[4] },
+    { from: 0, to: 50, color: colors[1] },
+    { from: 50, to: 66.67, color: colors[2] },
+    { from: 66.67, to: 83.33, color: colors[3] },
+    { from: 83.33, to: 100, color: colors[4] },
   ];
 
   const chartData = history.map((p) => ({ hr: p.hr, idx: p.t }));
 
+  const nameColor = theme === "dark" ? "#F1F5F9" : "#0F172A";
+  const secondaryColor = theme === "dark" ? "#94A3B8" : "#64748B";
+
   return (
     <div
-      className={`bg-gradient-to-br ${gradient} border rounded-xl flex flex-col relative overflow-hidden min-h-0 p-2 sm:p-3`}
+      className="border rounded-xl flex flex-col relative overflow-hidden min-h-0 p-2 sm:p-3"
+      style={{ background: gradient, borderColor: theme === "dark" ? undefined : "rgba(0,0,0,0.08)" }}
     >
-      <div className="text-center shrink-0 font-bold text-slate-100" style={{ fontSize: "clamp(3.2rem, 11.2vw, 14.4rem)" }}>
+      <div className="text-center shrink-0 font-bold" style={{ fontSize: "clamp(3.2rem, 11.2vw, 14.4rem)", color: nameColor }}>
         {data.athlete_name || `Sensor #${data.device_id}`}
       </div>
 
@@ -66,7 +74,7 @@ export default function AthleteCard({ data, history }: Props) {
           style={{
             fontSize: "clamp(4rem, 14vw, 18rem)",
             color: zoneColor,
-            textShadow: "0 4px 12px rgba(0,0,0,0.5)",
+            textShadow: theme === "dark" ? "0 4px 12px rgba(0,0,0,0.5)" : "none",
           }}
         >
           {data.heart_rate}
@@ -103,7 +111,7 @@ export default function AthleteCard({ data, history }: Props) {
         <span style={{ color: zoneColor }} className="font-bold">
           {zoneName}
         </span>
-        <span className="text-slate-400">
+        <span style={{ color: secondaryColor }}>
           {Math.round(data.zone_percent)}% · Max {maxHr}
         </span>
       </div>
@@ -132,7 +140,7 @@ export default function AthleteCard({ data, history }: Props) {
             </AreaChart>
           </ResponsiveContainer>
         ) : (
-          <div className="h-full flex items-center justify-center text-slate-500" style={{ fontSize: "0.7rem" }}>
+          <div className="h-full flex items-center justify-center" style={{ color: secondaryColor, fontSize: "0.7rem" }}>
             Сбор данных...
           </div>
         )}

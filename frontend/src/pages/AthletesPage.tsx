@@ -73,18 +73,18 @@ export default function AthletesPage() {
 
   return (
     <div className="max-w-2xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-6">Спортсмены</h1>
+      <h1 className="text-2xl font-bold mb-6 text-slate-900 dark:text-slate-100">Спортсмены</h1>
 
       <div className="flex gap-3 mb-2">
         <input
-          className="flex-1 bg-slate-800 border border-slate-700 rounded px-3 py-2 text-sm text-white"
+          className="flex-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded px-3 py-2 text-sm text-slate-900 dark:text-white"
           placeholder="Имя"
           value={name}
           onChange={(e) => setName(e.target.value)}
           onKeyDown={handleKeyDown}
         />
         <input
-          className="w-24 bg-slate-800 border border-slate-700 rounded px-3 py-2 text-sm text-white"
+          className="w-24 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded px-3 py-2 text-sm text-slate-900 dark:text-white"
           type="number"
           placeholder="Max HR"
           value={maxHr}
@@ -99,7 +99,7 @@ export default function AthletesPage() {
       </div>
 
       {status && (
-        <div className="bg-yellow-900/50 border border-yellow-700 text-yellow-200 px-4 py-2 rounded text-sm mb-4">
+        <div className="bg-yellow-100 dark:bg-yellow-900/50 border border-yellow-300 dark:border-yellow-700 text-yellow-800 dark:text-yellow-200 px-4 py-2 rounded text-sm mb-4">
           {status}
         </div>
       )}
@@ -107,14 +107,14 @@ export default function AthletesPage() {
       <div className="space-y-2 mt-4">
         {athletes.map((a) =>
           editing === a.id ? (
-            <div key={a.id} className="flex gap-2 bg-slate-800/50 border border-slate-700 rounded-lg p-3">
+            <div key={a.id} className="flex gap-2 bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg p-3">
               <input
-                className="flex-1 bg-slate-700 border border-slate-600 rounded px-3 py-1.5 text-sm text-white"
+                className="flex-1 bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded px-3 py-1.5 text-sm text-slate-900 dark:text-white"
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
               />
               <input
-                className="w-24 bg-slate-700 border border-slate-600 rounded px-3 py-1.5 text-sm text-white"
+                className="w-24 bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded px-3 py-1.5 text-sm text-slate-900 dark:text-white"
                 type="number"
                 value={editMaxHr}
                 onChange={(e) => setEditMaxHr(Number(e.target.value))}
@@ -125,8 +125,8 @@ export default function AthletesPage() {
               >
                 Сохранить
               </button>
-              <button
-                className="text-slate-400 hover:text-white px-2 text-sm"
+                <button
+                className="text-slate-400 hover:text-slate-900 dark:hover:text-white px-2 text-sm"
                 onClick={() => setEditing(null)}
               >
                 Отмена
@@ -135,23 +135,23 @@ export default function AthletesPage() {
           ) : (
             <div
               key={a.id}
-              className="flex items-center justify-between bg-slate-800/50 border border-slate-700 rounded-lg p-3"
+              className="flex items-center justify-between bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg p-3"
             >
               <div>
-                <span className="font-medium">{a.name}</span>
+                <span className="font-medium text-slate-900 dark:text-slate-100">{a.name}</span>
                 <span className="text-slate-400 text-sm ml-3">
                   Max HR: {a.max_hr}
                 </span>
               </div>
               <div className="flex gap-2">
                 <button
-                  className="text-sm text-slate-400 hover:text-white px-2"
+                  className="text-sm text-slate-400 hover:text-slate-900 dark:hover:text-white px-2"
                   onClick={() => startEdit(a)}
                 >
                   Ред.
                 </button>
                 <button
-                  className="text-sm text-red-400 hover:text-red-300 px-2"
+                  className="text-sm text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 px-2"
                   onClick={() => handleDelete(a.id)}
                 >
                   Удалить
