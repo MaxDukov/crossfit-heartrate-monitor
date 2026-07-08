@@ -68,19 +68,8 @@ export default function AthleteCard({ data, history }: Props) {
         {data.athlete_name || `Sensor #${data.device_id}`}
       </div>
 
-      <div className="flex-1 flex items-center justify-center min-h-0 relative">
-        <span
-          className="font-black tabular-nums leading-none"
-          style={{
-            fontSize: "clamp(4rem, 14vw, 18rem)",
-            color: zoneColor,
-            textShadow: theme === "dark" ? "0 4px 12px rgba(0,0,0,0.5)" : "none",
-          }}
-        >
-          {data.heart_rate}
-        </span>
-
-        <div style={{ width: "15%", minWidth: "3rem", maxWidth: "5rem" }} className="absolute bottom-0 left-3">
+      <div className="flex-1 flex items-center min-h-0">
+        <div className="flex items-center justify-center h-full" style={{ width: "clamp(12rem, 25vw, 30rem)", flexShrink: 0 }}>
           <svg viewBox="0 0 200 115" className="w-full" preserveAspectRatio="xMidYMid meet">
             {zones.map((z, i) => (
               <path
@@ -99,11 +88,24 @@ export default function AthleteCard({ data, history }: Props) {
               x2={polar(cx, cy, r - 4, needleDeg).x}
               y2={polar(cx, cy, r - 4, needleDeg).y}
               stroke={zoneColor}
-              strokeWidth="3"
+              strokeWidth="4"
               strokeLinecap="round"
             />
-            <circle cx={cx} cy={cy} r="5" fill={zoneColor} />
+            <circle cx={cx} cy={cy} r="6" fill={zoneColor} />
           </svg>
+        </div>
+
+        <div className="flex-1 flex items-center justify-center">
+          <span
+            className="font-black tabular-nums leading-none"
+            style={{
+              fontSize: "clamp(4rem, 14vw, 18rem)",
+              color: zoneColor,
+              textShadow: theme === "dark" ? "0 4px 12px rgba(0,0,0,0.5)" : "none",
+            }}
+          >
+            {data.heart_rate}
+          </span>
         </div>
       </div>
 
