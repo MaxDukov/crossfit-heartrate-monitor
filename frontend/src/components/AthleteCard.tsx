@@ -40,19 +40,32 @@ export default function AthleteCard({ data, history }: Props) {
   const zoneColor = colors[zone] || "#94A3B8";
   const gradient = gradients[zone] || gradients[1];
   const maxHr = data.max_hr || 190;
-  const pct = Math.min(data.zone_percent, 120);
-  const needleDeg = (pct / 120) * 180;
+
+  const GAUGE_MIN = 50;
+  const GAUGE_MAX = 220;
+  const GAUGE_RANGE = GAUGE_MAX - GAUGE_MIN;
+
+  function hrToDeg(hr: number): number {
+    const clamped = Math.max(GAUGE_MIN, Math.min(GAUGE_MAX, hr));
+    return ((clamped - GAUGE_MIN) / GAUGE_RANGE) * 180;
+  }
+
+  const needleDeg = hrToDeg(data.heart_rate);
 
   const cx = 100;
   const cy = 100;
   const r = 88;
 
-  const zones = [
-    { from: 0, to: 50, color: colors[1] },
-    { from: 50, to: 66.67, color: colors[2] },
-    { from: 66.67, to: 83.33, color: colors[3] },
-    { from: 83.33, to: 100, color: colors[4] },
+  const greenMax = Math.min(0.8 * maxHr, 180);
+  const amberMax = 180;
+
+  const gaugeZones = [
+    { from: 0, to: hrToDeg(greenMax), color: colors[1] },
+    { from: hrToDeg(greenMax), to: hrToDeg(amberMax), color: colors[3] },
+    { from: hrToDeg(amberMax), to: 180, color: "#111111" },
   ];
+
+  const activeGaugeZone = zone <= 2 ? 0 : zone === 3 ? 1 : 2;
 
   const chartData = history.map((p) => ({ hr: p.hr, idx: p.t }));
 
@@ -68,10 +81,10 @@ export default function AthleteCard({ data, history }: Props) {
         {data.athlete_name || `Sensor #${data.device_id}`}
       </div>
 
-      <div className="flex-1 flex items-center min-h-0">
+      <div className="flex-1 flex items-center min-h-0 relative">
         <div className="flex items-center justify-center h-full" style={{ width: "clamp(12rem, 25vw, 30rem)", flexShrink: 0 }}>
           <svg viewBox="0 0 200 115" className="w-full" preserveAspectRatio="xMidYMid meet">
-            {zones.map((z, i) => (
+            {gaugeZones.map((z, i) => (
               <path
                 key={i}
                 d={arc(cx, cy, r, z.from, z.to)}
@@ -79,7 +92,7 @@ export default function AthleteCard({ data, history }: Props) {
                 strokeWidth="14"
                 fill="none"
                 strokeLinecap="butt"
-                opacity={zone === i + 1 ? 1 : 0.25}
+                opacity={activeGaugeZone === i ? 1 : 0.25}
               />
             ))}
             <line
@@ -95,7 +108,7 @@ export default function AthleteCard({ data, history }: Props) {
           </svg>
         </div>
 
-        <div className="flex-1 flex items-center justify-center">
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <span
             className="font-black tabular-nums leading-none"
             style={{
