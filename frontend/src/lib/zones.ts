@@ -1,14 +1,14 @@
 const ZONE_COLORS_LIGHT: Record<number, string> = {
-  1: "#16A34A",
-  2: "#16A34A",
-  3: "#D97706",
+  1: "#0a8a06",
+  2: "#0a8a06",
+  3: "#f5e505",
   4: "#DC2626",
 };
 
 const ZONE_COLORS_DARK: Record<number, string> = {
-  1: "#22C55E",
-  2: "#22C55E",
-  3: "#F59E0B",
+  1: "#0a8a06",
+  2: "#0a8a06",
+  3: "#f5e505",
   4: "#EF4444",
 };
 
