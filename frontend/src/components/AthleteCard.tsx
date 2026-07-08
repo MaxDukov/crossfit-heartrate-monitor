@@ -62,7 +62,7 @@ export default function AthleteCard({ data, history }: Props) {
   const gaugeZones = [
     { from: 0, to: hrToDeg(greenMax), color: colors[1] },
     { from: hrToDeg(greenMax), to: hrToDeg(amberMax), color: colors[3] },
-    { from: hrToDeg(amberMax), to: 180, color: "#111111" },
+    { from: hrToDeg(amberMax), to: 180, color: "#991B1B" },
   ];
 
   const activeGaugeZone = zone <= 2 ? 0 : zone === 3 ? 1 : 2;
