@@ -75,14 +75,33 @@ export default function AthleteCard({ data, history }: Props) {
   return (
     <div
       className="border rounded-xl flex flex-col relative overflow-hidden min-h-0 p-2 sm:p-3"
-      style={{ background: gradient, borderColor: theme === "dark" ? undefined : "rgba(0,0,0,0.08)" }}
+      style={{
+        background: gradient,
+        borderColor: theme === "dark" ? undefined : "rgba(0,0,0,0.08)",
+        containerType: "inline-size",
+      }}
     >
-      <div className="text-center shrink-0 font-bold" style={{ fontSize: "clamp(3.2rem, 11.2vw, 14.4rem)", color: nameColor }}>
+      {/* Имя спортсмена */}
+      <div
+        className="text-center shrink-0 font-bold truncate px-1"
+        style={{
+          fontSize: "clamp(0.85rem, 7cqw, 6.5rem)",
+          lineHeight: 1.1,
+          color: nameColor,
+        }}
+      >
         {data.athlete_name || `Sensor #${data.device_id}`}
       </div>
 
-      <div className="flex-1 flex items-center min-h-0 relative">
-        <div className="flex items-center justify-center h-full" style={{ width: "clamp(12rem, 25vw, 30rem)", flexShrink: 0 }}>
+      {/* Центральная зона: спидометр + пульс */}
+      <div className="flex-1 flex items-center justify-center min-h-0 relative">
+        <div
+          className="flex items-center justify-center"
+          style={{
+            width: "clamp(3.5rem, 26cqw, 18rem)",
+            flexShrink: 0,
+          }}
+        >
           <svg viewBox="0 0 200 115" className="w-full" preserveAspectRatio="xMidYMid meet">
             {gaugeZones.map((z, i) => (
               <path
@@ -112,7 +131,7 @@ export default function AthleteCard({ data, history }: Props) {
           <span
             className="font-black tabular-nums leading-none"
             style={{
-              fontSize: "clamp(4rem, 14vw, 18rem)",
+              fontSize: "clamp(1.1rem, 12cqw, 13rem)",
               color: zoneColor,
               textShadow: theme === "dark" ? "0 4px 12px rgba(0,0,0,0.5)" : "none",
             }}
@@ -122,16 +141,24 @@ export default function AthleteCard({ data, history }: Props) {
         </div>
       </div>
 
-      <div className="shrink-0 flex items-center justify-between mb-1" style={{ fontSize: "clamp(0.6rem, 1vw, 1.2rem)" }}>
-        <span style={{ color: zoneColor }} className="font-bold">
+      {/* Зона и % от максимума */}
+      <div
+        className="shrink-0 flex items-center justify-between mb-1 px-1"
+        style={{ fontSize: "clamp(0.5rem, 1.4cqw, 0.95rem)" }}
+      >
+        <span style={{ color: zoneColor }} className="font-bold truncate">
           {zoneName}
         </span>
-        <span style={{ color: secondaryColor }}>
+        <span style={{ color: secondaryColor }} className="shrink-0 ml-2">
           {Math.round(data.zone_percent)}% · Max {maxHr}
         </span>
       </div>
 
-      <div className="shrink-0" style={{ height: "clamp(3rem, 20%, 8rem)" }}>
+      {/* График истории пульса */}
+      <div
+        className="shrink-0"
+        style={{ height: "clamp(1.5rem, 16cqw, 6rem)" }}
+      >
         {chartData.length > 1 ? (
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={chartData} margin={{ top: 2, right: 2, bottom: 0, left: 2 }}>
@@ -155,7 +182,7 @@ export default function AthleteCard({ data, history }: Props) {
             </AreaChart>
           </ResponsiveContainer>
         ) : (
-          <div className="h-full flex items-center justify-center" style={{ color: secondaryColor, fontSize: "0.7rem" }}>
+          <div className="h-full flex items-center justify-center" style={{ color: secondaryColor, fontSize: "0.65rem" }}>
             Сбор данных...
           </div>
         )}
