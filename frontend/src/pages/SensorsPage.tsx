@@ -97,11 +97,10 @@ export default function SensorsPage() {
               Отвязать
             </button>
             <button
-              className="text-sm text-slate-400 hover:text-red-500 px-2 py-1.5"
-              title="Пометить как чужой"
+              className="text-sm bg-slate-200 dark:bg-slate-700 hover:bg-red-500 hover:text-white text-slate-600 dark:text-slate-300 px-3 py-1.5 rounded"
               onClick={() => handleIgnore(s.device_id)}
             >
-              🚫
+              Чужой
             </button>
           </>
         ) : (
@@ -131,11 +130,10 @@ export default function SensorsPage() {
               OK
             </button>
             <button
-              className="text-sm text-slate-400 hover:text-red-500 px-2 py-1.5"
-              title="Пометить как чужой"
+              className="text-sm bg-slate-200 dark:bg-slate-700 hover:bg-red-500 hover:text-white text-slate-600 dark:text-slate-300 px-3 py-1.5 rounded"
               onClick={() => handleIgnore(s.device_id)}
             >
-              🚫
+              Чужой
             </button>
           </>
         )}
