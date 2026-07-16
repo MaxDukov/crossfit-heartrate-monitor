@@ -47,7 +47,7 @@ export default function AthleteCard({ data, history }: Props) {
       <div
         className="text-center shrink-0 font-bold truncate px-1"
         style={{
-          fontSize: "clamp(0.85rem, 7cqw, 6.5rem)",
+          fontSize: "clamp(1.2rem, 16cqw, 12rem)",
           lineHeight: 1.1,
           color: nameColor,
         }}
@@ -60,7 +60,7 @@ export default function AthleteCard({ data, history }: Props) {
         <span
           className="font-black tabular-nums leading-none"
           style={{
-            fontSize: "clamp(1.5rem, 18cqw, 16rem)",
+            fontSize: "clamp(2.5rem, 28cqw, 18rem)",
             color: zoneColor,
             textShadow: theme === "dark" ? "0 4px 12px rgba(0,0,0,0.5)" : "none",
           }}
