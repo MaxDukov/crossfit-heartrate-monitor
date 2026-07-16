@@ -19,18 +19,6 @@ interface Props {
   history: HrPoint[];
 }
 
-function polar(cx: number, cy: number, r: number, deg: number) {
-  const rad = ((deg - 180) * Math.PI) / 180;
-  return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
-}
-
-function arc(cx: number, cy: number, r: number, startDeg: number, endDeg: number) {
-  const s = polar(cx, cy, r, startDeg);
-  const e = polar(cx, cy, r, endDeg);
-  const large = endDeg - startDeg > 180 ? 1 : 0;
-  return `M ${s.x} ${s.y} A ${r} ${r} 0 ${large} 1 ${e.x} ${e.y}`;
-}
-
 export default function AthleteCard({ data, history }: Props) {
   const { theme } = useTheme();
   const zone = data.zone;
@@ -40,32 +28,6 @@ export default function AthleteCard({ data, history }: Props) {
   const zoneColor = colors[zone] || "#94A3B8";
   const gradient = gradients[zone] || gradients[1];
   const maxHr = data.max_hr || 190;
-
-  const GAUGE_MIN = 50;
-  const GAUGE_MAX = 220;
-  const GAUGE_RANGE = GAUGE_MAX - GAUGE_MIN;
-
-  function hrToDeg(hr: number): number {
-    const clamped = Math.max(GAUGE_MIN, Math.min(GAUGE_MAX, hr));
-    return ((clamped - GAUGE_MIN) / GAUGE_RANGE) * 180;
-  }
-
-  const needleDeg = hrToDeg(data.heart_rate);
-
-  const cx = 100;
-  const cy = 100;
-  const r = 88;
-
-  const greenMax = Math.min(0.8 * maxHr, 180);
-  const amberMax = 180;
-
-  const gaugeZones = [
-    { from: 0, to: hrToDeg(greenMax), color: colors[1] },
-    { from: hrToDeg(greenMax), to: hrToDeg(amberMax), color: colors[3] },
-    { from: hrToDeg(amberMax), to: 180, color: "#C00000" },
-  ];
-
-  const activeGaugeZone = zone <= 2 ? 0 : zone === 3 ? 1 : 2;
 
   const chartData = history.map((p) => ({ hr: p.hr, idx: p.t }));
 
@@ -93,52 +55,18 @@ export default function AthleteCard({ data, history }: Props) {
         {data.athlete_name || `Sensor #${data.device_id}`}
       </div>
 
-      {/* Центральная зона: спидометр + пульс */}
-      <div className="flex-1 flex items-center justify-center min-h-0 relative">
-        <div
-          className="flex items-center justify-center"
+      {/* Пульс */}
+      <div className="flex-1 flex items-center justify-center min-h-0">
+        <span
+          className="font-black tabular-nums leading-none"
           style={{
-            width: "clamp(3.5rem, 26cqw, 18rem)",
-            flexShrink: 0,
+            fontSize: "clamp(1.5rem, 18cqw, 16rem)",
+            color: zoneColor,
+            textShadow: theme === "dark" ? "0 4px 12px rgba(0,0,0,0.5)" : "none",
           }}
         >
-          <svg viewBox="0 0 200 115" className="w-full" preserveAspectRatio="xMidYMid meet">
-            {gaugeZones.map((z, i) => (
-              <path
-                key={i}
-                d={arc(cx, cy, r, z.from, z.to)}
-                stroke={z.color}
-                strokeWidth="14"
-                fill="none"
-                strokeLinecap="butt"
-                opacity={activeGaugeZone === i ? 1 : 0.25}
-              />
-            ))}
-            <line
-              x1={cx}
-              y1={cy}
-              x2={polar(cx, cy, r - 4, needleDeg).x}
-              y2={polar(cx, cy, r - 4, needleDeg).y}
-              stroke={zoneColor}
-              strokeWidth="4"
-              strokeLinecap="round"
-            />
-            <circle cx={cx} cy={cy} r="6" fill={zoneColor} />
-          </svg>
-        </div>
-
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <span
-            className="font-black tabular-nums leading-none"
-            style={{
-              fontSize: "clamp(1.1rem, 12cqw, 13rem)",
-              color: zoneColor,
-              textShadow: theme === "dark" ? "0 4px 12px rgba(0,0,0,0.5)" : "none",
-            }}
-          >
-            {data.heart_rate}
-          </span>
-        </div>
+          {data.heart_rate}
+        </span>
       </div>
 
       {/* Зона и % от максимума */}
