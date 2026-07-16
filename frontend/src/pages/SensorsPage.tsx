@@ -100,7 +100,7 @@ export default function SensorsPage() {
               className="text-sm bg-slate-200 dark:bg-slate-700 hover:bg-red-500 hover:text-white text-slate-600 dark:text-slate-300 px-3 py-1.5 rounded"
               onClick={() => handleIgnore(s.device_id)}
             >
-              Чужой
+              Отключить
             </button>
           </>
         ) : (
@@ -133,7 +133,7 @@ export default function SensorsPage() {
               className="text-sm bg-slate-200 dark:bg-slate-700 hover:bg-red-500 hover:text-white text-slate-600 dark:text-slate-300 px-3 py-1.5 rounded"
               onClick={() => handleIgnore(s.device_id)}
             >
-              Чужой
+              Отключить
             </button>
           </>
         )}
