@@ -108,7 +108,7 @@ class AntCollector:
 
             self._upsert_sensor(numeric_id)
 
-            if is_new and self._on_new_sensor and not self._is_sensor_assigned(numeric_id):
+            if is_new and self._on_new_sensor and not self._is_sensor_assigned(numeric_id) and not self._is_sensor_ignored(numeric_id):
                 try:
                     self._on_new_sensor(numeric_id)
                 except Exception as e:
@@ -148,6 +148,30 @@ class AntCollector:
                     _logger.error(f"on_hr_data callback error: {e}")
 
         return on_data
+
+    def _is_sensor_ignored(self, device_id: int) -> bool:
+        """Проверяет, помечен ли датчик как проигнорированный."""
+        db = SessionLocal()
+        try:
+            sensor = db.query(Sensor).filter(Sensor.device_id == device_id).first()
+            return sensor is not None and sensor.ignored
+        except Exception as e:
+            _logger.error(f"DB check ignored error: {e}")
+            return False
+        finally:
+            db.close()
+
+    def _is_sensor_assigned(self, device_id: int) -> bool:
+        """Проверяет, привязан ли датчик к спортсмену."""
+        db = SessionLocal()
+        try:
+            sensor = db.query(Sensor).filter(Sensor.device_id == device_id).first()
+            return sensor is not None and sensor.athlete_id is not None
+        except Exception as e:
+            _logger.error(f"DB check assigned error: {e}")
+            return False
+        finally:
+            db.close()
 
     def _upsert_sensor(self, device_id: int):
         """Создаёт или обновляет запись датчика в БД."""

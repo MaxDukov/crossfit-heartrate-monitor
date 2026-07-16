@@ -1,4 +1,4 @@
-"""API для управления ANT+ датчиками: список, привязка/отвязка."""
+"""API для управления ANT+ датчиками: список, привязка/отвязка, игнорирование."""
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -19,6 +19,7 @@ def _sensor_to_out(s: Sensor) -> SensorOut:
         last_hr=s.last_hr,
         last_seen_at=s.last_seen_at,
         battery_level=s.battery_level,
+        ignored=s.ignored,
     )
 
 
@@ -35,6 +36,8 @@ def assign_sensor(device_id: int, data: SensorAssign, db: Session = Depends(get_
     sensor = db.query(Sensor).filter(Sensor.device_id == device_id).first()
     if not sensor:
         raise HTTPException(404, "Датчик не найден")
+    if sensor.ignored:
+        raise HTTPException(400, "Датчик проигнорирован — верните его в активные")
 
     from ..models import Athlete
     athlete = db.query(Athlete).filter(Athlete.id == data.athlete_id).first()
@@ -58,6 +61,31 @@ def unassign_sensor(device_id: int, db: Session = Depends(get_db)):
     if not sensor:
         raise HTTPException(404, "Датчик не найден")
     sensor.athlete_id = None
+    db.commit()
+    db.refresh(sensor)
+    return _sensor_to_out(sensor)
+
+
+@router.post("/{device_id}/ignore", response_model=SensorOut)
+def ignore_sensor(device_id: int, db: Session = Depends(get_db)):
+    """Помечает датчик как проигнорированный (чужой)."""
+    sensor = db.query(Sensor).filter(Sensor.device_id == device_id).first()
+    if not sensor:
+        raise HTTPException(404, "Датчик не найден")
+    sensor.ignored = True
+    sensor.athlete_id = None
+    db.commit()
+    db.refresh(sensor)
+    return _sensor_to_out(sensor)
+
+
+@router.post("/{device_id}/unignore", response_model=SensorOut)
+def unignore_sensor(device_id: int, db: Session = Depends(get_db)):
+    """Возвращает датчик из проигнорированных в активные."""
+    sensor = db.query(Sensor).filter(Sensor.device_id == device_id).first()
+    if not sensor:
+        raise HTTPException(404, "Датчик не найден")
+    sensor.ignored = False
     db.commit()
     db.refresh(sensor)
     return _sensor_to_out(sensor)

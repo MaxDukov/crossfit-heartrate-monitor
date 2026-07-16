@@ -13,6 +13,7 @@ export interface Sensor {
   last_hr: number | null;
   last_seen_at: string | null;
   battery_level: number | null;
+  ignored: boolean;
 }
 
 export interface Session {

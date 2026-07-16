@@ -34,6 +34,10 @@ export const api = {
       }),
     unassign: (deviceId: number) =>
       request<Sensor>(`/sensors/${deviceId}/assign`, { method: "DELETE" }),
+    ignore: (deviceId: number) =>
+      request<Sensor>(`/sensors/${deviceId}/ignore`, { method: "POST" }),
+    unignore: (deviceId: number) =>
+      request<Sensor>(`/sensors/${deviceId}/unignore`, { method: "POST" }),
   },
   sessions: {
     list: () => request<Session[]>("/sessions"),

@@ -43,6 +43,7 @@ class Sensor(Base):
     last_hr: Mapped[int | None] = mapped_column(Integer, nullable=True)
     last_seen_at: Mapped[datetime | None] = mapped_column(nullable=True)
     battery_level: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    ignored: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     athlete: Mapped["Athlete | None"] = relationship(back_populates="sensor")
 

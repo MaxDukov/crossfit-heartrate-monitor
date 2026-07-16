@@ -39,6 +39,7 @@ class SensorOut(BaseModel):
     last_hr: int | None = None
     last_seen_at: datetime | None = None
     battery_level: int | None = None
+    ignored: bool = False
 
 
 # ── Sessions ──────────────────────────────────────────────
