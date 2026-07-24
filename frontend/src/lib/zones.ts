@@ -13,17 +13,17 @@ const ZONE_COLORS_DARK: Record<number, string> = {
 };
 
 const ZONE_GRADIENT_LIGHT: Record<number, string> = {
-  1: "linear-gradient(135deg, #F0FDF4, #ECFDF5)",
-  2: "linear-gradient(135deg, #F0FDF4, #ECFDF5)",
-  3: "linear-gradient(135deg, #FFFBEB, #FEFCE8)",
-  4: "linear-gradient(135deg, #FEF2F2, #FFF7ED)",
+  1: "linear-gradient(160deg, rgba(10,138,6,0.18) 0%, rgba(10,138,6,0.06) 100%)",
+  2: "linear-gradient(160deg, rgba(10,138,6,0.18) 0%, rgba(10,138,6,0.06) 100%)",
+  3: "linear-gradient(160deg, rgba(245,229,5,0.22) 0%, rgba(245,229,5,0.08) 100%)",
+  4: "linear-gradient(160deg, rgba(220,38,38,0.18) 0%, rgba(220,38,38,0.06) 100%)",
 };
 
 const ZONE_GRADIENT_DARK: Record<number, string> = {
-  1: "linear-gradient(135deg, #022C22, #065F46)",
-  2: "linear-gradient(135deg, #022C22, #065F46)",
-  3: "linear-gradient(135deg, #451A03, #92400E)",
-  4: "linear-gradient(135deg, #450A0A, #991B1B)",
+  1: "linear-gradient(160deg, rgba(10,138,6,0.30) 0%, rgba(10,138,6,0.10) 100%)",
+  2: "linear-gradient(160deg, rgba(10,138,6,0.30) 0%, rgba(10,138,6,0.10) 100%)",
+  3: "linear-gradient(160deg, rgba(245,229,5,0.30) 0%, rgba(245,229,5,0.10) 100%)",
+  4: "linear-gradient(160deg, rgba(239,68,68,0.30) 0%, rgba(239,68,68,0.10) 100%)",
 };
 
 export const ZONE_NAMES: Record<number, string> = {
