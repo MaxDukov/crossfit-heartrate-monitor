@@ -39,8 +39,9 @@ export default function AthleteCard({ data, history }: Props) {
       className="border rounded-xl flex flex-col relative overflow-hidden min-h-0 p-2 sm:p-3"
       style={{
         background: gradient,
-        borderColor: theme === "dark" ? undefined : "rgba(0,0,0,0.08)",
+        borderColor: theme === "dark" ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)",
         containerType: "inline-size",
+        transition: "background 0.8s ease, border-color 0.8s ease",
       }}
     >
       {/* Имя спортсмена */}
