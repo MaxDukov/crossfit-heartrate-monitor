@@ -20,11 +20,16 @@ from .models import Sensor, Athlete
 from .database import SessionLocal
 from .hr_zones import calc_zone, calc_percent
 from .services.ws_manager import manager
-from .services.ant_collector import AntCollector
+from .services.mock_collector import MockCollector
 
 _logger = logging.getLogger(__name__)
 
-collector: AntCollector | None = None
+DEV_MODE = os.environ.get("CF_DEV_MODE", "0") == "1"
+
+if not DEV_MODE:
+    from .services.ant_collector import AntCollector
+
+collector: "AntCollector | MockCollector | None" = None
 _main_loop: asyncio.AbstractEventLoop | None = None
 
 
@@ -83,13 +88,20 @@ async def lifespan(app: FastAPI):
     seed_db()
     _logger.info("Database initialized and seeded")
 
-    collector = AntCollector(
-        max_sensors=8,
-        on_hr_data=_on_hr_data,
-        on_new_sensor=_on_new_sensor,
-    )
+    if DEV_MODE:
+        _logger.info("=== CF DEV MODE — mock collector (8 virtual sensors) ===")
+        collector = MockCollector(
+            on_hr_data=_on_hr_data,
+            on_new_sensor=_on_new_sensor,
+        )
+    else:
+        collector = AntCollector(
+            max_sensors=8,
+            on_hr_data=_on_hr_data,
+            on_new_sensor=_on_new_sensor,
+        )
     collector.start()
-    _logger.info("ANT+ collector started")
+    _logger.info(f"Collector started ({'mock' if DEV_MODE else 'ANT+'})")
 
     yield
 

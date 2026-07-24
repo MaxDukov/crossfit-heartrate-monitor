@@ -9,3 +9,6 @@ __pycache__/
 .vscode/
 .idea/
 *.log
+backend/.venv/
+*.db
+__pycache__/
