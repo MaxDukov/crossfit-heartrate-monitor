@@ -24,6 +24,8 @@ class Athlete(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     max_hr: Mapped[int] = mapped_column(Integer, nullable=False, default=190)
+    weight_kg: Mapped[float | None] = mapped_column(nullable=True)
+    age: Mapped[int | None] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(default=_now)
     updated_at: Mapped[datetime] = mapped_column(default=_now, onupdate=_now)
 

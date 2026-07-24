@@ -18,9 +18,9 @@ async function request<T>(url: string, opts?: RequestInit): Promise<T> {
 export const api = {
   athletes: {
     list: () => request<Athlete[]>("/athletes"),
-    create: (data: { name: string; max_hr: number }) =>
+    create: (data: { name: string; max_hr: number; weight_kg?: number; age?: number }) =>
       request<Athlete>("/athletes", { method: "POST", body: JSON.stringify(data) }),
-    update: (id: string, data: Partial<{ name: string; max_hr: number }>) =>
+    update: (id: string, data: Partial<{ name: string; max_hr: number; weight_kg?: number; age?: number }>) =>
       request<Athlete>(`/athletes/${id}`, { method: "PUT", body: JSON.stringify(data) }),
     delete: (id: string) =>
       request<void>(`/athletes/${id}`, { method: "DELETE" }),

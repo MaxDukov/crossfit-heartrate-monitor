@@ -2,6 +2,8 @@ export interface Athlete {
   id: string;
   name: string;
   max_hr: number;
+  weight_kg: number | null;
+  age: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -33,6 +35,7 @@ export interface HrUpdate {
   zone: number;
   zone_percent: number;
   max_hr: number | null;
+  calories: number;
 }
 
 export interface NewSensorEvent {

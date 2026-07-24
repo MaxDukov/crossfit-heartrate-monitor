@@ -36,6 +36,18 @@ def _run_migrations():
             ))
             conn.commit()
 
+        if not _column_exists(conn, "athletes", "weight_kg"):
+            conn.execute(text(
+                "ALTER TABLE athletes ADD COLUMN weight_kg FLOAT"
+            ))
+            conn.commit()
+
+        if not _column_exists(conn, "athletes", "age"):
+            conn.execute(text(
+                "ALTER TABLE athletes ADD COLUMN age INTEGER"
+            ))
+            conn.commit()
+
 
 def init_db():
     """Создаёт таблицы при первом запуске и применяет миграции."""

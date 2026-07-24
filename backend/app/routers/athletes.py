@@ -19,7 +19,12 @@ def list_athletes(db: Session = Depends(get_db)):
 @router.post("", response_model=AthleteOut, status_code=201)
 def create_athlete(data: AthleteCreate, db: Session = Depends(get_db)):
     """Создаёт нового спортсмена."""
-    athlete = Athlete(name=data.name, max_hr=data.max_hr)
+    athlete = Athlete(
+        name=data.name,
+        max_hr=data.max_hr,
+        weight_kg=data.weight_kg,
+        age=data.age,
+    )
     db.add(athlete)
     db.commit()
     db.refresh(athlete)
@@ -36,6 +41,10 @@ def update_athlete(athlete_id: str, data: AthleteUpdate, db: Session = Depends(g
         athlete.name = data.name
     if data.max_hr is not None:
         athlete.max_hr = data.max_hr
+    if data.weight_kg is not None:
+        athlete.weight_kg = data.weight_kg
+    if data.age is not None:
+        athlete.age = data.age
     db.commit()
     db.refresh(athlete)
     return athlete
