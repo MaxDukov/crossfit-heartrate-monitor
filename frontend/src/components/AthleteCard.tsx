@@ -66,7 +66,7 @@ export default function AthleteCard({ data, history }: Props) {
             textShadow: theme === "dark" ? "0 4px 12px rgba(0,0,0,0.5)" : "none",
           }}
         >
-          {data.heart_rate}❤️
+          {data.heart_rate}<span style={{ fontSize: "0.8em", opacity: 0.6 }}>♥</span>
         </span>
         <span
           className="font-bold tabular-nums leading-none mt-1"
@@ -75,7 +75,7 @@ export default function AthleteCard({ data, history }: Props) {
             color: zoneColor,
           }}
         >
-          {Math.round(data.calories)} 🔥
+          {Math.round(data.calories)} <span style={{ fontSize: "0.8em", opacity: 0.4 }}>🔥</span>
         </span>
       </div>
 
