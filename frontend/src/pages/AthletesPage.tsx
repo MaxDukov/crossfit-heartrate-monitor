@@ -3,15 +3,19 @@ import type { Athlete } from "../types";
 import { api } from "../lib/api";
 import OnScreenKeyboard from "../components/OnScreenKeyboard";
 
-type ActiveField = "name" | "maxHr" | "editName" | "editMaxHr" | null;
+type ActiveField = "name" | "maxHr" | "weight" | "age" | "editName" | "editMaxHr" | "editWeight" | "editAge" | null;
 
 export default function AthletesPage() {
   const [athletes, setAthletes] = useState<Athlete[]>([]);
   const [name, setName] = useState("");
   const [maxHr, setMaxHr] = useState(190);
+  const [weight, setWeight] = useState<string>("");
+  const [age, setAge] = useState<string>("");
   const [editing, setEditing] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [editMaxHr, setEditMaxHr] = useState(190);
+  const [editWeight, setEditWeight] = useState<string>("");
+  const [editAge, setEditAge] = useState<string>("");
   const [status, setStatus] = useState<string | null>(null);
   const [kbField, setKbField] = useState<ActiveField>(null);
 
@@ -33,8 +37,15 @@ export default function AthletesPage() {
     }
     setStatus("Создание...");
     try {
-      await api.athletes.create({ name: name.trim(), max_hr: maxHr });
+      await api.athletes.create({
+        name: name.trim(),
+        max_hr: maxHr,
+        weight_kg: weight ? Number(weight) : undefined,
+        age: age ? Number(age) : undefined,
+      });
       setName("");
+      setWeight("");
+      setAge("");
       setStatus(null);
       setKbField(null);
       await load();
@@ -45,7 +56,12 @@ export default function AthletesPage() {
 
   const handleUpdate = async (id: string) => {
     try {
-      await api.athletes.update(id, { name: editName.trim(), max_hr: editMaxHr });
+      await api.athletes.update(id, {
+        name: editName.trim(),
+        max_hr: editMaxHr,
+        weight_kg: editWeight ? Number(editWeight) : undefined,
+        age: editAge ? Number(editAge) : undefined,
+      });
       setEditing(null);
       setKbField(null);
       load();
@@ -68,6 +84,8 @@ export default function AthletesPage() {
     setEditing(a.id);
     setEditName(a.name);
     setEditMaxHr(a.max_hr);
+    setEditWeight(a.weight_kg ? String(a.weight_kg) : "");
+    setEditAge(a.age ? String(a.age) : "");
     setKbField(null);
   };
 
@@ -83,8 +101,12 @@ export default function AthletesPage() {
     switch (kbField) {
       case "name": return insertText(ch, name, setName);
       case "maxHr": return insertText(ch, String(maxHr), (v) => setMaxHr(Number(v) || 0));
+      case "weight": return insertText(ch, weight, setWeight);
+      case "age": return insertText(ch, age, setAge);
       case "editName": return insertText(ch, editName, setEditName);
       case "editMaxHr": return insertText(ch, String(editMaxHr), (v) => setEditMaxHr(Number(v) || 0));
+      case "editWeight": return insertText(ch, editWeight, setEditWeight);
+      case "editAge": return insertText(ch, editAge, setEditAge);
     }
   };
 
@@ -92,8 +114,12 @@ export default function AthletesPage() {
     switch (kbField) {
       case "name": return backspace(name, setName);
       case "maxHr": return backspace(String(maxHr), (v) => setMaxHr(Number(v) || 0));
+      case "weight": return backspace(weight, setWeight);
+      case "age": return backspace(age, setAge);
       case "editName": return backspace(editName, setEditName);
       case "editMaxHr": return backspace(String(editMaxHr), (v) => setEditMaxHr(Number(v) || 0));
+      case "editWeight": return backspace(editWeight, setEditWeight);
+      case "editAge": return backspace(editAge, setEditAge);
     }
   };
 
@@ -110,13 +136,15 @@ export default function AthletesPage() {
       ? "ring-2 ring-blue-500 ring-offset-1 dark:ring-offset-slate-900"
       : "";
 
+  const inputCls = "bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded px-3 py-2 text-sm text-slate-900 dark:text-white";
+
   return (
     <div className="max-w-2xl mx-auto p-6" style={{ paddingBottom: kbField ? "34vh" : undefined }}>
       <h1 className="text-2xl font-bold mb-6 text-slate-900 dark:text-slate-100">Спортсмены</h1>
 
-      <div className="flex gap-3 mb-2">
+      <div className="flex flex-wrap gap-3 mb-2">
         <input
-          className={`flex-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded px-3 py-2 text-sm text-slate-900 dark:text-white ${activeRing("name")}`}
+          className={`flex-1 min-w-[140px] ${inputCls} ${activeRing("name")}`}
           placeholder="Имя"
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -125,13 +153,31 @@ export default function AthletesPage() {
           readOnly={kbField === "name"}
         />
         <input
-          className={`w-24 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded px-3 py-2 text-sm text-slate-900 dark:text-white ${activeRing("maxHr")}`}
+          className={`w-24 ${inputCls} ${activeRing("maxHr")}`}
           type="number"
           placeholder="Max HR"
           value={maxHr}
           onChange={(e) => setMaxHr(Number(e.target.value))}
           onFocus={() => setKbField("maxHr")}
           readOnly={kbField === "maxHr"}
+        />
+        <input
+          className={`w-24 ${inputCls} ${activeRing("weight")}`}
+          type="number"
+          placeholder="Вес, кг"
+          value={weight}
+          onChange={(e) => setWeight(e.target.value)}
+          onFocus={() => setKbField("weight")}
+          readOnly={kbField === "weight"}
+        />
+        <input
+          className={`w-20 ${inputCls} ${activeRing("age")}`}
+          type="number"
+          placeholder="Возраст"
+          value={age}
+          onChange={(e) => setAge(e.target.value)}
+          onFocus={() => setKbField("age")}
+          readOnly={kbField === "age"}
         />
         <button
           className="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded text-sm font-medium text-white"
@@ -150,9 +196,9 @@ export default function AthletesPage() {
       <div className="space-y-2 mt-4">
         {athletes.map((a) =>
           editing === a.id ? (
-            <div key={a.id} className="flex gap-2 bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg p-3">
+            <div key={a.id} className="flex flex-wrap gap-2 bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg p-3">
               <input
-                className={`flex-1 bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded px-3 py-1.5 text-sm text-slate-900 dark:text-white ${activeRing("editName")}`}
+                className={`flex-1 min-w-[120px] bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded px-3 py-1.5 text-sm text-slate-900 dark:text-white ${activeRing("editName")}`}
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
                 onFocus={() => setKbField("editName")}
@@ -165,6 +211,24 @@ export default function AthletesPage() {
                 onChange={(e) => setEditMaxHr(Number(e.target.value))}
                 onFocus={() => setKbField("editMaxHr")}
                 readOnly={kbField === "editMaxHr"}
+              />
+              <input
+                className={`w-24 bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded px-3 py-1.5 text-sm text-slate-900 dark:text-white ${activeRing("editWeight")}`}
+                type="number"
+                placeholder="Вес"
+                value={editWeight}
+                onChange={(e) => setEditWeight(e.target.value)}
+                onFocus={() => setKbField("editWeight")}
+                readOnly={kbField === "editWeight"}
+              />
+              <input
+                className={`w-20 bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded px-3 py-1.5 text-sm text-slate-900 dark:text-white ${activeRing("editAge")}`}
+                type="number"
+                placeholder="Возраст"
+                value={editAge}
+                onChange={(e) => setEditAge(e.target.value)}
+                onFocus={() => setKbField("editAge")}
+                readOnly={kbField === "editAge"}
               />
               <button
                 className="bg-emerald-600 hover:bg-emerald-500 px-3 py-1.5 rounded text-sm text-white"
@@ -184,11 +248,15 @@ export default function AthletesPage() {
               key={a.id}
               className="flex items-center justify-between bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg p-3"
             >
-              <div>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                 <span className="font-medium text-slate-900 dark:text-slate-100">{a.name}</span>
-                <span className="text-slate-400 text-sm ml-3">
-                  Max HR: {a.max_hr}
-                </span>
+                <span className="text-slate-400 text-sm">Max HR: {a.max_hr}</span>
+                {a.weight_kg && (
+                  <span className="text-slate-400 text-sm">{a.weight_kg} кг</span>
+                )}
+                {a.age && (
+                  <span className="text-slate-400 text-sm">{a.age} лет</span>
+                )}
               </div>
               <div className="flex gap-2">
                 <button

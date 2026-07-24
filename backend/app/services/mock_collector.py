@@ -21,6 +21,9 @@ MOCK_NAMES = [
     "Дина", "Егор", "Жанна", "Захар",
 ]
 
+MOCK_WEIGHTS = [62, 85, 58, 78, 65, 90, 55, 82]
+MOCK_AGES = [28, 35, 24, 31, 40, 26, 33, 29]
+
 MOCK_RANGES: dict[int, tuple[int, int]] = {
     1: (60, 90),
     2: (60, 90),
@@ -113,7 +116,12 @@ class MockCollector:
                 name = MOCK_NAMES[i]
                 athlete = db.query(Athlete).filter(Athlete.name == name).first()
                 if not athlete:
-                    athlete = Athlete(name=name, max_hr=190)
+                    athlete = Athlete(
+                        name=name,
+                        max_hr=190,
+                        weight_kg=MOCK_WEIGHTS[i],
+                        age=MOCK_AGES[i],
+                    )
                     db.add(athlete)
                     db.flush()
 

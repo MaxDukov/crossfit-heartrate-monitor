@@ -78,8 +78,13 @@ export default function AthleteCard({ data, history }: Props) {
         <span style={{ color: zoneColor }} className="font-bold truncate">
           {zoneName}
         </span>
-        <span style={{ color: secondaryColor }} className="shrink-0 ml-2">
-          {Math.round(data.zone_percent)}% · Max {maxHr}
+        <span style={{ color: secondaryColor }} className="shrink-0 ml-2 flex items-center gap-2">
+          <span>{Math.round(data.zone_percent)}% · Max {maxHr}</span>
+          {data.calories > 0 && (
+            <span style={{ color: zoneColor }} className="font-semibold tabular-nums">
+              {Math.round(data.calories)} ккал
+            </span>
+          )}
         </span>
       </div>
 

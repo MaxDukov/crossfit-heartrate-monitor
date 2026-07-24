@@ -9,17 +9,23 @@ from pydantic import BaseModel, Field, field_validator
 class AthleteCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     max_hr: int = Field(default=190, ge=60, le=250)
+    weight_kg: float | None = Field(None, ge=30, le=250)
+    age: int | None = Field(None, ge=10, le=100)
 
 
 class AthleteUpdate(BaseModel):
     name: str | None = Field(None, min_length=1, max_length=100)
     max_hr: int | None = Field(None, ge=60, le=250)
+    weight_kg: float | None = Field(None, ge=30, le=250)
+    age: int | None = Field(None, ge=10, le=100)
 
 
 class AthleteOut(BaseModel):
     id: str
     name: str
     max_hr: int
+    weight_kg: float | None = None
+    age: int | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -80,6 +86,7 @@ class HrUpdate(BaseModel):
     zone: int
     zone_percent: float
     max_hr: int | None
+    calories: float = 0.0
 
 
 class NewSensorEvent(BaseModel):
