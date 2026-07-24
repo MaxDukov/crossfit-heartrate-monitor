@@ -12,9 +12,14 @@ from datetime import datetime, timezone
 from typing import Callable, Optional
 
 from ..database import SessionLocal
-from ..models import Sensor
+from ..models import Sensor, Athlete
 
 _logger = logging.getLogger(__name__)
+
+MOCK_NAMES = [
+    "Анна", "Борис", "Вера", "Глеб",
+    "Дина", "Егор", "Жанна", "Захар",
+]
 
 MOCK_RANGES: dict[int, tuple[int, int]] = {
     1: (60, 90),
@@ -55,6 +60,8 @@ class MockCollector:
         _logger.info("Mock collector stopped")
 
     def _run(self):
+        self._ensure_mock_athletes()
+
         for device_id in MOCK_RANGES:
             self._upsert_sensor(device_id)
             if self._on_new_sensor:
@@ -88,6 +95,37 @@ class MockCollector:
                         _logger.error(f"on_hr_data callback error: {e}")
 
             time.sleep(2.0)
+
+    def _ensure_mock_athletes(self):
+        """Создаёт тестовых спортсменов и привязывает к mock-датчикам."""
+        db = SessionLocal()
+        try:
+            for i, device_id in enumerate(MOCK_RANGES):
+                sensor = db.query(Sensor).filter(Sensor.device_id == device_id).first()
+                if not sensor:
+                    sensor = Sensor(device_id=device_id)
+                    db.add(sensor)
+                    db.flush()
+
+                if sensor.athlete_id:
+                    continue
+
+                name = MOCK_NAMES[i]
+                athlete = db.query(Athlete).filter(Athlete.name == name).first()
+                if not athlete:
+                    athlete = Athlete(name=name, max_hr=190)
+                    db.add(athlete)
+                    db.flush()
+
+                sensor.athlete_id = athlete.id
+
+            db.commit()
+            _logger.info("Mock athletes created and assigned")
+        except Exception as e:
+            _logger.error(f"Mock athletes setup error: {e}")
+            db.rollback()
+        finally:
+            db.close()
 
     def _upsert_sensor(self, device_id: int):
         db = SessionLocal()
