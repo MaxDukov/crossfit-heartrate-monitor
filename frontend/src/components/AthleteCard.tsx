@@ -56,8 +56,8 @@ export default function AthleteCard({ data, history }: Props) {
         {data.athlete_name || `Sensor #${data.device_id}`}
       </div>
 
-      {/* Пульс */}
-      <div className="flex-1 flex items-center justify-center min-h-0">
+      {/* Пульс и калории */}
+      <div className="flex-1 flex flex-col items-center justify-center min-h-0">
         <span
           className="font-black tabular-nums leading-none"
           style={{
@@ -66,7 +66,16 @@ export default function AthleteCard({ data, history }: Props) {
             textShadow: theme === "dark" ? "0 4px 12px rgba(0,0,0,0.5)" : "none",
           }}
         >
-          {data.heart_rate}
+          {data.heart_rate}❤️
+        </span>
+        <span
+          className="font-bold tabular-nums leading-none mt-1"
+          style={{
+            fontSize: "clamp(0.75rem, 8.4cqw, 5.4rem)",
+            color: zoneColor,
+          }}
+        >
+          {Math.round(data.calories)} 🔥
         </span>
       </div>
 
@@ -78,13 +87,8 @@ export default function AthleteCard({ data, history }: Props) {
         <span style={{ color: zoneColor }} className="font-bold truncate">
           {zoneName}
         </span>
-        <span style={{ color: secondaryColor }} className="shrink-0 ml-2 flex items-center gap-2">
-          <span>{Math.round(data.zone_percent)}% · Max {maxHr}</span>
-          {data.calories > 0 && (
-            <span style={{ color: zoneColor }} className="font-semibold tabular-nums">
-              {Math.round(data.calories)} ккал
-            </span>
-          )}
+        <span style={{ color: secondaryColor }} className="shrink-0 ml-2">
+          {Math.round(data.zone_percent)}% · Max {maxHr}
         </span>
       </div>
 
