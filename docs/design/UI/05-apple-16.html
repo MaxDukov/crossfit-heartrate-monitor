@@ -1,0 +1,420 @@
+<!-- Style: Apple/Minimalist — 16 athletes (4×4 compact) -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CrossFit · 16 спортсменов</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+    background: #000000;
+    color: #ffffff;
+    height: 100vh;
+    margin: 0;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .app {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 18px 22px 10px;
+    gap: 12px;
+  }
+
+  /* ── Title bar ─────────────────────────────── */
+  .titlebar {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: 0 4px;
+    flex-shrink: 0;
+  }
+  .titlebar .label {
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(235,235,245,0.5);
+  }
+  .titlebar h1 {
+    font-size: 22px;
+    font-weight: 200;
+    letter-spacing: -0.01em;
+    margin-top: 2px;
+  }
+  .titlebar .clock {
+    font-size: 14px;
+    font-weight: 400;
+    color: rgba(235,235,245,0.6);
+    letter-spacing: 0.02em;
+  }
+
+  /* ── Grid 4×4 ─────────────────────────────── */
+  .grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(4, 1fr);
+    gap: 10px;
+    min-height: 0;
+  }
+
+  /* ── Card ─────────────────────────────────── */
+  .card {
+    container-type: inline-size;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 12px 10px;
+    border-radius: 16px;
+    background: rgba(28,28,30,0.8);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    overflow: hidden;
+    transition: transform 0.4s cubic-bezier(0.2,0.8,0.2,1);
+  }
+
+  /* Zone tints */
+  .z1 { --z: #30D158; background: rgba(48,209,88,0.10), rgba(28,28,30,0.8); border-color: rgba(48,209,88,0.20); }
+  .z2 { --z: #64D2FF; background: rgba(100,210,255,0.10), rgba(28,28,30,0.8); border-color: rgba(100,210,255,0.20); }
+  .z3 { --z: #FFD60A; background: rgba(255,214,10,0.10), rgba(28,28,30,0.8); border-color: rgba(255,214,10,0.22); }
+  .z4 { --z: #FF453A; background: rgba(255,69,58,0.12), rgba(28,28,30,0.8); border-color: rgba(255,69,58,0.26); }
+
+  .card .top {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .name {
+    font-size: clamp(0.7rem, 5cqw, 1.4rem);
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+
+  .zone-tag {
+    font-size: clamp(0.45rem, 1.8cqw, 0.72rem);
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: var(--z);
+    text-transform: uppercase;
+    opacity: 0.85;
+  }
+
+  .bpm {
+    font-size: clamp(1.2rem, 16cqw, 7rem);
+    font-weight: 200;
+    letter-spacing: -0.03em;
+    line-height: 0.95;
+    color: #ffffff;
+    display: flex;
+    align-items: baseline;
+    gap: 3px;
+  }
+  .bpm .unit {
+    font-size: 0.22em;
+    font-weight: 400;
+    color: rgba(235,235,245,0.45);
+    letter-spacing: 0.04em;
+  }
+
+  .cal {
+    font-size: clamp(0.6rem, 2.8cqw, 1rem);
+    font-weight: 500;
+    color: rgba(235,235,245,0.55);
+  }
+  .cal b {
+    color: #ffffff;
+    font-weight: 600;
+  }
+
+  /* Activity ring — smaller for 4×4 */
+  .ring-wrap {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    opacity: 0.9;
+  }
+
+  /* ── Bottom status bar ────────────────────── */
+  .statusbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 8px 2px;
+    font-size: 12px;
+    font-weight: 500;
+    color: rgba(235,235,245,0.5);
+    flex-shrink: 0;
+  }
+  .statusbar .icons {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    letter-spacing: 0.04em;
+  }
+  .battery {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .batt-body {
+    width: 22px; height: 11px;
+    border: 1.4px solid rgba(235,235,245,0.6);
+    border-radius: 3px;
+    position: relative;
+    padding: 1px;
+  }
+  .batt-body::after {
+    content: "";
+    position: absolute;
+    right: -3px; top: 3px;
+    width: 2px; height: 4px;
+    background: rgba(235,235,245,0.6);
+    border-radius: 0 2px 2px 0;
+  }
+  .batt-fill {
+    display: block;
+    height: 100%;
+    width: 92%;
+    background: rgba(235,235,245,0.8);
+    border-radius: 1px;
+  }
+  .wifi {
+    display: inline-flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 12px;
+  }
+  .wifi i {
+    display: block;
+    width: 3px;
+    background: rgba(235,235,245,0.7);
+    border-radius: 1px;
+  }
+  .wifi i:nth-child(1){ height: 4px; }
+  .wifi i:nth-child(2){ height: 7px; }
+  .wifi i:nth-child(3){ height: 10px; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Title bar -->
+  <header class="titlebar">
+    <div>
+      <div class="label">CrossFit</div>
+      <h1>Тренировка · 16 спортсменов</h1>
+    </div>
+    <div class="clock">14:32</div>
+  </header>
+
+  <!-- Athlete grid 4×4 -->
+  <main class="grid">
+
+    <!-- Row 1 -->
+    <!-- Анна · Z1 -->
+    <article class="card z1">
+      <div class="ring-wrap"><svg width="30" height="30" viewBox="0 0 44 44">
+        <circle cx="22" cy="22" r="18" fill="none" stroke="rgba(48,209,88,0.2)" stroke-width="5"/>
+        <circle cx="22" cy="22" r="18" fill="none" stroke="#30D158" stroke-width="5" stroke-linecap="round" stroke-dasharray="113.1" stroke-dashoffset="73.5" transform="rotate(-90 22 22)"/>
+      </svg></div>
+      <div class="top"><span class="name">Анна</span><span class="zone-tag">Z1</span></div>
+      <div class="bpm">68<span class="unit">BPM</span></div>
+      <div class="cal"><b>12</b> ккал</div>
+    </article>
+
+    <!-- Борис · Z2 -->
+    <article class="card z2">
+      <div class="ring-wrap"><svg width="30" height="30" viewBox="0 0 44 44">
+        <circle cx="22" cy="22" r="18" fill="none" stroke="rgba(100,210,255,0.2)" stroke-width="5"/>
+        <circle cx="22" cy="22" r="18" fill="none" stroke="#64D2FF" stroke-width="5" stroke-linecap="round" stroke-dasharray="113.1" stroke-dashoffset="64.5" transform="rotate(-90 22 22)"/>
+      </svg></div>
+      <div class="top"><span class="name">Борис</span><span class="zone-tag">Z2</span></div>
+      <div class="bpm">82<span class="unit">BPM</span></div>
+      <div class="cal"><b>28</b> ккал</div>
+    </article>
+
+    <!-- Вера · Z2 -->
+    <article class="card z2">
+      <div class="ring-wrap"><svg width="30" height="30" viewBox="0 0 44 44">
+        <circle cx="22" cy="22" r="18" fill="none" stroke="rgba(100,210,255,0.2)" stroke-width="5"/>
+        <circle cx="22" cy="22" r="18" fill="none" stroke="#64D2FF" stroke-width="5" stroke-linecap="round" stroke-dasharray="113.1" stroke-dashoffset="45.2" transform="rotate(-90 22 22)"/>
+      </svg></div>
+      <div class="top"><span class="name">Вера</span><span class="zone-tag">Z2</span></div>
+      <div class="bpm">115<span class="unit">BPM</span></div>
+      <div class="cal"><b>65</b> ккал</div>
+    </article>
+
+    <!-- Глеб · Z3 -->
+    <article class="card z3">
+      <div class="ring-wrap"><svg width="30" height="30" viewBox="0 0 44 44">
+        <circle cx="22" cy="22" r="18" fill="none" stroke="rgba(255,214,10,0.2)" stroke-width="5"/>
+        <circle cx="22" cy="22" r="18" fill="none" stroke="#FFD60A" stroke-width="5" stroke-linecap="round" stroke-dasharray="113.1" stroke-dashoffset="24.9" transform="rotate(-90 22 22)"/>
+      </svg></div>
+      <div class="top"><span class="name">Глеб</span><span class="zone-tag">Z3</span></div>
+      <div class="bpm">148<span class="unit">BPM</span></div>
+      <div class="cal"><b>142</b> ккал</div>
+    </article>
+
+    <!-- Row 2 -->
+    <!-- Дина · Z4 -->
+    <article class="card z4">
+      <div class="ring-wrap"><svg width="30" height="30" viewBox="0 0 44 44">
+        <circle cx="22" cy="22" r="18" fill="none" stroke="rgba(255,69,58,0.2)" stroke-width="5"/>
+        <circle cx="22" cy="22" r="18" fill="none" stroke="#FF453A" stroke-width="5" stroke-linecap="round" stroke-dasharray="113.1" stroke-dashoffset="9.0" transform="rotate(-90 22 22)"/>
+      </svg></div>
+      <div class="top"><span class="name">Дина</span><span class="zone-tag">Z4</span></div>
+      <div class="bpm">175<span class="unit">BPM</span></div>
+      <div class="cal"><b>218</b> ккал</div>
+    </article>
+
+    <!-- Егор · Z3 -->
+    <article class="card z3">
+      <div class="ring-wrap"><svg width="30" height="30" viewBox="0 0 44 44">
+        <circle cx="22" cy="22" r="18" fill="none" stroke="rgba(255,214,10,0.2)" stroke-width="5"/>
+        <circle cx="22" cy="22" r="18" fill="none" stroke="#FFD60A" stroke-width="5" stroke-linecap="round" stroke-dasharray="113.1" stroke-dashoffset="35.1" transform="rotate(-90 22 22)"/>
+      </svg></div>
+      <div class="top"><span class="name">Егор</span><span class="zone-tag">Z3</span></div>
+      <div class="bpm">132<span class="unit">BPM</span></div>
+      <div class="cal"><b>96</b> ккал</div>
+    </article>
+
+    <!-- Жанна · Z2 -->
+    <article class="card z2">
+      <div class="ring-wrap"><svg width="30" height="30" viewBox="0 0 44 44">
+        <circle cx="22" cy="22" r="18" fill="none" stroke="rgba(100,210,255,0.2)" stroke-width="5"/>
+        <circle cx="22" cy="22" r="18" fill="none" stroke="#64D2FF" stroke-width="5" stroke-linecap="round" stroke-dasharray="113.1" stroke-dashoffset="58.8" transform="rotate(-90 22 22)"/>
+      </svg></div>
+      <div class="top"><span class="name">Жанна</span><span class="zone-tag">Z2</span></div>
+      <div class="bpm">92<span class="unit">BPM</span></div>
+      <div class="cal"><b>35</b> ккал</div>
+    </article>
+
+    <!-- Захар · Z4 -->
+    <article class="card z4">
+      <div class="ring-wrap"><svg width="30" height="30" viewBox="0 0 44 44">
+        <circle cx="22" cy="22" r="18" fill="none" stroke="rgba(255,69,58,0.2)" stroke-width="5"/>
+        <circle cx="22" cy="22" r="18" fill="none" stroke="#FF453A" stroke-width="5" stroke-linecap="round" stroke-dasharray="113.1" stroke-dashoffset="4.5" transform="rotate(-90 22 22)"/>
+      </svg></div>
+      <div class="top"><span class="name">Захар</span><span class="zone-tag">Z4</span></div>
+      <div class="bpm">182<span class="unit">BPM</span></div>
+      <div class="cal"><b>245</b> ккал</div>
+    </article>
+
+    <!-- Row 3 -->
+    <!-- Ира · Z1 -->
+    <article class="card z1">
+      <div class="ring-wrap"><svg width="30" height="30" viewBox="0 0 44 44">
+        <circle cx="22" cy="22" r="18" fill="none" stroke="rgba(48,209,88,0.2)" stroke-width="5"/>
+        <circle cx="22" cy="22" r="18" fill="none" stroke="#30D158" stroke-width="5" stroke-linecap="round" stroke-dasharray="113.1" stroke-dashoffset="79.2" transform="rotate(-90 22 22)"/>
+      </svg></div>
+      <div class="top"><span class="name">Ира</span><span class="zone-tag">Z1</span></div>
+      <div class="bpm">65<span class="unit">BPM</span></div>
+      <div class="cal"><b>8</b> ккал</div>
+    </article>
+
+    <!-- Кирилл · Z3 -->
+    <article class="card z3">
+      <div class="ring-wrap"><svg width="30" height="30" viewBox="0 0 44 44">
+        <circle cx="22" cy="22" r="18" fill="none" stroke="rgba(255,214,10,0.2)" stroke-width="5"/>
+        <circle cx="22" cy="22" r="18" fill="none" stroke="#FFD60A" stroke-width="5" stroke-linecap="round" stroke-dasharray="113.1" stroke-dashoffset="20.4" transform="rotate(-90 22 22)"/>
+      </svg></div>
+      <div class="top"><span class="name">Кирилл</span><span class="zone-tag">Z3</span></div>
+      <div class="bpm">155<span class="unit">BPM</span></div>
+      <div class="cal"><b>158</b> ккал</div>
+    </article>
+
+    <!-- Лена · Z4 -->
+    <article class="card z4">
+      <div class="ring-wrap"><svg width="30" height="30" viewBox="0 0 44 44">
+        <circle cx="22" cy="22" r="18" fill="none" stroke="rgba(255,69,58,0.2)" stroke-width="5"/>
+        <circle cx="22" cy="22" r="18" fill="none" stroke="#FF453A" stroke-width="5" stroke-linecap="round" stroke-dasharray="113.1" stroke-dashoffset="7.9" transform="rotate(-90 22 22)"/>
+      </svg></div>
+      <div class="top"><span class="name">Лена</span><span class="zone-tag">Z4</span></div>
+      <div class="bpm">178<span class="unit">BPM</span></div>
+      <div class="cal"><b>225</b> ккал</div>
+    </article>
+
+    <!-- Максим · Z2 -->
+    <article class="card z2">
+      <div class="ring-wrap"><svg width="30" height="30" viewBox="0 0 44 44">
+        <circle cx="22" cy="22" r="18" fill="none" stroke="rgba(100,210,255,0.2)" stroke-width="5"/>
+        <circle cx="22" cy="22" r="18" fill="none" stroke="#64D2FF" stroke-width="5" stroke-linecap="round" stroke-dasharray="113.1" stroke-dashoffset="54.3" transform="rotate(-90 22 22)"/>
+      </svg></div>
+      <div class="top"><span class="name">Максим</span><span class="zone-tag">Z2</span></div>
+      <div class="bpm">88<span class="unit">BPM</span></div>
+      <div class="cal"><b>32</b> ккал</div>
+    </article>
+
+    <!-- Row 4 -->
+    <!-- Нина · Z2 -->
+    <article class="card z2">
+      <div class="ring-wrap"><svg width="30" height="30" viewBox="0 0 44 44">
+        <circle cx="22" cy="22" r="18" fill="none" stroke="rgba(100,210,255,0.2)" stroke-width="5"/>
+        <circle cx="22" cy="22" r="18" fill="none" stroke="#64D2FF" stroke-width="5" stroke-linecap="round" stroke-dasharray="113.1" stroke-dashoffset="42.0" transform="rotate(-90 22 22)"/>
+      </svg></div>
+      <div class="top"><span class="name">Нина</span><span class="zone-tag">Z2</span></div>
+      <div class="bpm">122<span class="unit">BPM</span></div>
+      <div class="cal"><b>72</b> ккал</div>
+    </article>
+
+    <!-- Олег · Z4 -->
+    <article class="card z4">
+      <div class="ring-wrap"><svg width="30" height="30" viewBox="0 0 44 44">
+        <circle cx="22" cy="22" r="18" fill="none" stroke="rgba(255,69,58,0.2)" stroke-width="5"/>
+        <circle cx="22" cy="22" r="18" fill="none" stroke="#FF453A" stroke-width="5" stroke-linecap="round" stroke-dasharray="113.1" stroke-dashoffset="11.3" transform="rotate(-90 22 22)"/>
+      </svg></div>
+      <div class="top"><span class="name">Олег</span><span class="zone-tag">Z4</span></div>
+      <div class="bpm">168<span class="unit">BPM</span></div>
+      <div class="cal"><b>195</b> ккал</div>
+    </article>
+
+    <!-- Полина · Z1 -->
+    <article class="card z1">
+      <div class="ring-wrap"><svg width="30" height="30" viewBox="0 0 44 44">
+        <circle cx="22" cy="22" r="18" fill="none" stroke="rgba(48,209,88,0.2)" stroke-width="5"/>
+        <circle cx="22" cy="22" r="18" fill="none" stroke="#30D158" stroke-width="5" stroke-linecap="round" stroke-dasharray="113.1" stroke-dashoffset="75.8" transform="rotate(-90 22 22)"/>
+      </svg></div>
+      <div class="top"><span class="name">Полина</span><span class="zone-tag">Z1</span></div>
+      <div class="bpm">72<span class="unit">BPM</span></div>
+      <div class="cal"><b>10</b> ккал</div>
+    </article>
+
+    <!-- Роман · Z3 -->
+    <article class="card z3">
+      <div class="ring-wrap"><svg width="30" height="30" viewBox="0 0 44 44">
+        <circle cx="22" cy="22" r="18" fill="none" stroke="rgba(255,214,10,0.2)" stroke-width="5"/>
+        <circle cx="22" cy="22" r="18" fill="none" stroke="#FFD60A" stroke-width="5" stroke-linecap="round" stroke-dasharray="113.1" stroke-dashoffset="31.7" transform="rotate(-90 22 22)"/>
+      </svg></div>
+      <div class="top"><span class="name">Роман</span><span class="zone-tag">Z3</span></div>
+      <div class="bpm">138<span class="unit">BPM</span></div>
+      <div class="cal"><b>102</b> ккал</div>
+    </article>
+
+  </main>
+
+  <!-- Bottom status bar -->
+  <footer class="statusbar">
+    <span>Сервер: активен</span>
+    <span class="icons">
+      <span class="wifi"><i></i><i></i><i></i></span>
+      <span class="battery"><span class="batt-body"><span class="batt-fill"></span></span> 92%</span>
+      <span>14:32</span>
+    </span>
+  </footer>
+
+</div>
+</body>
+</html>
