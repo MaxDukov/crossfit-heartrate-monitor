@@ -1,0 +1,424 @@
+<!-- Layout: Split-screen — cards right + bottom, content main -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CF-MONITOR // SPLIT-SCREEN</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0F172A;
+    --text: #E2E8F0;
+    --text-dim: #94A3B8;
+    --text-muted: #64748B;
+    --border: rgba(255,255,255,0.08);
+    --card-bg: rgba(255,255,255,0.03);
+    --z1: #0a8a06;
+    --z2: #0a8a06;
+    --z3: #EAB308;
+    --z4: #EF4444;
+    --work: #22C55E;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    height: 100vh;
+    margin: 0;
+    overflow: hidden;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ===== GRID SHELL ===== */
+  .shell {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    grid-template-rows: 1fr 140px;
+    grid-template-areas:
+      "main right"
+      "bottom bottom";
+    gap: 8px;
+    padding: 8px;
+    height: 100vh;
+  }
+
+  .area-main    { grid-area: main; }
+  .area-right   { grid-area: right; }
+  .area-bottom  { grid-area: bottom; }
+
+  /* ===== MAIN AREA ===== */
+  .area-main {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 18px;
+    min-height: 0;
+  }
+
+  .wod-title {
+    font-size: clamp(2rem, 4vw, 5rem);
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    margin: 0;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .timer {
+    font-family: 'Inter', monospace;
+    font-variant-numeric: tabular-nums;
+    font-size: clamp(3rem, 8vw, 10rem);
+    font-weight: 800;
+    color: var(--work);
+    line-height: 1;
+    margin: 0;
+    letter-spacing: -0.03em;
+    text-shadow: 0 0 40px rgba(34,197,94,0.25);
+  }
+
+  .phase-tag {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--work);
+    background: rgba(34,197,94,0.12);
+    border: 1px solid rgba(34,197,94,0.3);
+    padding: 4px 12px;
+    border-radius: 999px;
+  }
+
+  .wod-desc {
+    font-size: clamp(0.9rem, 1.4vw, 1.15rem);
+    color: var(--text-dim);
+    max-width: 640px;
+    margin: 0;
+    line-height: 1.5;
+    font-weight: 500;
+  }
+
+  /* ===== GROUP STATS ===== */
+  .group-stats {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+    font-variant-numeric: tabular-nums;
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    font-weight: 600;
+  }
+  .group-stats b {
+    color: var(--text);
+    font-weight: 800;
+    margin-right: 4px;
+  }
+  .group-stats .sep {
+    color: var(--border);
+  }
+
+  /* ===== LEADERBOARD ===== */
+  .leaderboard {
+    width: 100%;
+    max-width: 480px;
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    text-align: left;
+  }
+  .lb-head {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding: 0 12px 4px;
+  }
+  .lb-row {
+    display: grid;
+    grid-template-columns: 28px 1fr auto auto;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-weight: 600;
+  }
+  .lb-rank { font-size: 1.1rem; }
+  .lb-name { color: var(--text); }
+  .lb-kcal {
+    font-variant-numeric: tabular-nums;
+    color: var(--text-dim);
+    font-size: 0.9rem;
+  }
+  .lb-zone {
+    font-size: 0.7rem;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: rgba(239,68,68,0.15);
+    color: var(--z4);
+    border: 1px solid rgba(239,68,68,0.4);
+  }
+
+  /* ===== RIGHT SIDEBAR ===== */
+  .area-right {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 0;
+  }
+
+  .card-side {
+    container-type: inline-size;
+    flex: 1 1 0;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: linear-gradient(135deg,
+      color-mix(in srgb, var(--zc) 15%, transparent),
+      rgba(255,255,255,0.02));
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--zc);
+    border-radius: 12px;
+  }
+
+  .card-side .name {
+    font-weight: 600;
+    font-size: clamp(0.85rem, 1.2vw, 1rem);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .card-side .bpm {
+    font-variant-numeric: tabular-nums;
+    font-weight: 800;
+    color: var(--zc);
+    font-size: clamp(1.5rem, 4cqw, 3rem);
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+
+  .card-side .zone-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--zc);
+    box-shadow: 0 0 12px color-mix(in srgb, var(--zc) 70%, transparent);
+    flex: 0 0 auto;
+  }
+
+  /* ===== BOTTOM ROW ===== */
+  .area-bottom {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .card-wide {
+    container-type: inline-size;
+    display: grid;
+    grid-template-columns: minmax(120px, auto) 1fr 120px;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 20px;
+    background: linear-gradient(135deg,
+      color-mix(in srgb, var(--zc) 15%, transparent),
+      rgba(255,255,255,0.02));
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--zc);
+    border-radius: 12px;
+  }
+
+  .card-wide .who {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+  .card-wide .name {
+    font-weight: 700;
+    font-size: clamp(1rem, 1.5vw, 1.3rem);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .card-wide .meta {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    letter-spacing: 0.05em;
+  }
+
+  .card-wide .vitals {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    justify-content: flex-end;
+  }
+  .card-wide .bpm {
+    font-variant-numeric: tabular-nums;
+    font-weight: 800;
+    color: var(--zc);
+    font-size: clamp(1.8rem, 3vw, 2.6rem);
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+  .card-wide .heart {
+    color: var(--zc);
+    font-size: 1.1rem;
+  }
+  .card-wide .kcal {
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    color: var(--text-dim);
+    font-size: 0.95rem;
+  }
+  .card-wide .kcal .fire { color: #F97316; }
+
+  .card-wide .spark {
+    width: 100%;
+    height: 48px;
+    display: block;
+  }
+</style>
+</head>
+<body>
+  <div class="shell">
+
+    <!-- MAIN -->
+    <main class="area-main">
+      <h1 class="wod-title">AMRAP 20:00</h1>
+      <span class="phase-tag">Work Phase</span>
+      <div class="timer">14:32</div>
+      <p class="wod-desc">5 rounds: 10 Thrusters (40/25kg), 15 Pull-ups, 20 Box Jumps (60/50cm)</p>
+
+      <div class="group-stats">
+        <span><b>Avg HR:</b>128</span>
+        <span class="sep">|</span>
+        <span><b>Total kcal:</b>891</span>
+        <span class="sep">|</span>
+        <span><b>Active:</b>8</span>
+      </div>
+
+      <section class="leaderboard">
+        <div class="lb-head">Leaderboard · Top Effort</div>
+        <div class="lb-row">
+          <span class="lb-rank">🥇</span>
+          <span class="lb-name">Захар</span>
+          <span class="lb-kcal">245 kcal</span>
+          <span class="lb-zone">Z4</span>
+        </div>
+        <div class="lb-row">
+          <span class="lb-rank">🥈</span>
+          <span class="lb-name">Дина</span>
+          <span class="lb-kcal">218 kcal</span>
+          <span class="lb-zone">Z4</span>
+        </div>
+        <div class="lb-row">
+          <span class="lb-rank">🥉</span>
+          <span class="lb-name">Глеб</span>
+          <span class="lb-kcal">142 kcal</span>
+          <span class="lb-zone">Z4</span>
+        </div>
+      </section>
+    </main>
+
+    <!-- RIGHT SIDEBAR -->
+    <aside class="area-right">
+      <div class="card-side" style="--zc: var(--z1)">
+        <span class="name">Анна</span>
+        <span class="bpm">68</span>
+        <span class="zone-dot"></span>
+      </div>
+      <div class="card-side" style="--zc: var(--z2)">
+        <span class="name">Борис</span>
+        <span class="bpm">82</span>
+        <span class="zone-dot"></span>
+      </div>
+      <div class="card-side" style="--zc: var(--z3)">
+        <span class="name">Вера</span>
+        <span class="bpm">122</span>
+        <span class="zone-dot"></span>
+      </div>
+      <div class="card-side" style="--zc: var(--z4)">
+        <span class="name">Глеб</span>
+        <span class="bpm">155</span>
+        <span class="zone-dot"></span>
+      </div>
+      <div class="card-side" style="--zc: var(--z4)">
+        <span class="name">Дина</span>
+        <span class="bpm">175</span>
+        <span class="zone-dot"></span>
+      </div>
+      <div class="card-side" style="--zc: var(--z3)">
+        <span class="name">Егор</span>
+        <span class="bpm">132</span>
+        <span class="zone-dot"></span>
+      </div>
+    </aside>
+
+    <!-- BOTTOM ROW -->
+    <section class="area-bottom">
+      <div class="card-wide" style="--zc: var(--z2)">
+        <div class="who">
+          <span class="name">Жанна</span>
+          <span class="meta">Z2 · Steady</span>
+        </div>
+        <svg class="spark" viewBox="0 0 120 48" preserveAspectRatio="none">
+          <polyline fill="none" stroke="var(--z2)" stroke-width="2"
+            stroke-linejoin="round" stroke-linecap="round"
+            points="0,34 12,30 24,32 36,26 48,28 60,22 72,26 84,20 96,24 108,18 120,22"/>
+          <polyline fill="rgba(10,138,6,0.12)" stroke="none"
+            points="0,34 12,30 24,32 36,26 48,28 60,22 72,26 84,20 96,24 108,18 120,22 120,48 0,48"/>
+        </svg>
+        <div class="vitals">
+          <span class="bpm">92</span>
+          <span class="heart">♥</span>
+          <span class="kcal"><span class="fire">🔥</span>35 kcal</span>
+        </div>
+      </div>
+
+      <div class="card-wide" style="--zc: var(--z4)">
+        <div class="who">
+          <span class="name">Захар</span>
+          <span class="meta">Z4 · High Intensity</span>
+        </div>
+        <svg class="spark" viewBox="0 0 120 48" preserveAspectRatio="none">
+          <polyline fill="none" stroke="var(--z4)" stroke-width="2"
+            stroke-linejoin="round" stroke-linecap="round"
+            points="0,40 12,32 24,28 36,22 48,18 60,14 72,10 84,8 96,6 108,5 120,4"/>
+          <polyline fill="rgba(239,68,68,0.12)" stroke="none"
+            points="0,40 12,32 24,28 36,22 48,18 60,14 72,10 84,8 96,6 108,5 120,4 120,48 0,48"/>
+        </svg>
+        <div class="vitals">
+          <span class="bpm">178</span>
+          <span class="heart">♥</span>
+          <span class="kcal"><span class="fire">🔥</span>245 kcal</span>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</body>
+</html>

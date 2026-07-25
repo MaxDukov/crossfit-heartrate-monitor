@@ -1,0 +1,343 @@
+<!-- Layout: 4 athletes (2×2) — wide landscape cards -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CF-Monitor — Grid 4 (2×2)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    height: 100vh;
+    overflow: hidden;
+    background: #0F172A;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    color: #F8FAFC;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Title bar */
+  .title-bar {
+    flex: 0 0 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    background: rgba(15, 23, 42, 0.95);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: #CBD5E1;
+  }
+
+  .title-bar .brand {
+    color: #38BDF8;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    font-size: 13px;
+  }
+
+  .title-bar .clock {
+    color: #E2E8F0;
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+  }
+
+  .title-bar .theme {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: #94A3B8;
+    font-size: 12px;
+  }
+
+  .title-bar .theme .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #38BDF8;
+    box-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
+  }
+
+  /* Grid */
+  .grid {
+    flex: 1 1 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 12px;
+    padding: 12px;
+    min-height: 0;
+  }
+
+  /* Card */
+  .card {
+    position: relative;
+    container-type: inline-size;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  /* Zone backgrounds */
+  .card.z1 {
+    background: linear-gradient(160deg, rgba(10, 138, 6, 0.18) 0%, rgba(10, 138, 6, 0.06) 100%);
+  }
+  .card.z2 {
+    background: linear-gradient(160deg, rgba(10, 138, 6, 0.18) 0%, rgba(10, 138, 6, 0.06) 100%);
+  }
+  .card.z3 {
+    background: linear-gradient(160deg, rgba(234, 179, 8, 0.30) 0%, rgba(234, 179, 8, 0.12) 100%);
+  }
+  .card.z4 {
+    background: linear-gradient(160deg, rgba(239, 68, 68, 0.30) 0%, rgba(239, 68, 68, 0.10) 100%);
+  }
+
+  /* Accent strip on left edge */
+  .card::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 4px;
+    background: var(--accent);
+    box-shadow: 0 0 24px var(--accent);
+  }
+
+  /* Name */
+  .name {
+    flex: 0 0 auto;
+    text-align: center;
+    padding: 12px 16px 4px;
+    font-size: clamp(1.5rem, 8cqw, 4rem);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: #F8FAFC;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+  }
+
+  /* BPM block (center) */
+  .bpm-block {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 0 16px;
+    min-height: 0;
+  }
+
+  .bpm {
+    font-size: clamp(3rem, 20cqw, 16rem);
+    font-weight: 900;
+    line-height: 0.95;
+    letter-spacing: -0.04em;
+    font-variant-numeric: tabular-nums;
+    color: #FFFFFF;
+    text-shadow: 0 4px 32px var(--accent);
+    display: inline-flex;
+    align-items: baseline;
+  }
+
+  .bpm .heart {
+    font-size: 0.8em;
+    margin-left: 0.15em;
+    opacity: 0.6;
+    color: var(--accent);
+  }
+
+  .bpm-unit {
+    font-size: clamp(0.9rem, 3cqw, 1.6rem);
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #94A3B8;
+  }
+
+  .calories {
+    font-size: clamp(1rem, 6cqw, 3rem);
+    font-weight: 600;
+    color: #E2E8F0;
+    font-variant-numeric: tabular-nums;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 6px;
+  }
+
+  .calories .fire {
+    font-size: 0.8em;
+    opacity: 0.4;
+  }
+
+  /* Zone info bar */
+  .zone-info {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 16px;
+    font-size: clamp(0.85rem, 3cqw, 1.4rem);
+    font-weight: 600;
+  }
+
+  .zone-info .zone-name {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .zone-info .zone-name .badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 999px;
+    background: var(--accent);
+    color: #0F172A;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+  }
+
+  .zone-info .pct {
+    color: #CBD5E1;
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+  }
+
+  /* Sparkline */
+  .sparkline {
+    flex: 0 0 auto;
+    width: 100%;
+    height: clamp(40px, 14cqw, 90px);
+    display: block;
+    margin-top: 4px;
+  }
+
+  .sparkline .line {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .sparkline .area {
+    fill: var(--accent);
+    opacity: 0.18;
+  }
+
+  .sparkline .last-dot {
+    fill: #FFFFFF;
+    stroke: var(--accent);
+    stroke-width: 2;
+  }
+</style>
+</head>
+<body>
+
+  <!-- Title bar -->
+  <div class="title-bar">
+    <span class="brand">CF-MONITOR</span>
+    <span class="clock">14:32:08</span>
+    <span class="theme"><span class="dot"></span>DARK · 4×2</span>
+  </div>
+
+  <!-- 2×2 grid -->
+  <div class="grid">
+
+    <!-- Анна — Z1 Recovery, flat sparkline -->
+    <div class="card z1" style="--accent: #0a8a06;">
+      <div class="name">Анна</div>
+      <div class="bpm-block">
+        <div class="bpm">68<span class="heart">♥</span></div>
+        <div class="bpm-unit">BPM</div>
+        <div class="calories">12 <span class="fire">🔥</span></div>
+      </div>
+      <div class="zone-info">
+        <span class="zone-name"><span class="badge">Z1</span> Восстановление</span>
+        <span class="pct">55% MAX</span>
+      </div>
+      <svg class="sparkline" viewBox="0 0 200 50" preserveAspectRatio="none">
+        <path class="area" d="M0,30 L20,32 L40,29 L60,31 L80,28 L100,30 L120,31 L140,29 L160,30 L180,28 L200,29 L200,50 L0,50 Z"></path>
+        <path class="line" d="M0,30 L20,32 L40,29 L60,31 L80,28 L100,30 L120,31 L140,29 L160,30 L180,28 L200,29"></path>
+        <circle class="last-dot" cx="200" cy="29" r="3.5"></circle>
+      </svg>
+    </div>
+
+    <!-- Борис — Z3 High, rising sparkline -->
+    <div class="card z3" style="--accent: #EAB308;">
+      <div class="name">Борис</div>
+      <div class="bpm-block">
+        <div class="bpm">145<span class="heart">♥</span></div>
+        <div class="bpm-unit">BPM</div>
+        <div class="calories">85 <span class="fire">🔥</span></div>
+      </div>
+      <div class="zone-info">
+        <span class="zone-name"><span class="badge">Z3</span> Высокая</span>
+        <span class="pct">78% MAX</span>
+      </div>
+      <svg class="sparkline" viewBox="0 0 200 50" preserveAspectRatio="none">
+        <path class="area" d="M0,42 L20,40 L40,36 L60,34 L80,28 L100,24 L120,20 L140,16 L160,13 L180,10 L200,8 L200,50 L0,50 Z"></path>
+        <path class="line" d="M0,42 L20,40 L40,36 L60,34 L80,28 L100,24 L120,20 L140,16 L160,13 L180,10 L200,8"></path>
+        <circle class="last-dot" cx="200" cy="8" r="3.5"></circle>
+      </svg>
+    </div>
+
+    <!-- Вера — Z4 Critical, peaked sparkline -->
+    <div class="card z4" style="--accent: #EF4444;">
+      <div class="name">Вера</div>
+      <div class="bpm-block">
+        <div class="bpm">178<span class="heart">♥</span></div>
+        <div class="bpm-unit">BPM</div>
+        <div class="calories">168 <span class="fire">🔥</span></div>
+      </div>
+      <div class="zone-info">
+        <span class="zone-name"><span class="badge">Z4</span> Критическая</span>
+        <span class="pct">92% MAX</span>
+      </div>
+      <svg class="sparkline" viewBox="0 0 200 50" preserveAspectRatio="none">
+        <path class="area" d="M0,38 L20,30 L40,22 L60,14 L80,8 L100,5 L120,6 L140,9 L160,12 L180,10 L200,7 L200,50 L0,50 Z"></path>
+        <path class="line" d="M0,38 L20,30 L40,22 L60,14 L80,8 L100,5 L120,6 L140,9 L160,12 L180,10 L200,7"></path>
+        <circle class="last-dot" cx="200" cy="7" r="3.5"></circle>
+      </svg>
+    </div>
+
+    <!-- Глеб — Z2 Moderate, oscillating sparkline -->
+    <div class="card z2" style="--accent: #0a8a06;">
+      <div class="name">Глеб</div>
+      <div class="bpm-block">
+        <div class="bpm">115<span class="heart">♥</span></div>
+        <div class="bpm-unit">BPM</div>
+        <div class="calories">45 <span class="fire">🔥</span></div>
+      </div>
+      <div class="zone-info">
+        <span class="zone-name"><span class="badge">Z2</span> Умеренная</span>
+        <span class="pct">65% MAX</span>
+      </div>
+      <svg class="sparkline" viewBox="0 0 200 50" preserveAspectRatio="none">
+        <path class="area" d="M0,28 L20,22 L40,30 L60,24 L80,32 L100,26 L120,20 L140,28 L160,22 L180,30 L200,24 L200,50 L0,50 Z"></path>
+        <path class="line" d="M0,28 L20,22 L40,30 L60,24 L80,32 L100,26 L120,20 L140,28 L160,22 L180,30 L200,24"></path>
+        <circle class="last-dot" cx="200" cy="24" r="3.5"></circle>
+      </svg>
+    </div>
+
+  </div>
+
+</body>
+</html>
