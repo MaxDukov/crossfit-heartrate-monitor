@@ -1,0 +1,268 @@
+<!-- Layout: 16 athletes (4×4) — compact mini-cards -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CF-MONITOR | 16 ATHLETES</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+
+  html, body {
+    height: 100vh;
+    margin: 0;
+    overflow: hidden;
+  }
+
+  body {
+    background-color: #0F172A;
+    color: #F8FAFC;
+    font-family: 'Inter', sans-serif;
+    display: flex;
+    flex-direction: column;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---- Title bar ---- */
+  .title-bar {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    background: #0B1120;
+  }
+
+  .title-bar .brand {
+    font-weight: 800;
+    font-size: clamp(0.7rem, 1.4vw, 1rem);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #F8FAFC;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .title-bar .brand .sep {
+    color: #475569;
+    font-weight: 500;
+  }
+
+  .title-bar .brand .count {
+    color: #94A3B8;
+    font-weight: 600;
+  }
+
+  .title-bar .clock {
+    font-weight: 600;
+    font-size: clamp(0.7rem, 1.4vw, 1rem);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.08em;
+    color: #CBD5E1;
+  }
+
+  /* ---- 4×4 grid ---- */
+  .grid {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(4, 1fr);
+    gap: 6px;
+    padding: 8px;
+  }
+
+  /* ---- Mini card ---- */
+  .card {
+    container-type: inline-size;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5cqw;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.06);
+    padding: 3cqw;
+    position: relative;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .name {
+    font-weight: 600;
+    font-size: clamp(0.6rem, 8cqw, 2rem);
+    line-height: 1;
+    letter-spacing: 0.04em;
+    color: #F1F5F9;
+    text-transform: uppercase;
+  }
+
+  .bpm {
+    font-weight: 800;
+    font-size: clamp(1rem, 14cqw, 4rem);
+    line-height: 0.95;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+    color: var(--zcolor);
+  }
+
+  /* Zone number indicator (top-right) */
+  .zbadge {
+    position: absolute;
+    top: 2cqw;
+    right: 2cqw;
+    display: flex;
+    align-items: center;
+    gap: 1cqw;
+    font-weight: 700;
+    font-size: clamp(0.55rem, 4cqw, 1rem);
+    color: var(--zcolor);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.05em;
+  }
+
+  .zdot {
+    width: clamp(0.5rem, 2.5cqw, 0.7rem);
+    height: clamp(0.5rem, 2.5cqw, 0.7rem);
+    border-radius: 50%;
+    background: var(--zcolor);
+    box-shadow: 0 0 8px var(--zcolor);
+    animation: pulse 1.4s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.85); }
+  }
+
+  /* ---- Zone tints (stronger backgrounds for small cards) ---- */
+  .card.z1 { background: rgba(10,138,6,0.25);  --zcolor: #0a8a06; }
+  .card.z2 { background: rgba(10,138,6,0.25);  --zcolor: #0a8a06; }
+  .card.z3 { background: rgba(234,179,8,0.30); --zcolor: #EAB308; }
+  .card.z4 { background: rgba(239,68,68,0.30); --zcolor: #EF4444; }
+</style>
+</head>
+<body>
+
+  <div class="title-bar">
+    <div class="brand">
+      <span>CF-MONITOR</span>
+      <span class="sep">|</span>
+      <span class="count">16 ATHLETES</span>
+    </div>
+    <div class="clock" id="clock">--:--:--</div>
+  </div>
+
+  <div class="grid">
+
+    <!-- Row 1 -->
+    <div class="card z1">
+      <span class="zbadge"><span class="zdot"></span>Z1</span>
+      <div class="name">ИВН</div>
+      <div class="bpm">68</div>
+    </div>
+    <div class="card z2">
+      <span class="zbadge"><span class="zdot"></span>Z2</span>
+      <div class="name">ПТР</div>
+      <div class="bpm">82</div>
+    </div>
+    <div class="card z3">
+      <span class="zbadge"><span class="zdot"></span>Z3</span>
+      <div class="name">СДР</div>
+      <div class="bpm">122</div>
+    </div>
+    <div class="card z4">
+      <span class="zbadge"><span class="zdot"></span>Z4</span>
+      <div class="name">КЗН</div>
+      <div class="bpm">155</div>
+    </div>
+
+    <!-- Row 2 -->
+    <div class="card z4">
+      <span class="zbadge"><span class="zdot"></span>Z4</span>
+      <div class="name">СКЛ</div>
+      <div class="bpm">175</div>
+    </div>
+    <div class="card z2">
+      <span class="zbadge"><span class="zdot"></span>Z2</span>
+      <div class="name">МРЗ</div>
+      <div class="bpm">92</div>
+    </div>
+    <div class="card z2">
+      <span class="zbadge"><span class="zdot"></span>Z2</span>
+      <div class="name">ВЛК</div>
+      <div class="bpm">78</div>
+    </div>
+    <div class="card z3">
+      <span class="zbadge"><span class="zdot"></span>Z3</span>
+      <div class="name">ЗАЦ</div>
+      <div class="bpm">138</div>
+    </div>
+
+    <!-- Row 3 -->
+    <div class="card z4">
+      <span class="zbadge"><span class="zdot"></span>Z4</span>
+      <div class="name">ДНЛ</div>
+      <div class="bpm">185</div>
+    </div>
+    <div class="card z3">
+      <span class="zbadge"><span class="zdot"></span>Z3</span>
+      <div class="name">ЕГР</div>
+      <div class="bpm">115</div>
+    </div>
+    <div class="card z2">
+      <span class="zbadge"><span class="zdot"></span>Z2</span>
+      <div class="name">ЖНН</div>
+      <div class="bpm">88</div>
+    </div>
+    <div class="card z1">
+      <span class="zbadge"><span class="zdot"></span>Z1</span>
+      <div class="name">ЗХР</div>
+      <div class="bpm">65</div>
+    </div>
+
+    <!-- Row 4 -->
+    <div class="card z3">
+      <span class="zbadge"><span class="zdot"></span>Z3</span>
+      <div class="name">ЛНА</div>
+      <div class="bpm">145</div>
+    </div>
+    <div class="card z4">
+      <span class="zbadge"><span class="zdot"></span>Z4</span>
+      <div class="name">МХЛ</div>
+      <div class="bpm">168</div>
+    </div>
+    <div class="card z1">
+      <span class="zbadge"><span class="zdot"></span>Z1</span>
+      <div class="name">НКТ</div>
+      <div class="bpm">72</div>
+    </div>
+    <div class="card z2">
+      <span class="zbadge"><span class="zdot"></span>Z2</span>
+      <div class="name">ОЛГ</div>
+      <div class="bpm">102</div>
+    </div>
+
+  </div>
+
+  <script>
+    (function () {
+      var el = document.getElementById('clock');
+      function tick() {
+        var d = new Date();
+        var p = function (n) { return (n < 10 ? '0' : '') + n; };
+        el.textContent = p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
+      }
+      tick();
+      setInterval(tick, 1000);
+    })();
+  </script>
+
+</body>
+</html>

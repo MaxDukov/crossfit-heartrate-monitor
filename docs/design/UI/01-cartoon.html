@@ -1,0 +1,374 @@
+<!-- Style: Cartoon/Playful — for children's sports -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Дети CrossFit — Heart Rate Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    height: 100vh;
+    overflow: hidden;
+    background: #FFF8E7;
+    font-family: 'Fredoka', system-ui, sans-serif;
+    color: #1f2937;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Title bar */
+  .title-bar {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 10px 16px;
+    background: linear-gradient(90deg, #FBBF24, #F87171);
+    color: #fff;
+    font-weight: 700;
+    font-size: clamp(1.4rem, 2.4vw, 2.2rem);
+    text-shadow: 0 2px 0 rgba(0, 0, 0, 0.15);
+    border-bottom: 4px solid #fff;
+  }
+
+  .title-bar .emoji {
+    font-size: 1.2em;
+    transform: rotate(-8deg);
+    display: inline-block;
+  }
+
+  /* Grid layout */
+  .grid {
+    flex: 1 1 auto;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 12px;
+    padding: 12px;
+    min-height: 0;
+  }
+
+  /* Athlete card */
+  .card {
+    container-type: inline-size;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    background: #fff;
+    border: 4px solid #ffffff;
+    border-radius: 24px;
+    box-shadow: 0 8px 0 rgba(0, 0, 0, 0.1);
+    padding: 2cqw 2.5cqw;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Zone-colored accent stripe at the top of the card */
+  .card .accent {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2cqw;
+  }
+
+  .name {
+    font-weight: 600;
+    font-size: clamp(0.9rem, 3cqw, 2rem);
+    color: #374151;
+    margin: 0 0 0.5cqw 0;
+  }
+
+  .bpm-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5cqw;
+    line-height: 1;
+  }
+
+  .heart {
+    font-size: clamp(1.2rem, 8cqw, 4rem);
+    color: #F87171;
+    transform: translateY(-0.1em);
+  }
+
+  .bpm {
+    font-weight: 700;
+    font-size: clamp(2rem, 24cqw, 14rem);
+    line-height: 0.9;
+  }
+
+  .bpm-unit {
+    font-weight: 600;
+    font-size: clamp(0.7rem, 3cqw, 1.6rem);
+    color: #9ca3af;
+    align-self: flex-end;
+    margin-bottom: 1cqw;
+  }
+
+  .calories {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5cqw;
+    font-weight: 600;
+    font-size: clamp(0.75rem, 3.2cqw, 1.6rem);
+    color: #b45309;
+    margin-top: 0.5cqw;
+  }
+
+  /* Zone label pill */
+  .zone-label {
+    display: inline-block;
+    font-weight: 700;
+    font-size: clamp(0.7rem, 3cqw, 1.4rem);
+    padding: 0.5cqw 2.5cqw;
+    border-radius: 999px;
+    margin-top: 1cqw;
+  }
+
+  .zone-1 { background: #4ADE80; color: #166534; }
+  .zone-2 { background: #2DD4BF; color: #0F766E; }
+  .zone-3 { background: #FBBF24; color: #92400E; }
+  .zone-4 { background: #F87171; color: #991B1B; }
+
+  /* Sparkline */
+  .sparkline {
+    width: 60%;
+    height: 4cqw;
+    margin-top: 1cqw;
+  }
+
+  .sparkline polyline {
+    fill: none;
+    stroke: #94a3b8;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  /* Segmented zone bar */
+  .zone-bar {
+    display: flex;
+    gap: 2px;
+    width: 90%;
+    height: 3.5cqw;
+    margin-top: 1.2cqw;
+    border-radius: 999px;
+    overflow: hidden;
+  }
+
+  .zone-bar .seg {
+    flex: 1;
+    background: #e5e7eb;
+    border-radius: 999px;
+  }
+
+  .zone-bar .seg.active.z1 { background: #4ADE80; }
+  .zone-bar .seg.active.z2 { background: #2DD4BF; }
+  .zone-bar .seg.active.z3 { background: #FBBF24; }
+  .zone-bar .seg.active.z4 { background: #F87171; }
+</style>
+</head>
+<body>
+
+  <div class="title-bar">
+    <span class="emoji">🏋️‍♀️</span>
+    <span>Дети CrossFit</span>
+    <span class="emoji">💪</span>
+  </div>
+
+  <div class="grid">
+
+    <!-- Маша — 72 BPM, Zone 1 -->
+    <div class="card">
+      <div class="accent" style="background:#4ADE80"></div>
+      <p class="name">Маша</p>
+      <div class="bpm-row">
+        <span class="heart">♥</span>
+        <span class="bpm" style="color:#166534">72</span>
+        <span class="bpm-unit">BPM</span>
+      </div>
+      <div class="calories"><span>🔥</span><span>180 kcal</span></div>
+      <span class="zone-label zone-1">Зона 1 · Восстановление</span>
+      <svg class="sparkline" viewBox="0 0 100 30" preserveAspectRatio="none">
+        <polyline points="0,22 14,20 28,23 42,18 56,21 70,19 84,22 100,20"></polyline>
+      </svg>
+      <div class="zone-bar">
+        <div class="seg active z1"></div>
+        <div class="seg z2"></div>
+        <div class="seg z3"></div>
+        <div class="seg z4"></div>
+      </div>
+    </div>
+
+    <!-- Петя — 85 BPM, Zone 1 -->
+    <div class="card">
+      <div class="accent" style="background:#4ADE80"></div>
+      <p class="name">Петя</p>
+      <div class="bpm-row">
+        <span class="heart">♥</span>
+        <span class="bpm" style="color:#166534">85</span>
+        <span class="bpm-unit">BPM</span>
+      </div>
+      <div class="calories"><span>🔥</span><span>220 kcal</span></div>
+      <span class="zone-label zone-1">Зона 1 · Восстановление</span>
+      <svg class="sparkline" viewBox="0 0 100 30" preserveAspectRatio="none">
+        <polyline points="0,20 14,18 28,21 42,16 56,19 70,17 84,20 100,18"></polyline>
+      </svg>
+      <div class="zone-bar">
+        <div class="seg active z1"></div>
+        <div class="seg z2"></div>
+        <div class="seg z3"></div>
+        <div class="seg z4"></div>
+      </div>
+    </div>
+
+    <!-- Соня — 115 BPM, Zone 2 -->
+    <div class="card">
+      <div class="accent" style="background:#2DD4BF"></div>
+      <p class="name">Соня</p>
+      <div class="bpm-row">
+        <span class="heart">♥</span>
+        <span class="bpm" style="color:#0F766E">115</span>
+        <span class="bpm-unit">BPM</span>
+      </div>
+      <div class="calories"><span>🔥</span><span>310 kcal</span></div>
+      <span class="zone-label zone-2">Зона 2 · Умеренная</span>
+      <svg class="sparkline" viewBox="0 0 100 30" preserveAspectRatio="none">
+        <polyline points="0,24 14,18 28,14 42,16 56,12 70,15 84,11 100,13"></polyline>
+      </svg>
+      <div class="zone-bar">
+        <div class="seg z1"></div>
+        <div class="seg active z2"></div>
+        <div class="seg z3"></div>
+        <div class="seg z4"></div>
+      </div>
+    </div>
+
+    <!-- Ваня — 145 BPM, Zone 3 -->
+    <div class="card">
+      <div class="accent" style="background:#FBBF24"></div>
+      <p class="name">Ваня</p>
+      <div class="bpm-row">
+        <span class="heart">♥</span>
+        <span class="bpm" style="color:#92400E">145</span>
+        <span class="bpm-unit">BPM</span>
+      </div>
+      <div class="calories"><span>🔥</span><span>420 kcal</span></div>
+      <span class="zone-label zone-3">Зона 3 · Высокая</span>
+      <svg class="sparkline" viewBox="0 0 100 30" preserveAspectRatio="none">
+        <polyline points="0,26 14,20 28,14 42,10 56,8 70,11 84,7 100,9"></polyline>
+      </svg>
+      <div class="zone-bar">
+        <div class="seg z1"></div>
+        <div class="seg z2"></div>
+        <div class="seg active z3"></div>
+        <div class="seg z4"></div>
+      </div>
+    </div>
+
+    <!-- Лена — 168 BPM, Zone 4 -->
+    <div class="card">
+      <div class="accent" style="background:#F87171"></div>
+      <p class="name">Лена</p>
+      <div class="bpm-row">
+        <span class="heart">♥</span>
+        <span class="bpm" style="color:#991B1B">168</span>
+        <span class="bpm-unit">BPM</span>
+      </div>
+      <div class="calories"><span>🔥</span><span>540 kcal</span></div>
+      <span class="zone-label zone-4">Зона 4 · Критическая</span>
+      <svg class="sparkline" viewBox="0 0 100 30" preserveAspectRatio="none">
+        <polyline points="0,28 14,22 28,14 42,8 56,5 70,7 84,4 100,3"></polyline>
+      </svg>
+      <div class="zone-bar">
+        <div class="seg z1"></div>
+        <div class="seg z2"></div>
+        <div class="seg z3"></div>
+        <div class="seg active z4"></div>
+      </div>
+    </div>
+
+    <!-- Артём — 135 BPM, Zone 3 -->
+    <div class="card">
+      <div class="accent" style="background:#FBBF24"></div>
+      <p class="name">Артём</p>
+      <div class="bpm-row">
+        <span class="heart">♥</span>
+        <span class="bpm" style="color:#92400E">135</span>
+        <span class="bpm-unit">BPM</span>
+      </div>
+      <div class="calories"><span>🔥</span><span>395 kcal</span></div>
+      <span class="zone-label zone-3">Зона 3 · Высокая</span>
+      <svg class="sparkline" viewBox="0 0 100 30" preserveAspectRatio="none">
+        <polyline points="0,25 14,21 28,16 42,12 56,14 70,10 84,13 100,9"></polyline>
+      </svg>
+      <div class="zone-bar">
+        <div class="seg z1"></div>
+        <div class="seg z2"></div>
+        <div class="seg active z3"></div>
+        <div class="seg z4"></div>
+      </div>
+    </div>
+
+    <!-- Кира — 92 BPM, Zone 1 -->
+    <div class="card">
+      <div class="accent" style="background:#4ADE80"></div>
+      <p class="name">Кира</p>
+      <div class="bpm-row">
+        <span class="heart">♥</span>
+        <span class="bpm" style="color:#166534">92</span>
+        <span class="bpm-unit">BPM</span>
+      </div>
+      <div class="calories"><span>🔥</span><span>240 kcal</span></div>
+      <span class="zone-label zone-1">Зона 1 · Восстановление</span>
+      <svg class="sparkline" viewBox="0 0 100 30" preserveAspectRatio="none">
+        <polyline points="0,22 14,19 28,22 42,17 56,20 70,18 84,21 100,19"></polyline>
+      </svg>
+      <div class="zone-bar">
+        <div class="seg active z1"></div>
+        <div class="seg z2"></div>
+        <div class="seg z3"></div>
+        <div class="seg z4"></div>
+      </div>
+    </div>
+
+    <!-- Никита — 178 BPM, Zone 4 -->
+    <div class="card">
+      <div class="accent" style="background:#F87171"></div>
+      <p class="name">Никита</p>
+      <div class="bpm-row">
+        <span class="heart">♥</span>
+        <span class="bpm" style="color:#991B1B">178</span>
+        <span class="bpm-unit">BPM</span>
+      </div>
+      <div class="calories"><span>🔥</span><span>580 kcal</span></div>
+      <span class="zone-label zone-4">Зона 4 · Критическая</span>
+      <svg class="sparkline" viewBox="0 0 100 30" preserveAspectRatio="none">
+        <polyline points="0,27 14,21 28,13 42,7 56,4 70,6 84,3 100,2"></polyline>
+      </svg>
+      <div class="zone-bar">
+        <div class="seg z1"></div>
+        <div class="seg z2"></div>
+        <div class="seg z3"></div>
+        <div class="seg active z4"></div>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>

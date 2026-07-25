@@ -1,0 +1,461 @@
+<!-- Style: Apple/Minimalist -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CrossFit · Тренировка</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+    background: #000000;
+    color: #ffffff;
+    height: 100vh;
+    margin: 0;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .app {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 22px 28px 14px;
+    gap: 16px;
+  }
+
+  /* ── Title bar ─────────────────────────────── */
+  .titlebar {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: 0 6px;
+    flex-shrink: 0;
+  }
+  .titlebar .label {
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(235,235,245,0.5);
+  }
+  .titlebar h1 {
+    font-size: 28px;
+    font-weight: 200;
+    letter-spacing: -0.01em;
+    margin-top: 2px;
+  }
+  .titlebar .clock {
+    font-size: 15px;
+    font-weight: 400;
+    color: rgba(235,235,245,0.6);
+    letter-spacing: 0.02em;
+  }
+
+  /* ── Grid ─────────────────────────────────── */
+  .grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 18px;
+    min-height: 0;
+  }
+
+  /* ── Card ─────────────────────────────────── */
+  .card {
+    container-type: inline-size;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 22px 18px;
+    border-radius: 20px;
+    background: rgba(28,28,30,0.8);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    overflow: hidden;
+    transition: transform 0.4s cubic-bezier(0.2,0.8,0.2,1);
+  }
+
+  /* Zone tints */
+  .z1 { --z: #30D158; background: rgba(48,209,88,0.08), rgba(28,28,30,0.8); border-color: rgba(48,209,88,0.18); }
+  .z2 { --z: #64D2FF; background: rgba(100,210,255,0.08), rgba(28,28,30,0.8); border-color: rgba(100,210,255,0.18); }
+  .z3 { --z: #FFD60A; background: rgba(255,214,10,0.08), rgba(28,28,30,0.8); border-color: rgba(255,214,10,0.18); }
+  .z4 { --z: #FF453A; background: rgba(255,69,58,0.10), rgba(28,28,30,0.8); border-color: rgba(255,69,58,0.22); }
+
+  .card .top {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .name {
+    font-size: clamp(1rem, 4.5cqw, 1.6rem);
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+
+  .zone-tag {
+    font-size: clamp(0.62rem, 2.2cqw, 0.85rem);
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: var(--z);
+    text-transform: uppercase;
+    opacity: 0.9;
+  }
+
+  .bpm {
+    font-size: clamp(2.5rem, 26cqw, 16rem);
+    font-weight: 200;
+    letter-spacing: -0.02em;
+    line-height: 0.95;
+    color: #ffffff;
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+  }
+  .bpm .unit {
+    font-size: 0.28em;
+    font-weight: 400;
+    color: rgba(235,235,245,0.5);
+    letter-spacing: 0.04em;
+  }
+
+  .meta {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-top: 2px;
+  }
+  .meta .cal {
+    font-size: clamp(0.9rem, 3.4cqw, 1.25rem);
+    font-weight: 500;
+    color: rgba(235,235,245,0.6);
+  }
+  .meta .cal b {
+    color: #ffffff;
+    font-weight: 600;
+  }
+
+  /* Activity ring */
+  .ring-wrap {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+  }
+
+  /* Sparkline */
+  .spark {
+    width: clamp(80px, 30cqw, 150px);
+    height: 26px;
+    margin-top: 4px;
+    opacity: 0.95;
+  }
+
+  /* ── Bottom status bar ────────────────────── */
+  .statusbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 10px 2px;
+    font-size: 13px;
+    font-weight: 500;
+    color: rgba(235,235,245,0.55);
+    flex-shrink: 0;
+  }
+  .statusbar .icons {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    letter-spacing: 0.04em;
+  }
+  .battery {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .batt-body {
+    width: 22px; height: 11px;
+    border: 1.4px solid rgba(235,235,245,0.6);
+    border-radius: 3px;
+    position: relative;
+    padding: 1px;
+  }
+  .batt-body::after {
+    content: "";
+    position: absolute;
+    right: -3px; top: 3px;
+    width: 2px; height: 4px;
+    background: rgba(235,235,245,0.6);
+    border-radius: 0 2px 2px 0;
+  }
+  .batt-fill {
+    display: block;
+    height: 100%;
+    width: 92%;
+    background: rgba(235,235,245,0.8);
+    border-radius: 1px;
+  }
+  .wifi {
+    display: inline-flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 12px;
+  }
+  .wifi i {
+    display: block;
+    width: 3px;
+    background: rgba(235,235,245,0.7);
+    border-radius: 1px;
+  }
+  .wifi i:nth-child(1){ height: 4px; }
+  .wifi i:nth-child(2){ height: 7px; }
+  .wifi i:nth-child(3){ height: 10px; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Title bar -->
+  <header class="titlebar">
+    <div>
+      <div class="label">CrossFit</div>
+      <h1>Тренировка</h1>
+    </div>
+    <div class="clock">14:32</div>
+  </header>
+
+  <!-- Athlete grid -->
+  <main class="grid">
+
+    <!-- Анна · Zone 1 -->
+    <article class="card z1">
+      <div class="ring-wrap">
+        <svg width="44" height="44" viewBox="0 0 44 44">
+          <circle cx="22" cy="22" r="18" fill="none" stroke="rgba(48,209,88,0.2)" stroke-width="4"/>
+          <circle cx="22" cy="22" r="18" fill="none" stroke="#30D158" stroke-width="4"
+                  stroke-linecap="round" stroke-dasharray="113.1" stroke-dashoffset="73.5"
+                  transform="rotate(-90 22 22)"/>
+        </svg>
+      </div>
+      <div class="top">
+        <span class="name">Анна</span>
+        <span class="zone-tag">Зона 1</span>
+      </div>
+      <div class="bpm">68<span class="unit">BPM</span></div>
+      <div class="meta"><span class="cal"><b>12</b> ккал</span></div>
+      <svg class="spark" viewBox="0 0 80 24" preserveAspectRatio="none">
+        <defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#30D158" stop-opacity="0.35"/>
+          <stop offset="100%" stop-color="#30D158" stop-opacity="0"/>
+        </linearGradient></defs>
+        <path d="M0,18 L10,17 L20,19 L30,15 L40,16 L50,13 L60,15 L70,12 L80,11 L80,24 L0,24 Z" fill="url(#g1)"/>
+        <path d="M0,18 L10,17 L20,19 L30,15 L40,16 L50,13 L60,15 L70,12 L80,11" fill="none" stroke="#30D158" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </article>
+
+    <!-- Жанна · Zone 1 -->
+    <article class="card z1">
+      <div class="ring-wrap">
+        <svg width="44" height="44" viewBox="0 0 44 44">
+          <circle cx="22" cy="22" r="18" fill="none" stroke="rgba(48,209,88,0.2)" stroke-width="4"/>
+          <circle cx="22" cy="22" r="18" fill="none" stroke="#30D158" stroke-width="4"
+                  stroke-linecap="round" stroke-dasharray="113.1" stroke-dashoffset="58.8"
+                  transform="rotate(-90 22 22)"/>
+        </svg>
+      </div>
+      <div class="top">
+        <span class="name">Жанна</span>
+        <span class="zone-tag">Зона 1</span>
+      </div>
+      <div class="bpm">92<span class="unit">BPM</span></div>
+      <div class="meta"><span class="cal"><b>35</b> ккал</span></div>
+      <svg class="spark" viewBox="0 0 80 24" preserveAspectRatio="none">
+        <defs><linearGradient id="g2" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#30D158" stop-opacity="0.35"/>
+          <stop offset="100%" stop-color="#30D158" stop-opacity="0"/>
+        </linearGradient></defs>
+        <path d="M0,16 L10,18 L20,15 L30,17 L40,14 L50,16 L60,12 L70,13 L80,10 L80,24 L0,24 Z" fill="url(#g2)"/>
+        <path d="M0,16 L10,18 L20,15 L30,17 L40,14 L50,16 L60,12 L70,13 L80,10" fill="none" stroke="#30D158" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </article>
+
+    <!-- Борис · Zone 2 -->
+    <article class="card z2">
+      <div class="ring-wrap">
+        <svg width="44" height="44" viewBox="0 0 44 44">
+          <circle cx="22" cy="22" r="18" fill="none" stroke="rgba(100,210,255,0.2)" stroke-width="4"/>
+          <circle cx="22" cy="22" r="18" fill="none" stroke="#64D2FF" stroke-width="4"
+                  stroke-linecap="round" stroke-dasharray="113.1" stroke-dashoffset="64.5"
+                  transform="rotate(-90 22 22)"/>
+        </svg>
+      </div>
+      <div class="top">
+        <span class="name">Борис</span>
+        <span class="zone-tag">Зона 2</span>
+      </div>
+      <div class="bpm">82<span class="unit">BPM</span></div>
+      <div class="meta"><span class="cal"><b>28</b> ккал</span></div>
+      <svg class="spark" viewBox="0 0 80 24" preserveAspectRatio="none">
+        <defs><linearGradient id="g3" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#64D2FF" stop-opacity="0.35"/>
+          <stop offset="100%" stop-color="#64D2FF" stop-opacity="0"/>
+        </linearGradient></defs>
+        <path d="M0,17 L10,15 L20,16 L30,13 L40,15 L50,11 L60,13 L70,9 L80,8 L80,24 L0,24 Z" fill="url(#g3)"/>
+        <path d="M0,17 L10,15 L20,16 L30,13 L40,15 L50,11 L60,13 L70,9 L80,8" fill="none" stroke="#64D2FF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </article>
+
+    <!-- Вера · Zone 2 -->
+    <article class="card z2">
+      <div class="ring-wrap">
+        <svg width="44" height="44" viewBox="0 0 44 44">
+          <circle cx="22" cy="22" r="18" fill="none" stroke="rgba(100,210,255,0.2)" stroke-width="4"/>
+          <circle cx="22" cy="22" r="18" fill="none" stroke="#64D2FF" stroke-width="4"
+                  stroke-linecap="round" stroke-dasharray="113.1" stroke-dashoffset="45.2"
+                  transform="rotate(-90 22 22)"/>
+        </svg>
+      </div>
+      <div class="top">
+        <span class="name">Вера</span>
+        <span class="zone-tag">Зона 2</span>
+      </div>
+      <div class="bpm">115<span class="unit">BPM</span></div>
+      <div class="meta"><span class="cal"><b>85</b> ккал</span></div>
+      <svg class="spark" viewBox="0 0 80 24" preserveAspectRatio="none">
+        <defs><linearGradient id="g4" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#64D2FF" stop-opacity="0.35"/>
+          <stop offset="100%" stop-color="#64D2FF" stop-opacity="0"/>
+        </linearGradient></defs>
+        <path d="M0,15 L10,16 L20,13 L30,14 L40,11 L50,12 L60,9 L70,10 L80,7 L80,24 L0,24 Z" fill="url(#g4)"/>
+        <path d="M0,15 L10,16 L20,13 L30,14 L40,11 L50,12 L60,9 L70,10 L80,7" fill="none" stroke="#64D2FF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </article>
+
+    <!-- Егор · Zone 3 -->
+    <article class="card z3">
+      <div class="ring-wrap">
+        <svg width="44" height="44" viewBox="0 0 44 44">
+          <circle cx="22" cy="22" r="18" fill="none" stroke="rgba(255,214,10,0.2)" stroke-width="4"/>
+          <circle cx="22" cy="22" r="18" fill="none" stroke="#FFD60A" stroke-width="4"
+                  stroke-linecap="round" stroke-dasharray="113.1" stroke-dashoffset="35.1"
+                  transform="rotate(-90 22 22)"/>
+        </svg>
+      </div>
+      <div class="top">
+        <span class="name">Егор</span>
+        <span class="zone-tag">Зона 3</span>
+      </div>
+      <div class="bpm">132<span class="unit">BPM</span></div>
+      <div class="meta"><span class="cal"><b>96</b> ккал</span></div>
+      <svg class="spark" viewBox="0 0 80 24" preserveAspectRatio="none">
+        <defs><linearGradient id="g5" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#FFD60A" stop-opacity="0.35"/>
+          <stop offset="100%" stop-color="#FFD60A" stop-opacity="0"/>
+        </linearGradient></defs>
+        <path d="M0,14 L10,13 L20,15 L30,11 L40,12 L50,8 L60,10 L70,6 L80,5 L80,24 L0,24 Z" fill="url(#g5)"/>
+        <path d="M0,14 L10,13 L20,15 L30,11 L40,12 L50,8 L60,10 L70,6 L80,5" fill="none" stroke="#FFD60A" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </article>
+
+    <!-- Глеб · Zone 3 -->
+    <article class="card z3">
+      <div class="ring-wrap">
+        <svg width="44" height="44" viewBox="0 0 44 44">
+          <circle cx="22" cy="22" r="18" fill="none" stroke="rgba(255,214,10,0.2)" stroke-width="4"/>
+          <circle cx="22" cy="22" r="18" fill="none" stroke="#FFD60A" stroke-width="4"
+                  stroke-linecap="round" stroke-dasharray="113.1" stroke-dashoffset="24.9"
+                  transform="rotate(-90 22 22)"/>
+        </svg>
+      </div>
+      <div class="top">
+        <span class="name">Глеб</span>
+        <span class="zone-tag">Зона 3</span>
+      </div>
+      <div class="bpm">148<span class="unit">BPM</span></div>
+      <div class="meta"><span class="cal"><b>142</b> ккал</span></div>
+      <svg class="spark" viewBox="0 0 80 24" preserveAspectRatio="none">
+        <defs><linearGradient id="g6" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#FFD60A" stop-opacity="0.35"/>
+          <stop offset="100%" stop-color="#FFD60A" stop-opacity="0"/>
+        </linearGradient></defs>
+        <path d="M0,13 L10,14 L20,11 L30,12 L40,9 L50,10 L60,7 L70,8 L80,4 L80,24 L0,24 Z" fill="url(#g6)"/>
+        <path d="M0,13 L10,14 L20,11 L30,12 L40,9 L50,10 L60,7 L70,8 L80,4" fill="none" stroke="#FFD60A" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </article>
+
+    <!-- Дина · Zone 4 -->
+    <article class="card z4">
+      <div class="ring-wrap">
+        <svg width="44" height="44" viewBox="0 0 44 44">
+          <circle cx="22" cy="22" r="18" fill="none" stroke="rgba(255,69,58,0.2)" stroke-width="4"/>
+          <circle cx="22" cy="22" r="18" fill="none" stroke="#FF453A" stroke-width="4"
+                  stroke-linecap="round" stroke-dasharray="113.1" stroke-dashoffset="9.0"
+                  transform="rotate(-90 22 22)"/>
+        </svg>
+      </div>
+      <div class="top">
+        <span class="name">Дина</span>
+        <span class="zone-tag">Зона 4</span>
+      </div>
+      <div class="bpm">175<span class="unit">BPM</span></div>
+      <div class="meta"><span class="cal"><b>218</b> ккал</span></div>
+      <svg class="spark" viewBox="0 0 80 24" preserveAspectRatio="none">
+        <defs><linearGradient id="g7" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#FF453A" stop-opacity="0.4"/>
+          <stop offset="100%" stop-color="#FF453A" stop-opacity="0"/>
+        </linearGradient></defs>
+        <path d="M0,12 L10,11 L20,13 L30,9 L40,10 L50,6 L60,7 L70,4 L80,3 L80,24 L0,24 Z" fill="url(#g7)"/>
+        <path d="M0,12 L10,11 L20,13 L30,9 L40,10 L50,6 L60,7 L70,4 L80,3" fill="none" stroke="#FF453A" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </article>
+
+    <!-- Захар · Zone 4 -->
+    <article class="card z4">
+      <div class="ring-wrap">
+        <svg width="44" height="44" viewBox="0 0 44 44">
+          <circle cx="22" cy="22" r="18" fill="none" stroke="rgba(255,69,58,0.2)" stroke-width="4"/>
+          <circle cx="22" cy="22" r="18" fill="none" stroke="#FF453A" stroke-width="4"
+                  stroke-linecap="round" stroke-dasharray="113.1" stroke-dashoffset="4.5"
+                  transform="rotate(-90 22 22)"/>
+        </svg>
+      </div>
+      <div class="top">
+        <span class="name">Захар</span>
+        <span class="zone-tag">Зона 4</span>
+      </div>
+      <div class="bpm">182<span class="unit">BPM</span></div>
+      <div class="meta"><span class="cal"><b>245</b> ккал</span></div>
+      <svg class="spark" viewBox="0 0 80 24" preserveAspectRatio="none">
+        <defs><linearGradient id="g8" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#FF453A" stop-opacity="0.4"/>
+          <stop offset="100%" stop-color="#FF453A" stop-opacity="0"/>
+        </linearGradient></defs>
+        <path d="M0,11 L10,12 L20,9 L30,10 L40,7 L50,8 L60,5 L70,4 L80,2 L80,24 L0,24 Z" fill="url(#g8)"/>
+        <path d="M0,11 L10,12 L20,9 L30,10 L40,7 L50,8 L60,5 L70,4 L80,2" fill="none" stroke="#FF453A" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </article>
+
+  </main>
+
+  <!-- Bottom status bar -->
+  <footer class="statusbar">
+    <span>Сервер: активен</span>
+    <span class="icons">
+      <span class="wifi"><i></i><i></i><i></i></span>
+      <span class="battery"><span class="batt-body"><span class="batt-fill"></span></span> 92%</span>
+      <span>14:32</span>
+    </span>
+  </footer>
+
+</div>
+</body>
+</html>

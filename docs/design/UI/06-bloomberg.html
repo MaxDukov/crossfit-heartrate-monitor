@@ -1,0 +1,632 @@
+<!-- Style: Bloomberg Terminal -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CF-TERMINAL // LIVE HR MONITOR</title>
+<style>
+  * { box-sizing: border-box; }
+
+  html, body {
+    height: 100vh;
+    margin: 0;
+    overflow: hidden;
+  }
+
+  body {
+    background-color: #000000;
+    color: #C8C8C8;
+    font-family: 'Helvetica Neue', Arial Narrow, sans-serif;
+    display: flex;
+    flex-direction: column;
+    font-stretch: condensed;
+  }
+
+  /* ---------- TITLE BAR ---------- */
+  .titlebar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 5px 10px;
+    background: #000000;
+    border-bottom: 1px solid #FF9E1B;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    letter-spacing: 1px;
+    color: #FF9E1B;
+    flex-shrink: 0;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .titlebar .seg { padding: 0 8px; }
+  .titlebar .sep { color: #5a3d00; }
+  .titlebar .dim { color: #7a5a10; }
+  .titlebar .live {
+    color: #00FF65;
+    font-weight: 700;
+  }
+  .titlebar .live::before {
+    content: "\25A0 ";
+    animation: blink 1s steps(1) infinite;
+  }
+  .cursor {
+    display: inline-block;
+    width: 8px;
+    height: 13px;
+    background: #FF9E1B;
+    margin-left: 4px;
+    vertical-align: middle;
+    animation: blink 0.9s steps(1) infinite;
+  }
+  @keyframes blink {
+    0%, 49%   { opacity: 1; }
+    50%, 100% { opacity: 0; }
+  }
+
+  /* ticker status strip */
+  .statstrip {
+    display: flex;
+    gap: 0;
+    background: #000000;
+    border-bottom: 1px solid #1A1A1A;
+    font-family: 'Courier New', monospace;
+    font-size: 10px;
+    color: #555;
+    padding: 2px 10px;
+    letter-spacing: 0.5px;
+    flex-shrink: 0;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .statstrip span { padding: 0 12px; border-right: 1px solid #1A1A1A; }
+  .statstrip span:last-child { border-right: none; }
+  .statstrip b { color: #C8C8C8; font-weight: 700; }
+  .statstrip .up { color: #00FF65; }
+  .statstrip .dn { color: #FF3B30; }
+
+  /* ---------- GRID ---------- */
+  .grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 1px;
+    background: #000000;
+    padding: 1px;
+    min-height: 0;
+  }
+
+  /* ---------- CARD ---------- */
+  .card {
+    container-type: inline-size;
+    background: #0A0A0A;
+    border: 1px solid #1A1A1A;
+    border-radius: 0;
+    padding: 6px 8px 6px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+    min-width: 0;
+  }
+
+  /* zone tint backgrounds */
+  .card[data-zone="1"] { background: rgba(0,255,101,0.05); }
+  .card[data-zone="4"] { background: rgba(255,59,48,0.08); }
+
+  /* zone accent left border */
+  .card[data-zone="1"] { border-left: 2px solid #00FF65; }
+  .card[data-zone="2"] { border-left: 2px solid #00C8FF; }
+  .card[data-zone="3"] { border-left: 2px solid #FFD000; }
+  .card[data-zone="4"] { border-left: 2px solid #FF3B30; }
+
+  /* ---------- COLUMN HEADER ROW ---------- */
+  .colhead {
+    display: flex;
+    align-items: center;
+    font-family: 'Courier New', monospace;
+    font-size: clamp(0.4rem, 1.6cqw, 0.62rem);
+    color: #5a5a5a;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    padding-bottom: 3px;
+    border-bottom: 1px solid rgba(255,158,27,0.35);
+  }
+  .colhead .col { white-space: nowrap; overflow: hidden; }
+  .colhead .c-name { width: 32%; }
+  .colhead .c-bpm  { width: 18%; text-align: right; }
+  .colhead .c-zone { width: 12%; text-align: center; }
+  .colhead .c-delta{ width: 14%; text-align: right; }
+  .colhead .c-cal  { width: 12%; text-align: right; }
+  .colhead .c-time { width: 12%; text-align: right; }
+
+  /* ---------- MAIN BPM AREA ---------- */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 4px 0 2px;
+    min-height: 0;
+  }
+
+  .name-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 6px;
+  }
+  .athlete {
+    font-family: 'Helvetica Neue', Arial Narrow, sans-serif;
+    font-stretch: condensed;
+    font-weight: 700;
+    font-size: clamp(0.7rem, 4.2cqw, 1.4rem);
+    letter-spacing: 1px;
+    color: #E8E8E8;
+    text-transform: uppercase;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .id-tag {
+    font-family: 'Courier New', monospace;
+    font-size: clamp(0.45rem, 1.8cqw, 0.7rem);
+    color: #555;
+    letter-spacing: 0.5px;
+    flex-shrink: 0;
+  }
+
+  .bpm-row {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    line-height: 0.85;
+    margin-top: 2px;
+  }
+  .bpm {
+    font-family: 'Courier New', monospace;
+    font-weight: 700;
+    font-size: clamp(1.8rem, 22cqw, 12rem);
+    letter-spacing: -2px;
+    line-height: 0.85;
+  }
+  .bpm-unit {
+    font-family: 'Courier New', monospace;
+    font-size: clamp(0.5rem, 2.2cqw, 0.85rem);
+    color: #555;
+    letter-spacing: 1px;
+  }
+  .zone-tag {
+    margin-left: auto;
+    font-family: 'Courier New', monospace;
+    font-weight: 700;
+    font-size: clamp(0.55rem, 2.6cqw, 1rem);
+    letter-spacing: 1px;
+    padding: 1px 5px;
+    border: 1px solid currentColor;
+    align-self: center;
+  }
+
+  /* zone colors */
+  .z1 { color: #00FF65; }
+  .z2 { color: #00C8FF; }
+  .z3 { color: #FFD000; }
+  .z4 { color: #FF3B30; }
+
+  /* ---------- SPARKLINE ---------- */
+  .sparkwrap {
+    margin-top: 3px;
+    height: clamp(14px, 5cqw, 26px);
+    position: relative;
+  }
+  .sparkline {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  /* ---------- DATA FOOTER ---------- */
+  .datafoot {
+    font-family: 'Courier New', monospace;
+    font-size: clamp(0.4rem, 2cqw, 0.75rem);
+    color: #888;
+    letter-spacing: 0.4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-top: 4px;
+    margin-top: 3px;
+    border-top: 1px solid rgba(255,158,27,0.35);
+  }
+  .datafoot .pipe { color: #3a3a3a; padding: 0 5px; }
+  .datafoot .lbl { color: #5a5a5a; }
+  .datafoot .up { color: #00FF65; font-weight: 700; }
+  .datafoot .dn { color: #FF3B30; font-weight: 700; }
+  .datafoot .arrow { font-weight: 700; }
+
+  /* change indicator badge on name row */
+  .delta {
+    font-family: 'Courier New', monospace;
+    font-weight: 700;
+    font-size: clamp(0.5rem, 2.4cqw, 0.9rem);
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+  }
+  .delta.up { color: #00FF65; }
+  .delta.dn { color: #FF3B30; }
+  .delta.flat { color: #555; }
+</style>
+</head>
+<body>
+
+  <!-- TITLE BAR -->
+  <div class="titlebar">
+    <span class="seg"><b>CF-TERMINAL</b></span>
+    <span class="sep">|</span>
+    <span class="seg live">LIVE HR MONITOR</span>
+    <span class="sep">|</span>
+    <span class="seg" id="clock">08:42:15 UTC</span>
+    <span class="cursor"></span>
+  </div>
+
+  <!-- STATUS TICKER STRIP -->
+  <div class="statstrip">
+    <span>SESSION <b>WOD-2407</b></span>
+    <span>ATHLETES <b>08/08</b></span>
+    <span>AVG <b>110 BPM</b></span>
+    <span>MAX <b>175</b></span>
+    <span>UPLINK <b style="color:#00FF65">OK</b></span>
+    <span>FEED <b style="color:#00FF65">STABLE</b></span>
+    <span>BOX <b>CROSSFIT/MSK</b></span>
+    <span>ELAPSED <b>00:24:18</b></span>
+    <span style="margin-left:auto;color:#FF9E1B">MKT <b style="color:#FF9E1B">OPEN</b></span>
+  </div>
+
+  <!-- GRID -->
+  <div class="grid">
+
+    <!-- 01 IVANOV -->
+    <div class="card" data-zone="1">
+      <div class="colhead">
+        <span class="col c-name">ATHLETE</span>
+        <span class="col c-bpm">BPM</span>
+        <span class="col c-zone">ZONE</span>
+        <span class="col c-delta">DELTA</span>
+        <span class="col c-cal">CAL</span>
+        <span class="col c-time">TIME</span>
+      </div>
+      <div class="main">
+        <div class="name-row">
+          <span class="athlete">IVANOV</span>
+          <span class="id-tag">#01</span>
+        </div>
+        <div class="bpm-row">
+          <span class="bpm z1">65</span>
+          <span class="bpm-unit">BPM</span>
+          <span class="zone-tag z1">Z1</span>
+        </div>
+        <div class="name-row" style="margin-top:2px">
+          <span class="delta flat">&#9644; 0.0%</span>
+          <span class="id-tag">CAL 12.0</span>
+        </div>
+      </div>
+      <div class="sparkwrap">
+        <svg class="sparkline" viewBox="0 0 100 20" preserveAspectRatio="none">
+          <polyline points="0,16 8,15 16,17 24,14 32,16 40,13 48,15 56,12 64,14 72,11 80,13 88,10 100,12"
+            fill="none" stroke="#00FF65" stroke-width="1"/>
+        </svg>
+      </div>
+      <div class="datafoot">
+        <span class="lbl">ZONE</span> <span class="z1">1</span>
+        <span class="pipe">|</span>
+        <span class="arrow flat">&#9644;</span> +0%
+        <span class="pipe">|</span> 65 BPM
+        <span class="pipe">|</span> 12 kcal
+        <span class="pipe">|</span> 08:02 IN ZONE
+      </div>
+    </div>
+
+    <!-- 02 PETROV -->
+    <div class="card" data-zone="2">
+      <div class="colhead">
+        <span class="col c-name">ATHLETE</span>
+        <span class="col c-bpm">BPM</span>
+        <span class="col c-zone">ZONE</span>
+        <span class="col c-delta">DELTA</span>
+        <span class="col c-cal">CAL</span>
+        <span class="col c-time">TIME</span>
+      </div>
+      <div class="main">
+        <div class="name-row">
+          <span class="athlete">PETROV</span>
+          <span class="id-tag">#02</span>
+        </div>
+        <div class="bpm-row">
+          <span class="bpm z2">82</span>
+          <span class="bpm-unit">BPM</span>
+          <span class="zone-tag z2">Z2</span>
+        </div>
+        <div class="name-row" style="margin-top:2px">
+          <span class="delta up">&#9650; +5.0%</span>
+          <span class="id-tag">CAL 24.0</span>
+        </div>
+      </div>
+      <div class="sparkwrap">
+        <svg class="sparkline" viewBox="0 0 100 20" preserveAspectRatio="none">
+          <polyline points="0,15 8,13 16,15 24,11 32,13 40,10 48,12 56,9 64,11 72,8 80,10 88,7 100,9"
+            fill="none" stroke="#00C8FF" stroke-width="1"/>
+        </svg>
+      </div>
+      <div class="datafoot">
+        <span class="lbl">ZONE</span> <span class="z2">2</span>
+        <span class="pipe">|</span>
+        <span class="arrow up">&#9650;</span> +5%
+        <span class="pipe">|</span> 82 BPM
+        <span class="pipe">|</span> 24 kcal
+        <span class="pipe">|</span> 06:45 IN ZONE
+      </div>
+    </div>
+
+    <!-- 03 SIDOROV -->
+    <div class="card" data-zone="3">
+      <div class="colhead">
+        <span class="col c-name">ATHLETE</span>
+        <span class="col c-bpm">BPM</span>
+        <span class="col c-zone">ZONE</span>
+        <span class="col c-delta">DELTA</span>
+        <span class="col c-cal">CAL</span>
+        <span class="col c-time">TIME</span>
+      </div>
+      <div class="main">
+        <div class="name-row">
+          <span class="athlete">SIDOROV</span>
+          <span class="id-tag">#03</span>
+        </div>
+        <div class="bpm-row">
+          <span class="bpm z3">118</span>
+          <span class="bpm-unit">BPM</span>
+          <span class="zone-tag z3">Z3</span>
+        </div>
+        <div class="name-row" style="margin-top:2px">
+          <span class="delta up">&#9650; +12.0%</span>
+          <span class="id-tag">CAL 42.0</span>
+        </div>
+      </div>
+      <div class="sparkwrap">
+        <svg class="sparkline" viewBox="0 0 100 20" preserveAspectRatio="none">
+          <polyline points="0,14 8,12 16,13 24,10 32,11 40,8 48,10 56,7 64,9 72,6 80,8 88,5 100,7"
+            fill="none" stroke="#FFD000" stroke-width="1"/>
+        </svg>
+      </div>
+      <div class="datafoot">
+        <span class="lbl">ZONE</span> <span class="z3">3</span>
+        <span class="pipe">|</span>
+        <span class="arrow up">&#9650;</span> +12%
+        <span class="pipe">|</span> 118 BPM
+        <span class="pipe">|</span> 42 kcal
+        <span class="pipe">|</span> 03:24 IN ZONE
+      </div>
+    </div>
+
+    <!-- 04 KUZNET -->
+    <div class="card" data-zone="4">
+      <div class="colhead">
+        <span class="col c-name">ATHLETE</span>
+        <span class="col c-bpm">BPM</span>
+        <span class="col c-zone">ZONE</span>
+        <span class="col c-delta">DELTA</span>
+        <span class="col c-cal">CAL</span>
+        <span class="col c-time">TIME</span>
+      </div>
+      <div class="main">
+        <div class="name-row">
+          <span class="athlete">KUZNET</span>
+          <span class="id-tag">#04</span>
+        </div>
+        <div class="bpm-row">
+          <span class="bpm z4">152</span>
+          <span class="bpm-unit">BPM</span>
+          <span class="zone-tag z4">Z4</span>
+        </div>
+        <div class="name-row" style="margin-top:2px">
+          <span class="delta up">&#9650; +18.0%</span>
+          <span class="id-tag">CAL 58.0</span>
+        </div>
+      </div>
+      <div class="sparkwrap">
+        <svg class="sparkline" viewBox="0 0 100 20" preserveAspectRatio="none">
+          <polyline points="0,12 8,10 16,11 24,8 32,9 40,6 48,8 56,5 64,7 72,4 80,6 88,3 100,5"
+            fill="none" stroke="#FF3B30" stroke-width="1.1"/>
+        </svg>
+      </div>
+      <div class="datafoot">
+        <span class="lbl">ZONE</span> <span class="z4">4</span>
+        <span class="pipe">|</span>
+        <span class="arrow up">&#9650;</span> +18%
+        <span class="pipe">|</span> 152 BPM
+        <span class="pipe">|</span> 58 kcal
+        <span class="pipe">|</span> 01:58 IN ZONE
+      </div>
+    </div>
+
+    <!-- 05 SOKOLOV -->
+    <div class="card" data-zone="4">
+      <div class="colhead">
+        <span class="col c-name">ATHLETE</span>
+        <span class="col c-bpm">BPM</span>
+        <span class="col c-zone">ZONE</span>
+        <span class="col c-delta">DELTA</span>
+        <span class="col c-cal">CAL</span>
+        <span class="col c-time">TIME</span>
+      </div>
+      <div class="main">
+        <div class="name-row">
+          <span class="athlete">SOKOLOV</span>
+          <span class="id-tag">#05</span>
+        </div>
+        <div class="bpm-row">
+          <span class="bpm z4">175</span>
+          <span class="bpm-unit">BPM</span>
+          <span class="zone-tag z4">Z4</span>
+        </div>
+        <div class="name-row" style="margin-top:2px">
+          <span class="delta up">&#9650; +22.0%</span>
+          <span class="id-tag">CAL 71.0</span>
+        </div>
+      </div>
+      <div class="sparkwrap">
+        <svg class="sparkline" viewBox="0 0 100 20" preserveAspectRatio="none">
+          <polyline points="0,11 8,9 16,10 24,7 32,8 40,5 48,7 56,4 64,6 72,3 80,5 88,2 100,4"
+            fill="none" stroke="#FF3B30" stroke-width="1.2"/>
+        </svg>
+      </div>
+      <div class="datafoot">
+        <span class="lbl">ZONE</span> <span class="z4">4</span>
+        <span class="pipe">|</span>
+        <span class="arrow up">&#9650;</span> +22%
+        <span class="pipe">|</span> 175 BPM
+        <span class="pipe">|</span> 71 kcal
+        <span class="pipe">|</span> 04:12 IN ZONE
+      </div>
+    </div>
+
+    <!-- 06 MOROZOV -->
+    <div class="card" data-zone="3">
+      <div class="colhead">
+        <span class="col c-name">ATHLETE</span>
+        <span class="col c-bpm">BPM</span>
+        <span class="col c-zone">ZONE</span>
+        <span class="col c-delta">DELTA</span>
+        <span class="col c-cal">CAL</span>
+        <span class="col c-time">TIME</span>
+      </div>
+      <div class="main">
+        <div class="name-row">
+          <span class="athlete">MOROZOV</span>
+          <span class="id-tag">#06</span>
+        </div>
+        <div class="bpm-row">
+          <span class="bpm z3">138</span>
+          <span class="bpm-unit">BPM</span>
+          <span class="zone-tag z3">Z3</span>
+        </div>
+        <div class="name-row" style="margin-top:2px">
+          <span class="delta up">&#9650; +8.0%</span>
+          <span class="id-tag">CAL 49.0</span>
+        </div>
+      </div>
+      <div class="sparkwrap">
+        <svg class="sparkline" viewBox="0 0 100 20" preserveAspectRatio="none">
+          <polyline points="0,13 8,11 16,12 24,9 32,10 40,7 48,9 56,6 64,8 72,5 80,7 88,4 100,6"
+            fill="none" stroke="#FFD000" stroke-width="1"/>
+        </svg>
+      </div>
+      <div class="datafoot">
+        <span class="lbl">ZONE</span> <span class="z3">3</span>
+        <span class="pipe">|</span>
+        <span class="arrow up">&#9650;</span> +8%
+        <span class="pipe">|</span> 138 BPM
+        <span class="pipe">|</span> 49 kcal
+        <span class="pipe">|</span> 02:47 IN ZONE
+      </div>
+    </div>
+
+    <!-- 07 VOLKOV -->
+    <div class="card" data-zone="2">
+      <div class="colhead">
+        <span class="col c-name">ATHLETE</span>
+        <span class="col c-bpm">BPM</span>
+        <span class="col c-zone">ZONE</span>
+        <span class="col c-delta">DELTA</span>
+        <span class="col c-cal">CAL</span>
+        <span class="col c-time">TIME</span>
+      </div>
+      <div class="main">
+        <div class="name-row">
+          <span class="athlete">VOLKOV</span>
+          <span class="id-tag">#07</span>
+        </div>
+        <div class="bpm-row">
+          <span class="bpm z2">88</span>
+          <span class="bpm-unit">BPM</span>
+          <span class="zone-tag z2">Z2</span>
+        </div>
+        <div class="name-row" style="margin-top:2px">
+          <span class="delta up">&#9650; +3.0%</span>
+          <span class="id-tag">CAL 27.0</span>
+        </div>
+      </div>
+      <div class="sparkwrap">
+        <svg class="sparkline" viewBox="0 0 100 20" preserveAspectRatio="none">
+          <polyline points="0,15 8,14 16,15 24,12 32,14 40,11 48,13 56,10 64,12 72,9 80,11 88,8 100,10"
+            fill="none" stroke="#00C8FF" stroke-width="1"/>
+        </svg>
+      </div>
+      <div class="datafoot">
+        <span class="lbl">ZONE</span> <span class="z2">2</span>
+        <span class="pipe">|</span>
+        <span class="arrow up">&#9650;</span> +3%
+        <span class="pipe">|</span> 88 BPM
+        <span class="pipe">|</span> 27 kcal
+        <span class="pipe">|</span> 05:33 IN ZONE
+      </div>
+    </div>
+
+    <!-- 08 ZAITSEV -->
+    <div class="card" data-zone="1">
+      <div class="colhead">
+        <span class="col c-name">ATHLETE</span>
+        <span class="col c-bpm">BPM</span>
+        <span class="col c-zone">ZONE</span>
+        <span class="col c-delta">DELTA</span>
+        <span class="col c-cal">CAL</span>
+        <span class="col c-time">TIME</span>
+      </div>
+      <div class="main">
+        <div class="name-row">
+          <span class="athlete">ZAITSEV</span>
+          <span class="id-tag">#08</span>
+        </div>
+        <div class="bpm-row">
+          <span class="bpm z1">68</span>
+          <span class="bpm-unit">BPM</span>
+          <span class="zone-tag z1">Z1</span>
+        </div>
+        <div class="name-row" style="margin-top:2px">
+          <span class="delta dn">&#9660; -2.0%</span>
+          <span class="id-tag">CAL 14.0</span>
+        </div>
+      </div>
+      <div class="sparkwrap">
+        <svg class="sparkline" viewBox="0 0 100 20" preserveAspectRatio="none">
+          <polyline points="0,10 8,11 16,9 24,12 32,10 40,13 48,11 56,14 64,12 72,15 80,13 88,16 100,14"
+            fill="none" stroke="#00FF65" stroke-width="1"/>
+        </svg>
+      </div>
+      <div class="datafoot">
+        <span class="lbl">ZONE</span> <span class="z1">1</span>
+        <span class="pipe">|</span>
+        <span class="arrow dn">&#9660;</span> -2%
+        <span class="pipe">|</span> 68 BPM
+        <span class="pipe">|</span> 14 kcal
+        <span class="pipe">|</span> 07:19 IN ZONE
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    (function () {
+      var el = document.getElementById('clock');
+      function tick() {
+        var d = new Date();
+        var p = function (n) { return n < 10 ? '0' + n : n; };
+        el.textContent = p(d.getUTCHours()) + ':' + p(d.getUTCMinutes()) + ':' + p(d.getUTCSeconds()) + ' UTC';
+      }
+      tick();
+      setInterval(tick, 1000);
+    })();
+  </script>
+</body>
+</html>

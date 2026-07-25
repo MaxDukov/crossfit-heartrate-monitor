@@ -1,0 +1,400 @@
+<!-- Style: Neon/Cyberpunk -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CYBERFIT MONITOR</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      height: 100vh;
+      margin: 0;
+      overflow: hidden;
+    }
+
+    body {
+      background-color: #0A0E14;
+      background-image:
+        linear-gradient(rgba(0,255,159,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,255,159,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      font-family: 'Rajdhani', sans-serif;
+      color: #E0E6ED;
+    }
+
+    body::after {
+      content: "";
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 9999;
+      background: repeating-linear-gradient(
+        0deg,
+        rgba(0,0,0,0) 0px,
+        rgba(0,0,0,0) 2px,
+        rgba(0,0,0,0.15) 3px,
+        rgba(0,0,0,0) 4px
+      );
+    }
+
+    .dashboard {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      gap: 8px;
+      padding: 8px;
+    }
+
+    .title-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px 0;
+    }
+
+    .title-bar h1 {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 900;
+      font-size: clamp(1.5rem, 3vw, 2.5rem);
+      letter-spacing: 0.3em;
+      color: #00FF9F;
+      text-shadow:
+        0 0 10px #00FF9F,
+        0 0 20px #00FF9F,
+        0 0 40px #00FF9F;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      grid-template-rows: repeat(2, 1fr);
+      gap: 8px;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .card {
+      container-type: inline-size;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background-color: #0F1620;
+      border-radius: 4px;
+      padding: 1.5cqw;
+      position: relative;
+      gap: 1cqw;
+    }
+
+    .card.zone-1 {
+      border: 1px solid #00FF9F;
+      box-shadow: 0 0 20px #00FF9F50;
+    }
+    .card.zone-2 {
+      border: 1px solid #00B8FF;
+      box-shadow: 0 0 20px #00B8FF50;
+    }
+    .card.zone-3 {
+      border: 1px solid #FFEA00;
+      box-shadow: 0 0 20px #FFEA0050;
+    }
+    .card.zone-4 {
+      border: 1px solid #FF003C;
+      box-shadow: 0 0 20px #FF003C50;
+    }
+
+    .athlete-name {
+      font-family: 'Rajdhani', sans-serif;
+      font-weight: 700;
+      font-size: clamp(1rem, 5cqw, 3rem);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+
+    .zone-1 .athlete-name { color: #00FF9F; text-shadow: 0 0 10px #00FF9F, 0 0 20px #00FF9F; }
+    .zone-2 .athlete-name { color: #00B8FF; text-shadow: 0 0 10px #00B8FF, 0 0 20px #00B8FF; }
+    .zone-3 .athlete-name { color: #FFEA00; text-shadow: 0 0 10px #FFEA00, 0 0 20px #FFEA00; }
+    .zone-4 .athlete-name { color: #FF003C; text-shadow: 0 0 10px #FF003C, 0 0 20px #FF003C, 0 0 40px #FF003C; }
+
+    .bpm-display {
+      display: flex;
+      align-items: baseline;
+      gap: 0.5cqw;
+    }
+
+    .bpm-number {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 900;
+      font-size: clamp(2rem, 24cqw, 14rem);
+      line-height: 1;
+    }
+
+    .zone-1 .bpm-number { color: #00FF9F; text-shadow: 0 0 10px #00FF9F, 0 0 20px #00FF9F; }
+    .zone-2 .bpm-number { color: #00B8FF; text-shadow: 0 0 10px #00B8FF, 0 0 20px #00B8FF; }
+    .zone-3 .bpm-number { color: #FFEA00; text-shadow: 0 0 10px #FFEA00, 0 0 20px #FFEA00; }
+    .zone-4 .bpm-number { color: #FF003C; text-shadow: 0 0 10px #FF003C, 0 0 20px #FF003C, 0 0 40px #FF003C; }
+
+    .bpm-unit {
+      font-family: 'Rajdhani', sans-serif;
+      font-weight: 600;
+      font-size: clamp(0.8rem, 3cqw, 1.5rem);
+      letter-spacing: 0.1em;
+      opacity: 0.7;
+    }
+
+    .stats-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 3cqw;
+      width: 100%;
+    }
+
+    .stat {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .stat-label {
+      font-family: 'Rajdhani', sans-serif;
+      font-weight: 400;
+      font-size: clamp(0.6rem, 2cqw, 1rem);
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      opacity: 0.6;
+    }
+
+    .stat-value {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      font-size: clamp(0.9rem, 4cqw, 2rem);
+    }
+
+    .zone-1 .stat-value { color: #00FF9F; text-shadow: 0 0 8px #00FF9F; }
+    .zone-2 .stat-value { color: #00B8FF; text-shadow: 0 0 8px #00B8FF; }
+    .zone-3 .stat-value { color: #FFEA00; text-shadow: 0 0 8px #FFEA00; }
+    .zone-4 .stat-value { color: #FF003C; text-shadow: 0 0 8px #FF003C; }
+
+    .zone-tag {
+      position: absolute;
+      top: 1.5cqw;
+      right: 1.5cqw;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      font-size: clamp(0.6rem, 2.2cqw, 1.1rem);
+      letter-spacing: 0.15em;
+      padding: 0.3cqw 1cqw;
+      border-radius: 2px;
+      opacity: 0.85;
+    }
+
+    .zone-1 .zone-tag { color: #00FF9F; border: 1px solid #00FF9F; text-shadow: 0 0 8px #00FF9F; }
+    .zone-2 .zone-tag { color: #00B8FF; border: 1px solid #00B8FF; text-shadow: 0 0 8px #00B8FF; }
+    .zone-3 .zone-tag { color: #FFEA00; border: 1px solid #FFEA00; text-shadow: 0 0 8px #FFEA00; }
+    .zone-4 .zone-tag { color: #FF003C; border: 1px solid #FF003C; text-shadow: 0 0 8px #FF003C; }
+
+    .sparkline {
+      width: 70%;
+      height: clamp(1rem, 5cqw, 2.5rem);
+      opacity: 0.7;
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard">
+    <div class="title-bar">
+      <h1>CYBERFIT MONITOR</h1>
+    </div>
+    <div class="grid">
+
+      <div class="card zone-1">
+        <span class="zone-tag">Z1</span>
+        <div class="athlete-name">NEO</div>
+        <div class="bpm-display">
+          <span class="bpm-number">68</span>
+          <span class="bpm-unit">BPM</span>
+        </div>
+        <div class="stats-row">
+          <div class="stat">
+            <span class="stat-label">KCAL</span>
+            <span class="stat-value">124</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">ZONE</span>
+            <span class="stat-value">01</span>
+          </div>
+        </div>
+        <svg class="sparkline" viewBox="0 0 100 20" preserveAspectRatio="none">
+          <polyline points="0,16 12,15 24,17 36,14 48,16 60,13 72,15 84,14 100,16" fill="none" stroke="#00FF9F" stroke-width="1.5"/>
+        </svg>
+      </div>
+
+      <div class="card zone-1">
+        <span class="zone-tag">Z1</span>
+        <div class="athlete-name">TRINITY</div>
+        <div class="bpm-display">
+          <span class="bpm-number">82</span>
+          <span class="bpm-unit">BPM</span>
+        </div>
+        <div class="stats-row">
+          <div class="stat">
+            <span class="stat-label">KCAL</span>
+            <span class="stat-value">218</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">ZONE</span>
+            <span class="stat-value">01</span>
+          </div>
+        </div>
+        <svg class="sparkline" viewBox="0 0 100 20" preserveAspectRatio="none">
+          <polyline points="0,15 12,14 24,16 36,13 48,15 60,14 72,13 84,15 100,14" fill="none" stroke="#00FF9F" stroke-width="1.5"/>
+        </svg>
+      </div>
+
+      <div class="card zone-2">
+        <span class="zone-tag">Z2</span>
+        <div class="athlete-name">MORPHEUS</div>
+        <div class="bpm-display">
+          <span class="bpm-number">122</span>
+          <span class="bpm-unit">BPM</span>
+        </div>
+        <div class="stats-row">
+          <div class="stat">
+            <span class="stat-label">KCAL</span>
+            <span class="stat-value">345</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">ZONE</span>
+            <span class="stat-value">02</span>
+          </div>
+        </div>
+        <svg class="sparkline" viewBox="0 0 100 20" preserveAspectRatio="none">
+          <polyline points="0,17 12,15 24,13 36,12 48,11 60,10 72,11 84,10 100,9" fill="none" stroke="#00B8FF" stroke-width="1.5"/>
+        </svg>
+      </div>
+
+      <div class="card zone-3">
+        <span class="zone-tag">Z3</span>
+        <div class="athlete-name">ZION</div>
+        <div class="bpm-display">
+          <span class="bpm-number">155</span>
+          <span class="bpm-unit">BPM</span>
+        </div>
+        <div class="stats-row">
+          <div class="stat">
+            <span class="stat-label">KCAL</span>
+            <span class="stat-value">412</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">ZONE</span>
+            <span class="stat-value">03</span>
+          </div>
+        </div>
+        <svg class="sparkline" viewBox="0 0 100 20" preserveAspectRatio="none">
+          <polyline points="0,18 12,16 24,14 36,11 48,9 60,7 72,6 84,5 100,4" fill="none" stroke="#FFEA00" stroke-width="1.5"/>
+        </svg>
+      </div>
+
+      <div class="card zone-4">
+        <span class="zone-tag">Z4</span>
+        <div class="athlete-name">CIPHER</div>
+        <div class="bpm-display">
+          <span class="bpm-number">188</span>
+          <span class="bpm-unit">BPM</span>
+        </div>
+        <div class="stats-row">
+          <div class="stat">
+            <span class="stat-label">KCAL</span>
+            <span class="stat-value">528</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">ZONE</span>
+            <span class="stat-value">04</span>
+          </div>
+        </div>
+        <svg class="sparkline" viewBox="0 0 100 20" preserveAspectRatio="none">
+          <polyline points="0,16 12,13 24,10 36,7 48,5 60,3 72,2 84,2 100,1" fill="none" stroke="#FF003C" stroke-width="1.5"/>
+        </svg>
+      </div>
+
+      <div class="card zone-3">
+        <span class="zone-tag">Z3</span>
+        <div class="athlete-name">TANK</div>
+        <div class="bpm-display">
+          <span class="bpm-number">140</span>
+          <span class="bpm-unit">BPM</span>
+        </div>
+        <div class="stats-row">
+          <div class="stat">
+            <span class="stat-label">KCAL</span>
+            <span class="stat-value">389</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">ZONE</span>
+            <span class="stat-value">03</span>
+          </div>
+        </div>
+        <svg class="sparkline" viewBox="0 0 100 20" preserveAspectRatio="none">
+          <polyline points="0,17 12,15 24,13 36,12 48,10 60,9 72,8 84,7 100,6" fill="none" stroke="#FFEA00" stroke-width="1.5"/>
+        </svg>
+      </div>
+
+      <div class="card zone-2">
+        <span class="zone-tag">Z2</span>
+        <div class="athlete-name">SWITCH</div>
+        <div class="bpm-display">
+          <span class="bpm-number">95</span>
+          <span class="bpm-unit">BPM</span>
+        </div>
+        <div class="stats-row">
+          <div class="stat">
+            <span class="stat-label">KCAL</span>
+            <span class="stat-value">267</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">ZONE</span>
+            <span class="stat-value">02</span>
+          </div>
+        </div>
+        <svg class="sparkline" viewBox="0 0 100 20" preserveAspectRatio="none">
+          <polyline points="0,16 12,15 24,14 36,13 48,12 60,11 72,12 84,11 100,10" fill="none" stroke="#00B8FF" stroke-width="1.5"/>
+        </svg>
+      </div>
+
+      <div class="card zone-4">
+        <span class="zone-tag">Z4</span>
+        <div class="athlete-name">APOC</div>
+        <div class="bpm-display">
+          <span class="bpm-number">175</span>
+          <span class="bpm-unit">BPM</span>
+        </div>
+        <div class="stats-row">
+          <div class="stat">
+            <span class="stat-label">KCAL</span>
+            <span class="stat-value">496</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">ZONE</span>
+            <span class="stat-value">04</span>
+          </div>
+        </div>
+        <svg class="sparkline" viewBox="0 0 100 20" preserveAspectRatio="none">
+          <polyline points="0,17 12,14 24,11 36,8 48,6 60,4 72,3 84,2 100,2" fill="none" stroke="#FF003C" stroke-width="1.5"/>
+        </svg>
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>

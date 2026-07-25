@@ -1,0 +1,686 @@
+<!-- Style: Retro 8-bit (Arcade/NES) -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HR QUEST - Retro 8-bit HR Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html, body {
+    height: 100vh;
+    margin: 0;
+    overflow: hidden;
+  }
+
+  body {
+    background: #1A0033;
+    -webkit-font-smoothing: none;
+    font-smooth: never;
+    -moz-osx-font-smoothing: grayscale;
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+    font-family: 'VT323', monospace;
+    color: #FFF;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ===== TITLE BAR ===== */
+  .titlebar {
+    flex: 0 0 auto;
+    background: #000;
+    border-bottom: 4px solid #FF00FF;
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .title {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(0.7rem, 1.4vw, 1.3rem);
+    color: #FFEE00;
+    text-shadow: 2px 2px 0 #AA0000;
+    letter-spacing: 1px;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .title .pix-deco {
+    color: #00FFFF;
+    text-shadow: 2px 2px 0 #0000AA;
+  }
+
+  .score {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(0.6rem, 1.1vw, 1.1rem);
+    color: #00FF00;
+    text-shadow: 2px 2px 0 #005500;
+    letter-spacing: 1px;
+  }
+
+  .titlebar .time {
+    font-family: 'VT323', monospace;
+    font-size: clamp(1rem, 1.6vw, 1.6rem);
+    color: #FFFFFF;
+  }
+
+  /* ===== GRID ===== */
+  .grid {
+    flex: 1 1 auto;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 10px;
+    padding: 10px;
+    min-height: 0;
+  }
+
+  /* ===== CARD ===== */
+  .card {
+    container-type: inline-size;
+    background: #2D1B4E;
+    border: 4px solid var(--zone-color, #FFF);
+    border-radius: 0px;
+    image-rendering: pixelated;
+    box-shadow: 4px 4px 0 #000;
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card .zone-tint {
+    position: absolute;
+    inset: 0;
+    background: var(--zone-bg, transparent);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .card > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Zone color modifiers */
+  .card[data-zone="1"] { --zone-color: #00AA00; --zone-bg: rgba(0,170,0,0.15); }
+  .card[data-zone="2"] { --zone-color: #00AAAA; --zone-bg: rgba(0,170,170,0.15); }
+  .card[data-zone="3"] { --zone-color: #AAAA00; --zone-bg: rgba(170,170,0,0.15); }
+  .card[data-zone="4"] { --zone-color: #AA0000; --zone-bg: rgba(170,0,0,0.20); }
+
+  /* ===== CARD HEADER ===== */
+  .card-head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .avatar {
+    flex: 0 0 auto;
+    width: 5cqw;
+    height: 5cqw;
+    max-width: 36px;
+    max-height: 36px;
+    min-width: 18px;
+    min-height: 18px;
+    background: var(--avatar-color, #00FFFF);
+    border: 2px solid #000;
+    box-shadow: 2px 2px 0 #000;
+    image-rendering: pixelated;
+    position: relative;
+  }
+  .avatar::after {
+    content: "";
+    position: absolute;
+    top: 22%;
+    left: 22%;
+    width: 56%;
+    height: 56%;
+    background: rgba(0,0,0,0.35);
+  }
+
+  .name-wrap {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  .name {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(0.5rem, 5cqw, 1.2rem);
+    color: #FFFFFF;
+    text-shadow: 1px 1px 0 #000;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    letter-spacing: 0.5px;
+  }
+
+  .level {
+    font-family: 'VT323', monospace;
+    font-size: clamp(0.7rem, 3.5cqw, 1rem);
+    color: #FFEE00;
+    letter-spacing: 1px;
+  }
+
+  .pixel-heart {
+    flex: 0 0 auto;
+    color: #FF0066;
+    font-size: clamp(0.7rem, 3.5cqw, 1.1rem);
+    image-rendering: pixelated;
+    text-shadow: 1px 1px 0 #000;
+    animation: heartBeat 1s steps(2) infinite;
+  }
+
+  @keyframes heartBeat {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.25); }
+    100% { transform: scale(1); }
+  }
+
+  /* ===== BPM ===== */
+  .bpm-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 4px;
+    margin: 2px 0;
+  }
+
+  .bpm {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(1.5rem, 18cqw, 10rem);
+    color: var(--zone-color, #FFF);
+    text-shadow: 3px 3px 0 #000;
+    line-height: 1;
+    -webkit-font-smoothing: none;
+    font-smooth: never;
+    letter-spacing: -1px;
+  }
+
+  .bpm-unit {
+    font-family: 'VT323', monospace;
+    font-size: clamp(0.8rem, 4cqw, 1.3rem);
+    color: #FFFFFF;
+    opacity: 0.8;
+  }
+
+  /* ===== ZONE LABEL ===== */
+  .zone-label {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(0.4rem, 3cqw, 0.8rem);
+    color: var(--zone-color, #FFF);
+    text-shadow: 1px 1px 0 #000;
+    text-align: center;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  /* ===== ZONE BAR (NES health bar) ===== */
+  .zone-bar {
+    display: flex;
+    gap: 3px;
+    height: 10px;
+  }
+  .zone-bar .block {
+    flex: 1 1 0;
+    border: 2px solid #000;
+    background: #333;
+  }
+  .zone-bar .block.on { background: var(--zone-color, #FFF); }
+
+  /* ===== HP BAR ===== */
+  .hp-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .hp-label {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(0.4rem, 2.6cqw, 0.7rem);
+    color: #FFEE00;
+    flex: 0 0 auto;
+  }
+  .hp-bar {
+    flex: 1 1 auto;
+    height: 8px;
+    background: #333;
+    border: 2px solid #000;
+    overflow: hidden;
+    display: flex;
+  }
+  .hp-bar .fill {
+    background: #00FF00;
+    height: 100%;
+  }
+  .hp-num {
+    font-family: 'VT323', monospace;
+    font-size: clamp(0.7rem, 3.5cqw, 1.1rem);
+    color: #FFFFFF;
+    flex: 0 0 auto;
+  }
+
+  /* ===== SPARKLINE (pixel-art) ===== */
+  .sparkline {
+    height: 22px;
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    margin-top: 2px;
+  }
+  .sparkline .bar {
+    flex: 1 1 0;
+    background: var(--zone-color, #FFF);
+    min-width: 3px;
+    image-rendering: pixelated;
+    border-bottom: 2px solid #000;
+  }
+
+  /* ===== FOOTER STATS ===== */
+  .stats {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: 'VT323', monospace;
+    font-size: clamp(0.75rem, 3.8cqw, 1.2rem);
+    color: #FFFFFF;
+    border-top: 2px dashed rgba(255,255,255,0.2);
+    padding-top: 2px;
+  }
+  .stats .stat {
+    display: flex;
+    gap: 3px;
+    align-items: baseline;
+  }
+  .stats .lbl {
+    color: #FFEE00;
+    font-size: clamp(0.55rem, 3cqw, 0.9rem);
+    font-family: 'Press Start 2P', monospace;
+  }
+
+  /* ===== STATUS BAR ===== */
+  .statusbar {
+    flex: 0 0 auto;
+    background: #000;
+    border-top: 4px solid #FF00FF;
+    padding: 6px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: 'VT323', monospace;
+    font-size: clamp(0.9rem, 1.4vw, 1.4rem);
+    color: #FFFFFF;
+  }
+  .statusbar .blink {
+    animation: blink 1s steps(2) infinite;
+    color: #FFEE00;
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(0.5rem, 0.9vw, 0.9rem);
+  }
+  @keyframes blink {
+    0% { opacity: 1; }
+    50% { opacity: 0; }
+    100% { opacity: 1; }
+  }
+  .statusbar .coin {
+    color: #FFEE00;
+  }
+</style>
+</head>
+<body>
+
+<!-- ===================== TITLE BAR ===================== -->
+<div class="titlebar">
+  <div class="title">
+    <span class="pix-deco">★</span>
+    <span>HR QUEST</span>
+    <span class="pix-deco">★</span>
+  </div>
+  <div class="time">12:48</div>
+  <div class="score">SCORE: 01250</div>
+</div>
+
+<!-- ===================== GRID ===================== -->
+<div class="grid">
+
+  <!-- HERO -->
+  <div class="card" data-zone="1" style="--avatar-color:#00AA00">
+    <div class="zone-tint"></div>
+    <div class="card-head">
+      <div class="avatar"></div>
+      <div class="name-wrap">
+        <div class="name">HERO</div>
+        <div class="level">LV.12</div>
+      </div>
+      <div class="pixel-heart">&hearts;</div>
+    </div>
+    <div class="bpm-row">
+      <span class="bpm">68</span><span class="bpm-unit">BPM</span>
+    </div>
+    <div class="zone-label">Zone 1 · Rest</div>
+    <div class="zone-bar">
+      <div class="block on"></div><div class="block"></div><div class="block"></div><div class="block"></div>
+    </div>
+    <div class="hp-wrap">
+      <span class="hp-label">HP</span>
+      <div class="hp-bar"><div class="fill" style="width:95%"></div></div>
+      <span class="hp-num">95</span>
+    </div>
+    <div class="sparkline">
+      <div class="bar" style="height:30%"></div>
+      <div class="bar" style="height:40%"></div>
+      <div class="bar" style="height:25%"></div>
+      <div class="bar" style="height:35%"></div>
+      <div class="bar" style="height:30%"></div>
+      <div class="bar" style="height:28%"></div>
+      <div class="bar" style="height:38%"></div>
+      <div class="bar" style="height:32%"></div>
+    </div>
+    <div class="stats">
+      <div class="stat"><span class="lbl">KCAL</span><span>0420</span></div>
+      <div class="stat"><span class="lbl">TIME</span><span>32:14</span></div>
+    </div>
+  </div>
+
+  <!-- WARRIOR -->
+  <div class="card" data-zone="2" style="--avatar-color:#00AAAA">
+    <div class="zone-tint"></div>
+    <div class="card-head">
+      <div class="avatar"></div>
+      <div class="name-wrap">
+        <div class="name">WARRIOR</div>
+        <div class="level">LV.15</div>
+      </div>
+      <div class="pixel-heart">&hearts;</div>
+    </div>
+    <div class="bpm-row">
+      <span class="bpm">82</span><span class="bpm-unit">BPM</span>
+    </div>
+    <div class="zone-label">Zone 2 · Warm</div>
+    <div class="zone-bar">
+      <div class="block on"></div><div class="block on"></div><div class="block"></div><div class="block"></div>
+    </div>
+    <div class="hp-wrap">
+      <span class="hp-label">HP</span>
+      <div class="hp-bar"><div class="fill" style="width:88%"></div></div>
+      <span class="hp-num">88</span>
+    </div>
+    <div class="sparkline">
+      <div class="bar" style="height:45%"></div>
+      <div class="bar" style="height:50%"></div>
+      <div class="bar" style="height:42%"></div>
+      <div class="bar" style="height:55%"></div>
+      <div class="bar" style="height:48%"></div>
+      <div class="bar" style="height:50%"></div>
+      <div class="bar" style="height:46%"></div>
+      <div class="bar" style="height:52%"></div>
+    </div>
+    <div class="stats">
+      <div class="stat"><span class="lbl">KCAL</span><span>0610</span></div>
+      <div class="stat"><span class="lbl">TIME</span><span>32:14</span></div>
+    </div>
+  </div>
+
+  <!-- MAGE -->
+  <div class="card" data-zone="2" style="--avatar-color:#AA00AA">
+    <div class="zone-tint"></div>
+    <div class="card-head">
+      <div class="avatar"></div>
+      <div class="name-wrap">
+        <div class="name">MAGE</div>
+        <div class="level">LV.09</div>
+      </div>
+      <div class="pixel-heart">&hearts;</div>
+    </div>
+    <div class="bpm-row">
+      <span class="bpm">115</span><span class="bpm-unit">BPM</span>
+    </div>
+    <div class="zone-label">Zone 2 · Fat Burn</div>
+    <div class="zone-bar">
+      <div class="block on"></div><div class="block on"></div><div class="block"></div><div class="block"></div>
+    </div>
+    <div class="hp-wrap">
+      <span class="hp-label">HP</span>
+      <div class="hp-bar"><div class="fill" style="width:74%"></div></div>
+      <span class="hp-num">74</span>
+    </div>
+    <div class="sparkline">
+      <div class="bar" style="height:60%"></div>
+      <div class="bar" style="height:55%"></div>
+      <div class="bar" style="height:65%"></div>
+      <div class="bar" style="height:58%"></div>
+      <div class="bar" style="height:62%"></div>
+      <div class="bar" style="height:60%"></div>
+      <div class="bar" style="height:55%"></div>
+      <div class="bar" style="height:63%"></div>
+    </div>
+    <div class="stats">
+      <div class="stat"><span class="lbl">KCAL</span><span>0525</span></div>
+      <div class="stat"><span class="lbl">TIME</span><span>32:14</span></div>
+    </div>
+  </div>
+
+  <!-- ROGUE -->
+  <div class="card" data-zone="3" style="--avatar-color:#AAAA00">
+    <div class="zone-tint"></div>
+    <div class="card-head">
+      <div class="avatar"></div>
+      <div class="name-wrap">
+        <div class="name">ROGUE</div>
+        <div class="level">LV.14</div>
+      </div>
+      <div class="pixel-heart">&hearts;</div>
+    </div>
+    <div class="bpm-row">
+      <span class="bpm">148</span><span class="bpm-unit">BPM</span>
+    </div>
+    <div class="zone-label">Zone 3 · Cardio</div>
+    <div class="zone-bar">
+      <div class="block on"></div><div class="block on"></div><div class="block on"></div><div class="block"></div>
+    </div>
+    <div class="hp-wrap">
+      <span class="hp-label">HP</span>
+      <div class="hp-bar"><div class="fill" style="width:61%"></div></div>
+      <span class="hp-num">61</span>
+    </div>
+    <div class="sparkline">
+      <div class="bar" style="height:70%"></div>
+      <div class="bar" style="height:75%"></div>
+      <div class="bar" style="height:72%"></div>
+      <div class="bar" style="height:68%"></div>
+      <div class="bar" style="height:78%"></div>
+      <div class="bar" style="height:74%"></div>
+      <div class="bar" style="height:70%"></div>
+      <div class="bar" style="height:76%"></div>
+    </div>
+    <div class="stats">
+      <div class="stat"><span class="lbl">KCAL</span><span>0780</span></div>
+      <div class="stat"><span class="lbl">TIME</span><span>32:14</span></div>
+    </div>
+  </div>
+
+  <!-- PALADIN -->
+  <div class="card" data-zone="4" style="--avatar-color:#AA5500">
+    <div class="zone-tint"></div>
+    <div class="card-head">
+      <div class="avatar"></div>
+      <div class="name-wrap">
+        <div class="name">PALADIN</div>
+        <div class="level">LV.18</div>
+      </div>
+      <div class="pixel-heart">&hearts;</div>
+    </div>
+    <div class="bpm-row">
+      <span class="bpm">175</span><span class="bpm-unit">BPM</span>
+    </div>
+    <div class="zone-label">Zone 4 · Max!</div>
+    <div class="zone-bar">
+      <div class="block on"></div><div class="block on"></div><div class="block on"></div><div class="block on"></div>
+    </div>
+    <div class="hp-wrap">
+      <span class="hp-label">HP</span>
+      <div class="hp-bar"><div class="fill" style="width:38%"></div></div>
+      <span class="hp-num">38</span>
+    </div>
+    <div class="sparkline">
+      <div class="bar" style="height:85%"></div>
+      <div class="bar" style="height:88%"></div>
+      <div class="bar" style="height:90%"></div>
+      <div class="bar" style="height:82%"></div>
+      <div class="bar" style="height:92%"></div>
+      <div class="bar" style="height:88%"></div>
+      <div class="bar" style="height:86%"></div>
+      <div class="bar" style="height:90%"></div>
+    </div>
+    <div class="stats">
+      <div class="stat"><span class="lbl">KCAL</span><span>0940</span></div>
+      <div class="stat"><span class="lbl">TIME</span><span>32:14</span></div>
+    </div>
+  </div>
+
+  <!-- ARCHER -->
+  <div class="card" data-zone="3" style="--avatar-color:#0055AA">
+    <div class="zone-tint"></div>
+    <div class="card-head">
+      <div class="avatar"></div>
+      <div class="name-wrap">
+        <div class="name">ARCHER</div>
+        <div class="level">LV.11</div>
+      </div>
+      <div class="pixel-heart">&hearts;</div>
+    </div>
+    <div class="bpm-row">
+      <span class="bpm">132</span><span class="bpm-unit">BPM</span>
+    </div>
+    <div class="zone-label">Zone 3 · Cardio</div>
+    <div class="zone-bar">
+      <div class="block on"></div><div class="block on"></div><div class="block on"></div><div class="block"></div>
+    </div>
+    <div class="hp-wrap">
+      <span class="hp-label">HP</span>
+      <div class="hp-bar"><div class="fill" style="width:67%"></div></div>
+      <span class="hp-num">67</span>
+    </div>
+    <div class="sparkline">
+      <div class="bar" style="height:65%"></div>
+      <div class="bar" style="height:70%"></div>
+      <div class="bar" style="height:68%"></div>
+      <div class="bar" style="height:72%"></div>
+      <div class="bar" style="height:66%"></div>
+      <div class="bar" style="height:74%"></div>
+      <div class="bar" style="height:70%"></div>
+      <div class="bar" style="height:68%"></div>
+    </div>
+    <div class="stats">
+      <div class="stat"><span class="lbl">KCAL</span><span>0695</span></div>
+      <div class="stat"><span class="lbl">TIME</span><span>32:14</span></div>
+    </div>
+  </div>
+
+  <!-- KNIGHT -->
+  <div class="card" data-zone="2" style="--avatar-color:#AAAAAA">
+    <div class="zone-tint"></div>
+    <div class="card-head">
+      <div class="avatar"></div>
+      <div class="name-wrap">
+        <div class="name">KNIGHT</div>
+        <div class="level">LV.16</div>
+      </div>
+      <div class="pixel-heart">&hearts;</div>
+    </div>
+    <div class="bpm-row">
+      <span class="bpm">92</span><span class="bpm-unit">BPM</span>
+    </div>
+    <div class="zone-label">Zone 2 · Warm</div>
+    <div class="zone-bar">
+      <div class="block on"></div><div class="block on"></div><div class="block"></div><div class="block"></div>
+    </div>
+    <div class="hp-wrap">
+      <span class="hp-label">HP</span>
+      <div class="hp-bar"><div class="fill" style="width:82%"></div></div>
+      <span class="hp-num">82</span>
+    </div>
+    <div class="sparkline">
+      <div class="bar" style="height:48%"></div>
+      <div class="bar" style="height:52%"></div>
+      <div class="bar" style="height:50%"></div>
+      <div class="bar" style="height:46%"></div>
+      <div class="bar" style="height:54%"></div>
+      <div class="bar" style="height:50%"></div>
+      <div class="bar" style="height:52%"></div>
+      <div class="bar" style="height:48%"></div>
+    </div>
+    <div class="stats">
+      <div class="stat"><span class="lbl">KCAL</span><span>0580</span></div>
+      <div class="stat"><span class="lbl">TIME</span><span>32:14</span></div>
+    </div>
+  </div>
+
+  <!-- BARBARIAN -->
+  <div class="card" data-zone="4" style="--avatar-color:#AA0000">
+    <div class="zone-tint"></div>
+    <div class="card-head">
+      <div class="avatar"></div>
+      <div class="name-wrap">
+        <div class="name">BARBARIAN</div>
+        <div class="level">LV.20</div>
+      </div>
+      <div class="pixel-heart">&hearts;</div>
+    </div>
+    <div class="bpm-row">
+      <span class="bpm">188</span><span class="bpm-unit">BPM</span>
+    </div>
+    <div class="zone-label">Zone 4 · MAX!!</div>
+    <div class="zone-bar">
+      <div class="block on"></div><div class="block on"></div><div class="block on"></div><div class="block on"></div>
+    </div>
+    <div class="hp-wrap">
+      <span class="hp-label">HP</span>
+      <div class="hp-bar"><div class="fill" style="width:24%"></div></div>
+      <span class="hp-num">24</span>
+    </div>
+    <div class="sparkline">
+      <div class="bar" style="height:92%"></div>
+      <div class="bar" style="height:96%"></div>
+      <div class="bar" style="height:94%"></div>
+      <div class="bar" style="height:98%"></div>
+      <div class="bar" style="height:95%"></div>
+      <div class="bar" style="height:97%"></div>
+      <div class="bar" style="height:93%"></div>
+      <div class="bar" style="height:99%"></div>
+    </div>
+    <div class="stats">
+      <div class="stat"><span class="lbl">KCAL</span><span>1020</span></div>
+      <div class="stat"><span class="lbl">TIME</span><span>32:14</span></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===================== STATUS BAR ===================== -->
+<div class="statusbar">
+  <span>PLAYERS: 08 / 08</span>
+  <span class="blink">PRESS START</span>
+  <span>HI-SCORE: 99999 &nbsp;<span class="coin">&#9733;</span></span>
+</div>
+
+</body>
+</html>
