@@ -1,26 +1,26 @@
-<!-- Layout: Tri-column 20-60-20 v3 — LIGHT, neutral BPM (high contrast), enlarged fonts -->
+<!-- Layout: Tri-column 20-60-20 v4 — DARK, neutral BPM (high contrast), enlarged fonts -->
 <!DOCTYPE html>
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CF-MONITOR // TRI-COLUMN v3 — LIGHT NEUTRAL</title>
+<title>CF-MONITOR // TRI-COLUMN v4 — DARK NEUTRAL</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #F1F5F9;
-    --text: #0F172A;
-    --text-dim: #475569;
-    --text-muted: #94A3B8;
-    --border: rgba(15,23,42,0.10);
-    --card-surface: #FFFFFF;
-    --z1: #0a8a06;
-    --z2: #0a8a06;
-    --z3: #CA8A04;
-    --z4: #DC2626;
-    --work: #16A34A;
+    --bg: #0F172A;
+    --text: #E2E8F0;
+    --text-dim: #94A3B8;
+    --text-muted: #64748B;
+    --border: rgba(255,255,255,0.08);
+    --card-surface: rgba(255,255,255,0.02);
+    --z1: #15FD07;
+    --z2: #15FD07;
+    --z3: #FDE507;
+    --z4: #FD0707;
+    --work: #22C55E;
   }
 
   * { box-sizing: border-box; }
@@ -44,7 +44,7 @@
 
   /* ===== CENTER ===== */
   .center {
-    background: rgba(15,23,42,0.03);
+    background: rgba(255,255,255,0.03);
     border: 1px solid var(--border);
     border-radius: 16px;
     padding: 40px 5%;
@@ -125,7 +125,7 @@
   .group-stats .sep { color: var(--border); }
   .leaderboard { width: 90%; max-width: 560px; display: flex; flex-direction: column; gap: 8px; text-align: left; }
   .lb-head { font-size: clamp(0.7rem, 0.9vw, 0.9rem); font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-muted); padding: 0 14px 4px; }
-  .lb-row { display: grid; grid-template-columns: 32px 1fr auto auto; align-items: center; gap: 14px; padding: 12px 14px; background: rgba(15,23,42,0.03); border: 1px solid var(--border); border-radius: 10px; font-weight: 600; font-size: clamp(0.9rem, 1.1vw, 1.15rem); }
+  .lb-row { display: grid; grid-template-columns: 32px 1fr auto auto; align-items: center; gap: 14px; padding: 12px 14px; background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 10px; font-weight: 600; font-size: clamp(0.9rem, 1.1vw, 1.15rem); }
   .lb-rank { font-size: 1.3rem; }
   .lb-zone { font-size: 0.75rem; font-weight: 800; padding: 3px 10px; border-radius: 999px; background: rgba(239,68,68,0.15); color: var(--z4); border: 1px solid rgba(239,68,68,0.4); }
   .lb-row.z3 .lb-zone { background: rgba(234,179,8,0.15); color: var(--z3); border-color: rgba(234,179,8,0.4); }
@@ -154,11 +154,11 @@
   }
   .card .bpm {
     font-variant-numeric: tabular-nums; font-weight: 800;
-    color: #0F172A;
+    color: #F8FAFC;
     font-size: clamp(2.88rem, 4.5vw, 5.04rem);
     line-height: 1; letter-spacing: -0.03em;
   }
-  .card .heart { color: #0F172A; font-size: clamp(1.26rem, 1.8vw, 2.16rem); }
+  .card .heart { color: #F8FAFC; font-size: clamp(1.26rem, 1.8vw, 2.16rem); }
   .card .kcal {
     font-variant-numeric: tabular-nums; font-weight: 700;
     color: var(--text-dim);
