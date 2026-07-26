@@ -36,7 +36,7 @@
 | Файл | Тема | BPM-цвет | Особенности |
 |---|---|---|---|
 | [split-screen.html](split-screen.html) | тёмная | по зоне | Базовый сплит |
-| [split-screen-5x3.html](split-screen-5x3.html) | тёмная | по зоне | 5×3 = 15 атлетов |
+| [split-screen-5x3.html](split-screen-5x3.html) | тёмная | по зоне | 5 столбцов × 3 строки = 15 атлетов |
 | [split-screen-4x4.html](split-screen-4x4.html) | тёмная | по зоне | 4×4 = 16 атлетов |
 | [split-screen-4x4-v2.html](split-screen-4x4-v2.html) | тёмная | по зоне | Увеличенные шрифты |
 | [split-screen-4x4-light-v2.html](split-screen-4x4-light-v2.html) | светлая | по зоне | Увеличенные шрифты |
