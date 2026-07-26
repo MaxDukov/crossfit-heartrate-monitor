@@ -1,0 +1,259 @@
+<!-- Layout: Tri-column 20-60-20 v5 — DARK, neutral BPM (high contrast), enlarged fonts -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CF-MONITOR // TRI-COLUMN v5 — DARK NEUTRAL</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0F172A;
+    --text: #E2E8F0;
+    --text-dim: #94A3B8;
+    --text-muted: #64748B;
+    --border: rgba(255,255,255,0.08);
+    --card-surface: rgba(255,255,255,0.02);
+    --z1: #15FD07;
+    --z2: #15FD07;
+    --z3: #FDE507;
+    --z4: #FD0707;
+    --work: #22C55E;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100vh; margin: 0; overflow: hidden; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .shell {
+    display: grid;
+    grid-template-columns: 20fr 60fr 20fr;
+    gap: 8px;
+    padding: 8px;
+    height: 100vh;
+  }
+
+  .col { display: flex; flex-direction: column; gap: 8px; min-height: 0; }
+
+  /* ===== CENTER ===== */
+  .center {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 40px 5%;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center; gap: 20px; min-height: 0;
+  }
+  .wod-title {
+    display: flex; align-items: baseline; justify-content: center;
+    gap: 16px;
+    font-size: clamp(1.67rem, 3.33vw, 4rem);
+    font-weight: 900; letter-spacing: -0.03em;
+    margin: 0; line-height: 1; text-transform: uppercase;
+    width: 90%;
+  }
+  .wod-title .wod-tag {
+    font-size: inherit;
+    font-weight: 900; letter-spacing: -0.03em;
+    color: var(--text-muted);
+  }
+  .phase-tag {
+    font-size: clamp(0.75rem, 1vw, 1.1rem);
+    font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--work); background: rgba(34,197,94,0.12);
+    border: 1px solid rgba(34,197,94,0.3);
+    padding: 6px 18px; border-radius: 999px;
+  }
+  .timer {
+    font-variant-numeric: tabular-nums;
+    font-size: clamp(4rem, 11vw, 14rem);
+    font-weight: 800; color: var(--work);
+    line-height: 0.9; letter-spacing: -0.04em;
+    text-shadow: 0 0 60px rgba(34,197,94,0.2); width: 90%;
+  }
+  /* ===== WOD TABLE ===== */
+  .wod-table {
+    width: 80%;
+    max-width: 520px;
+    border-collapse: collapse;
+    font-size: clamp(1.1rem, 1.8vw, 2rem);
+    font-weight: 600;
+  }
+  .wod-table caption {
+    font-size: clamp(0.8rem, 1vw, 1.1rem);
+    font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+  }
+  .wod-table th {
+    text-align: left;
+    font-size: clamp(0.7rem, 0.85vw, 0.9rem);
+    font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--text-muted);
+    padding: 8px 16px;
+    border-bottom: 2px solid var(--border);
+  }
+  .wod-table th:nth-child(1) { width: 18%; text-align: center; }
+  .wod-table th:nth-child(2) { width: 18%; }
+  .wod-table td {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+  }
+  .wod-table td:nth-child(1) {
+    font-weight: 900;
+    font-variant-numeric: tabular-nums;
+    color: var(--work);
+    font-size: 1.3em;
+    text-align: center;
+    vertical-align: middle;
+  }
+  .wod-table td:nth-child(2) {
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    color: var(--text);
+  }
+  .wod-table td:nth-child(3) { color: var(--text-dim); }
+  .wod-table tr:last-child td { border-bottom: none; }
+
+  .group-stats {
+    display: flex; gap: 32px; align-items: center;
+    font-variant-numeric: tabular-nums;
+    font-size: clamp(0.95rem, 1.3vw, 1.4rem);
+    color: var(--text-muted); font-weight: 600;
+  }
+  .group-stats b { color: var(--text); font-weight: 800; margin-right: 6px; }
+  .group-stats .sep { color: var(--border); }
+  .leaderboard { width: 90%; max-width: 560px; display: flex; flex-direction: column; gap: 8px; text-align: left; }
+  .lb-head { font-size: clamp(0.7rem, 0.9vw, 0.9rem); font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-muted); padding: 0 14px 4px; }
+  .lb-row { display: grid; grid-template-columns: 32px 1fr auto auto; align-items: center; gap: 14px; padding: 12px 14px; background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 10px; font-weight: 600; font-size: clamp(0.9rem, 1.1vw, 1.15rem); }
+  .lb-rank { font-size: 1.3rem; }
+  .lb-zone { font-size: 0.75rem; font-weight: 800; padding: 3px 10px; border-radius: 999px; background: rgba(239,68,68,0.15); color: var(--z4); border: 1px solid rgba(239,68,68,0.4); }
+  .lb-row.z3 .lb-zone { background: rgba(234,179,8,0.15); color: var(--z3); border-color: rgba(234,179,8,0.4); }
+
+  /* ===== CARD — enlarged fonts (-10% name/bpm, 9px border) ===== */
+  .card {
+    container-type: inline-size;
+    flex: 1 1 0; min-height: 0;
+    display: grid; grid-template-rows: auto 1fr auto;
+    align-items: center; gap: 8px;
+    padding: 14px 12px;
+    background: linear-gradient(135deg, color-mix(in srgb, var(--zc) 15%, transparent), var(--card-surface));
+    border: 1px solid var(--border);
+    border-left: 9px solid var(--zc);
+    border-radius: 12px;
+  }
+  .card .name {
+    font-weight: 700;
+    font-size: clamp(2.88rem, 3.15vw, 3.96rem);
+    text-align: center; line-height: 1;
+    overflow: hidden; letter-spacing: -0.02em;
+  }
+  .card .bpm-row {
+    display: flex; align-items: baseline;
+    justify-content: center; gap: 6px;
+  }
+  .card .bpm {
+    font-variant-numeric: tabular-nums; font-weight: 800;
+    color: #F8FAFC;
+    font-size: clamp(2.88rem, 4.5vw, 5.04rem);
+    line-height: 1; letter-spacing: -0.03em;
+  }
+  .card .heart { color: #F8FAFC; font-size: clamp(1.26rem, 1.8vw, 2.16rem); }
+  .card .kcal {
+    font-variant-numeric: tabular-nums; font-weight: 700;
+    color: var(--text-dim);
+    font-size: clamp(2.4rem, 2.5vw, 3rem);
+    text-align: center; line-height: 1;
+  }
+  .card .kcal .fire { color: #F97316; }
+</style>
+</head>
+<body>
+  <div class="shell">
+    <!-- LEFT -->
+    <aside class="col">
+      <div class="card" style="--zc: var(--z1)">
+        <div class="name">Анна</div>
+        <div class="bpm-row"><span class="bpm">68</span><span class="heart">♥</span></div>
+        <div class="kcal"><span class="fire">🔥</span> 12</div>
+      </div>
+      <div class="card" style="--zc: var(--z2)">
+        <div class="name">Борис</div>
+        <div class="bpm-row"><span class="bpm">82</span><span class="heart">♥</span></div>
+        <div class="kcal"><span class="fire">🔥</span> 28</div>
+      </div>
+      <div class="card" style="--zc: var(--z3)">
+        <div class="name">Вера</div>
+        <div class="bpm-row"><span class="bpm">122</span><span class="heart">♥</span></div>
+        <div class="kcal"><span class="fire">🔥</span> 65</div>
+      </div>
+      <div class="card" style="--zc: var(--z3)">
+        <div class="name">Глеб</div>
+        <div class="bpm-row"><span class="bpm">148</span><span class="heart">♥</span></div>
+        <div class="kcal"><span class="fire">🔥</span> 142</div>
+      </div>
+    </aside>
+
+    <!-- CENTER -->
+    <main class="center">
+      <h1 class="wod-title"><span class="wod-tag">WOD:</span> AMRAP 20:00</h1>
+      <span class="phase-tag">Work Phase</span>
+      <div class="timer">14:32</div>
+      <table class="wod-table">
+        <thead>
+          <tr><th>Раунды</th><th>Повторы</th><th>Упражнение</th></tr>
+        </thead>
+        <tbody>
+          <tr><td rowspan="3">5×</td><td>10</td><td>Thrusters (40/25 кг)</td></tr>
+          <tr><td>15</td><td>Pull-ups</td></tr>
+          <tr><td>20</td><td>Box Jumps (60/50 см)</td></tr>
+        </tbody>
+      </table>
+      <div class="group-stats">
+        <span><b>Средний HR:</b>128</span><span class="sep">|</span>
+        <span><b>Всего ккал:</b>891</span><span class="sep">|</span>
+        <span><b>Активны:</b>8</span>
+      </div>
+      <section class="leaderboard">
+        <div class="lb-head">Лидерборд · Топ усилий</div>
+        <div class="lb-row"><span class="lb-rank">🥇</span><span>Захар</span><span class="lb-kcal" style="color:var(--text-dim)">245 ккал</span><span class="lb-zone">Z4</span></div>
+        <div class="lb-row"><span class="lb-rank">🥈</span><span>Дина</span><span class="lb-kcal" style="color:var(--text-dim)">218 ккал</span><span class="lb-zone">Z4</span></div>
+        <div class="lb-row z3"><span class="lb-rank">🥉</span><span>Глеб</span><span class="lb-kcal" style="color:var(--text-dim)">142 ккал</span><span class="lb-zone">Z3</span></div>
+      </section>
+    </main>
+
+    <!-- RIGHT -->
+    <aside class="col">
+      <div class="card" style="--zc: var(--z4)">
+        <div class="name">Дина</div>
+        <div class="bpm-row"><span class="bpm">175</span><span class="heart">♥</span></div>
+        <div class="kcal"><span class="fire">🔥</span> 218</div>
+      </div>
+      <div class="card" style="--zc: var(--z3)">
+        <div class="name">Егор</div>
+        <div class="bpm-row"><span class="bpm">132</span><span class="heart">♥</span></div>
+        <div class="kcal"><span class="fire">🔥</span> 96</div>
+      </div>
+      <div class="card" style="--zc: var(--z2)">
+        <div class="name">Жанна</div>
+        <div class="bpm-row"><span class="bpm">92</span><span class="heart">♥</span></div>
+        <div class="kcal"><span class="fire">🔥</span> 35</div>
+      </div>
+      <div class="card" style="--zc: var(--z4)">
+        <div class="name">Захар</div>
+        <div class="bpm-row"><span class="bpm">182</span><span class="heart">♥</span></div>
+        <div class="kcal"><span class="fire">🔥</span> 245</div>
+      </div>
+    </aside>
+  </div>
+</body>
+</html>
