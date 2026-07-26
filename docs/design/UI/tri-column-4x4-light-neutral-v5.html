@@ -108,7 +108,7 @@
     border-bottom: 1px solid var(--border);
     text-align: left;
   }
-  .wod-table td:nth-child(1) {
+  .wod-table td.rounds {
     font-weight: 900;
     font-variant-numeric: tabular-nums;
     color: var(--work);
@@ -116,12 +116,12 @@
     text-align: center;
     vertical-align: middle;
   }
-  .wod-table td:nth-child(2) {
+  .wod-table td.reps {
     font-weight: 800;
     font-variant-numeric: tabular-nums;
     color: var(--text);
   }
-  .wod-table td:nth-child(3) { color: var(--text-dim); }
+  .wod-table td.exercise { color: var(--text-dim); }
   .wod-table tr:last-child td { border-bottom: none; }
 
   .group-stats {
@@ -213,9 +213,9 @@
           <tr><th>Раунды</th><th>Повторы</th><th>Упражнение</th></tr>
         </thead>
         <tbody>
-          <tr><td rowspan="3">5×</td><td>10</td><td>Thrusters (40/25 кг)</td></tr>
-          <tr><td>15</td><td>Pull-ups</td></tr>
-          <tr><td>20</td><td>Box Jumps (60/50 см)</td></tr>
+          <tr><td class="rounds" rowspan="3">5×</td><td class="reps">10</td><td class="exercise">Thrusters (40/25 кг)</td></tr>
+          <tr><td class="reps">15</td><td class="exercise">Pull-ups</td></tr>
+          <tr><td class="reps">20</td><td class="exercise">Box Jumps (60/50 см)</td></tr>
         </tbody>
       </table>
       <div class="group-stats">
