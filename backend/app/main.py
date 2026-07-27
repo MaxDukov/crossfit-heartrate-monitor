@@ -26,10 +26,8 @@ _logger = logging.getLogger(__name__)
 
 DEV_MODE = os.environ.get("CF_DEV_MODE", "0") == "1"
 
-if not DEV_MODE:
-    from .services.ant_collector import AntCollector
-
-collector: "AntCollector | MockCollector | None" = None
+collector: "MockCollector | None" = None
+current_mode: str = "mock" if DEV_MODE else "ant"
 _main_loop: asyncio.AbstractEventLoop | None = None
 _calories_accum: dict[int, float] = {}
 _last_hr_time: dict[int, float] = {}
@@ -97,29 +95,39 @@ def _on_new_sensor(device_id: int):
         )
 
 
+def _start_collector(mode: str):
+    """Создаёт и запускает коллектор нужного типа."""
+    global collector, current_mode
+    if mode == "mock":
+        collector = MockCollector(on_hr_data=_on_hr_data, on_new_sensor=_on_new_sensor)
+    else:
+        from .services.ant_collector import AntCollector
+        collector = AntCollector(max_sensors=8, on_hr_data=_on_hr_data, on_new_sensor=_on_new_sensor)
+    collector.start()
+    current_mode = mode
+    _logger.info(f"Collector started ({mode})")
+
+
+def switch_collector(mode: str):
+    """Останавливает текущий коллектор и запускает новый."""
+    global collector, _calories_accum, _last_hr_time
+    if collector:
+        collector.stop()
+    _calories_accum.clear()
+    _last_hr_time.clear()
+    _start_collector(mode)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Управление жизненным циклом: startup/shutdown."""
-    global collector, _main_loop
+    global _main_loop
     _main_loop = asyncio.get_running_loop()
     init_db()
     seed_db()
     _logger.info("Database initialized and seeded")
 
-    if DEV_MODE:
-        _logger.info("=== CF DEV MODE — mock collector (8 virtual sensors) ===")
-        collector = MockCollector(
-            on_hr_data=_on_hr_data,
-            on_new_sensor=_on_new_sensor,
-        )
-    else:
-        collector = AntCollector(
-            max_sensors=8,
-            on_hr_data=_on_hr_data,
-            on_new_sensor=_on_new_sensor,
-        )
-    collector.start()
-    _logger.info(f"Collector started ({'mock' if DEV_MODE else 'ANT+'})")
+    _start_collector(current_mode)
 
     yield
 
@@ -143,7 +151,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-from .routers import athletes, sensors, sessions, analytics, equipment, wods
+from .routers import athletes, sensors, sessions, analytics, equipment, wods, system
 
 app.include_router(athletes.router)
 app.include_router(sensors.router)
@@ -151,6 +159,7 @@ app.include_router(sessions.router)
 app.include_router(analytics.router)
 app.include_router(equipment.router)
 app.include_router(wods.router)
+app.include_router(system.router)
 
 
 @app.get("/api/health")

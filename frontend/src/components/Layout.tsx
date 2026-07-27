@@ -13,10 +13,11 @@ const navItems = [
 ];
 
 export default function Layout() {
-  const { connectWs, fetchSensors } = useHrStore();
+  const { connectWs, fetchSensors, demoMode, initMode, toggleDemo } = useHrStore();
   const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
+    initMode();
     connectWs();
     fetchSensors();
     return () => useHrStore.getState().disconnectWs();
@@ -49,6 +50,17 @@ export default function Layout() {
             </NavLink>
           ))}
         </div>
+        <button
+          onClick={toggleDemo}
+          className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
+            demoMode
+              ? "bg-amber-400 text-slate-900 hover:bg-amber-300"
+              : "text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+          }`}
+          title={demoMode ? "Demo режим включён (mock-датчики)" : "Включить Demo режим"}
+        >
+          Demo
+        </button>
         <button
           onClick={toggleTheme}
           className="ml-auto p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-xl"
