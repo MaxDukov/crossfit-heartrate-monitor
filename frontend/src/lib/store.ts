@@ -13,10 +13,13 @@ interface HrState {
   sensors: Sensor[];
   newSensors: number[];
   ws: WebSocket | null;
+  demoMode: boolean;
   connectWs: () => void;
   disconnectWs: () => void;
   fetchSensors: () => Promise<void>;
   dismissNewSensor: (deviceId: number) => void;
+  initMode: () => Promise<void>;
+  toggleDemo: () => Promise<void>;
 }
 
 const FIFTEEN_MIN = 15 * 60 * 1000;
@@ -27,6 +30,7 @@ export const useHrStore = create<HrState>((set, get) => ({
   sensors: [],
   newSensors: [],
   ws: null,
+  demoMode: false,
 
   connectWs: () => {
     const existing = get().ws;
@@ -50,7 +54,7 @@ export const useHrStore = create<HrState>((set, get) => ({
           };
         });
       } else if (msg.type === "new_sensor") {
-        set((s) => ({
+      set((s) => ({
           newSensors: s.newSensors.includes(msg.device_id)
             ? s.newSensors
             : [...s.newSensors, msg.device_id],
@@ -81,5 +85,32 @@ export const useHrStore = create<HrState>((set, get) => ({
     set((s) => ({
       newSensors: s.newSensors.filter((id) => id !== deviceId),
     }));
+  },
+
+  initMode: async () => {
+    try {
+      const { mode } = await api.system.getMode();
+      set({ demoMode: mode === "mock" });
+    } catch {}
+  },
+
+  toggleDemo: async () => {
+    const newMode = get().demoMode ? "ant" : "mock";
+    try {
+      await api.system.setMode(newMode);
+      set(() => ({
+        demoMode: newMode === "mock",
+        hrData: {},
+        hrHistory: {},
+        newSensors: [],
+      }));
+      get().disconnectWs();
+      setTimeout(() => {
+        get().connectWs();
+        get().fetchSensors();
+      }, 500);
+    } catch (e) {
+      console.error("Failed to toggle demo mode:", e);
+    }
   },
 }));

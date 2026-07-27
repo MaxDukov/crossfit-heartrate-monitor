@@ -82,4 +82,12 @@ export const api = {
     endActive: () => request<void>("/wods/active/end", { method: "POST" }),
     history: (limit = 20) => request<Wod[]>(`/wods/history?limit=${limit}`),
   },
+  system: {
+    getMode: () => request<{ mode: string }>("/system/mode"),
+    setMode: (mode: string) =>
+      request<{ mode: string }>("/system/mode", {
+        method: "POST",
+        body: JSON.stringify({ mode }),
+      }),
+  },
 };
