@@ -1,6 +1,5 @@
 """Менеджер WebSocket-соединений — broadcast HR данных всем клиентам."""
 
-import asyncio
 import json
 import logging
 from typing import Set
@@ -20,12 +19,12 @@ class ConnectionManager:
         """Принимает новое WebSocket-подключение."""
         await ws.accept()
         self._connections.add(ws)
-        _logger.info(f"WS client connected, total: {len(self._connections)}")
+        _logger.info("WS client connected, total: %s", len(self._connections))
 
     def disconnect(self, ws: WebSocket):
         """Удаляет отключённого клиента."""
         self._connections.discard(ws)
-        _logger.info(f"WS client disconnected, total: {len(self._connections)}")
+        _logger.info("WS client disconnected, total: %s", len(self._connections))
 
     async def broadcast(self, data: dict):
         """Рассылает dict как JSON всем подключённым клиентам."""

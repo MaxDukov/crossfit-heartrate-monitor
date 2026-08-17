@@ -3,7 +3,7 @@
 import logging
 
 from ..database import SessionLocal
-from ..models import Equipment, GymInventory, Movement, WodTemplate, WodTemplateMovement
+from ..models import Equipment, Movement, WodTemplate, WodTemplateMovement
 from .equipment import EQUIPMENT_SEED
 from .movements import MOVEMENTS_SEED
 from .wod_templates import WOD_TEMPLATES_SEED
@@ -20,7 +20,7 @@ def seed_db():
             for item in EQUIPMENT_SEED:
                 db.add(Equipment(**item))
             db.commit()
-            _logger.info(f"Seeded {len(EQUIPMENT_SEED)} equipment items")
+            _logger.info("Seeded %s equipment items", len(EQUIPMENT_SEED))
 
         # ── Движения ──
         if db.query(Movement).count() == 0:
@@ -30,7 +30,7 @@ def seed_db():
                 mv_dict["equipment_keys"] = ",".join(mv_dict.get("equipment_keys", []))
                 db.add(Movement(**mv_dict))
             db.commit()
-            _logger.info(f"Seeded {len(MOVEMENTS_SEED)} movements")
+            _logger.info("Seeded %s movements", len(MOVEMENTS_SEED))
 
         # ── Шаблоны тренировок ──
         if db.query(WodTemplate).count() == 0:
@@ -42,10 +42,10 @@ def seed_db():
                 for m in movements_data:
                     db.add(WodTemplateMovement(template_id=template.id, **m))
             db.commit()
-            _logger.info(f"Seeded {len(WOD_TEMPLATES_SEED)} wod templates")
+            _logger.info("Seeded %s wod templates", len(WOD_TEMPLATES_SEED))
 
     except Exception as e:
         db.rollback()
-        _logger.error(f"Seed error: {e}")
+        _logger.error("Seed error: %s", e)
     finally:
         db.close()

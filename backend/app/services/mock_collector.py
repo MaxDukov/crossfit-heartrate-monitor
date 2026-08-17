@@ -8,11 +8,11 @@ import logging
 import random
 import threading
 import time
-from datetime import datetime, timezone
 from typing import Callable, Optional
 
 from ..database import SessionLocal
-from ..models import Sensor, Athlete
+from ..models import Athlete, Sensor
+from . import sensor_db
 
 _logger = logging.getLogger(__name__)
 
@@ -51,6 +51,7 @@ class MockCollector:
         self._prev_hr: dict[int, int] = {}
 
     def start(self):
+        """Запускает генерацию mock-данных в фоновом потоке."""
         if self._running:
             return
         self._running = True
@@ -59,19 +60,21 @@ class MockCollector:
         _logger.info("Mock collector started (8 virtual sensors)")
 
     def stop(self):
+        """Останавливает генерацию mock-данных."""
         self._running = False
         _logger.info("Mock collector stopped")
 
     def _run(self):
+        """Основной цикл генерации (работает в отдельном потоке)."""
         self._ensure_mock_athletes()
 
         for device_id in MOCK_RANGES:
-            self._upsert_sensor(device_id)
+            sensor_db.upsert_sensor(device_id)
             if self._on_new_sensor:
                 try:
                     self._on_new_sensor(device_id)
                 except Exception as e:
-                    _logger.error(f"on_new_sensor callback error: {e}")
+                    _logger.error("on_new_sensor callback error: %s", e)
             time.sleep(0.3)
 
         while self._running:
@@ -89,13 +92,13 @@ class MockCollector:
                 self._prev_hr[device_id] = hr
                 battery = random.randint(70, 100)
 
-                self._update_sensor_hr(device_id, hr, battery)
+                sensor_db.update_sensor_hr(device_id, hr, battery)
 
                 if self._on_hr_data:
                     try:
                         self._on_hr_data(device_id, hr, battery)
                     except Exception as e:
-                        _logger.error(f"on_hr_data callback error: {e}")
+                        _logger.error("on_hr_data callback error: %s", e)
 
             time.sleep(2.0)
 
@@ -130,37 +133,7 @@ class MockCollector:
             db.commit()
             _logger.info("Mock athletes created and assigned")
         except Exception as e:
-            _logger.error(f"Mock athletes setup error: {e}")
-            db.rollback()
-        finally:
-            db.close()
-
-    def _upsert_sensor(self, device_id: int):
-        db = SessionLocal()
-        try:
-            sensor = db.query(Sensor).filter(Sensor.device_id == device_id).first()
-            if not sensor:
-                sensor = Sensor(device_id=device_id)
-                db.add(sensor)
-                db.commit()
-        except Exception as e:
-            _logger.error(f"DB upsert sensor error: {e}")
-            db.rollback()
-        finally:
-            db.close()
-
-    def _update_sensor_hr(self, device_id: int, hr: int, battery: int):
-        db = SessionLocal()
-        try:
-            sensor = db.query(Sensor).filter(Sensor.device_id == device_id).first()
-            if sensor:
-                sensor.last_hr = hr
-                sensor.last_seen_at = datetime.now(timezone.utc)
-                if battery != 0xFF:
-                    sensor.battery_level = battery
-                db.commit()
-        except Exception as e:
-            _logger.error(f"DB update sensor HR error: {e}")
+            _logger.error("Mock athletes setup error: %s", e)
             db.rollback()
         finally:
             db.close()

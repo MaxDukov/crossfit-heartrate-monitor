@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field, field_validator
 # ── Athletes ──────────────────────────────────────────────
 
 class AthleteCreate(BaseModel):
+    """Данные создания спортсмена."""
     name: str = Field(..., min_length=1, max_length=100)
     max_hr: int = Field(default=190, ge=60, le=250)
     weight_kg: float | None = Field(None, ge=30, le=250)
@@ -14,6 +15,7 @@ class AthleteCreate(BaseModel):
 
 
 class AthleteUpdate(BaseModel):
+    """Данные частичного обновления спортсмена."""
     name: str | None = Field(None, min_length=1, max_length=100)
     max_hr: int | None = Field(None, ge=60, le=250)
     weight_kg: float | None = Field(None, ge=30, le=250)
@@ -21,6 +23,7 @@ class AthleteUpdate(BaseModel):
 
 
 class AthleteOut(BaseModel):
+    """DTO спортсмена для ответов API."""
     id: str
     name: str
     max_hr: int
@@ -35,10 +38,12 @@ class AthleteOut(BaseModel):
 # ── Sensors ───────────────────────────────────────────────
 
 class SensorAssign(BaseModel):
+    """Тело запроса привязки датчика к спортсмену."""
     athlete_id: str
 
 
 class SensorOut(BaseModel):
+    """DTO датчика с именем привязанного спортсмена."""
     device_id: int
     athlete_id: str | None = None
     athlete_name: str | None = None
@@ -51,10 +56,12 @@ class SensorOut(BaseModel):
 # ── Sessions ──────────────────────────────────────────────
 
 class SessionCreate(BaseModel):
+    """Тело запроса создания тренировочной сессии."""
     name: str | None = None
 
 
 class SessionOut(BaseModel):
+    """DTO тренировочной сессии."""
     id: str
     name: str | None
     started_at: datetime
@@ -65,12 +72,14 @@ class SessionOut(BaseModel):
 
 
 class SessionAthleteAdd(BaseModel):
+    """Тело запроса добавления спортсмена в сессию."""
     athlete_id: str
 
 
 # ── HR data ───────────────────────────────────────────────
 
 class HrReadingOut(BaseModel):
+    """DTO одиночного измерения ЧСС."""
     heart_rate: int
     zone: int
     timestamp: datetime
@@ -98,6 +107,7 @@ class NewSensorEvent(BaseModel):
 # ── Analytics ─────────────────────────────────────────────
 
 class ZoneDistribution(BaseModel):
+    """Распределение времени по пульсовым зонам (сек)."""
     zone_1_seconds: int = 0
     zone_2_seconds: int = 0
     zone_3_seconds: int = 0
@@ -105,6 +115,7 @@ class ZoneDistribution(BaseModel):
 
 
 class SessionStats(BaseModel):
+    """Агрегированная статистика сессии."""
     session_id: str
     session_name: str | None
     avg_hr: float
@@ -115,6 +126,7 @@ class SessionStats(BaseModel):
 
 
 class AthleteStats(BaseModel):
+    """Агрегированная статистика спортсмена за всё время."""
     total_sessions: int
     total_duration_seconds: int
     avg_hr: float
@@ -124,6 +136,7 @@ class AthleteStats(BaseModel):
 # ── Equipment / Инвентарь ───────────────────────────────────
 
 class EquipmentOut(BaseModel):
+    """DTO единицы инвентаря."""
     key: str
     name: str
     category: str
@@ -133,6 +146,7 @@ class EquipmentOut(BaseModel):
 
 
 class GymInventoryOut(BaseModel):
+    """DTO позиции инвентаря зала."""
     equipment_key: str
     quantity: int
 
@@ -140,12 +154,14 @@ class GymInventoryOut(BaseModel):
 
 
 class GymInventoryUpdate(BaseModel):
+    """Тело запроса обновления инвентаря зала."""
     items: list[dict]  # [{"equipment_key": "barbell", "quantity": 4}, ...]
 
 
 # ── Movement ────────────────────────────────────────────────
 
 class MovementOut(BaseModel):
+    """DTO движения с распарсенными списками тем/инвентаря."""
     key: str
     name: str
     modality: str
@@ -159,6 +175,7 @@ class MovementOut(BaseModel):
     @field_validator("themes", "equipment_keys", mode="before")
     @classmethod
     def split_comma(cls, v):
+        """Разбивает строку с запятыми в список."""
         if isinstance(v, str):
             return [s.strip() for s in v.split(",") if s.strip()]
         return v
@@ -169,6 +186,7 @@ class MovementOut(BaseModel):
 # ── WodTemplate ─────────────────────────────────────────────
 
 class WodTemplateMovementOut(BaseModel):
+    """DTO движения в шаблоне WoD."""
     movement_key: str
     movement_name: str
     reps: int | None = None
@@ -181,6 +199,7 @@ class WodTemplateMovementOut(BaseModel):
 
 
 class WodTemplateOut(BaseModel):
+    """DTO шаблона WoD."""
     id: str
     name: str
     format: str
@@ -197,6 +216,7 @@ class WodTemplateOut(BaseModel):
 # ── Wod ─────────────────────────────────────────────────────
 
 class WodMovementOut(BaseModel):
+    """DTO движения в созданном WoD."""
     movement_key: str
     movement_name: str
     reps: int | None = None
@@ -210,6 +230,7 @@ class WodMovementOut(BaseModel):
 
 
 class WodOut(BaseModel):
+    """DTO созданного WoD."""
     id: str
     name: str
     format: str
@@ -226,10 +247,12 @@ class WodOut(BaseModel):
 
 
 class WodGenerateRequest(BaseModel):
+    """Тело запроса генерации вариантов WoD."""
     theme: str
     group_level: str = "intermediate"
 
 
 class WodSelectRequest(BaseModel):
+    """Тело запроса выбора шаблона WoD."""
     template_id: str
     group_level: str = "intermediate"

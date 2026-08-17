@@ -1,0 +1,28 @@
+[MAIN]
+# Путь к виртуальному окружению — pylint резолвит импорты оттуда
+init-hook='import sys; sys.path.append("backend")'
+
+[FORMAT]
+max-line-length=100
+
+[MESSAGES CONTROL]
+disable=
+    too-few-public-methods,
+    unused-argument,
+    broad-exception-caught,
+
+[TYPECHECK]
+# SQLAlchemy func.* — динамические прокси, pylint не умеет их резолвить
+ignored-modules=sqlalchemy
+
+[BASIC]
+good-names=SessionLocal,db,app,i,j,k,e,fp
+
+[DESIGN]
+max-locals=25
+max-attributes=10
+
+[SIMILARITIES]
+min-similarity-lines=10
+ignore-comments=yes
+ignore-docstrings=yes

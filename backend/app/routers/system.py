@@ -3,23 +3,27 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
+from ..services.runtime import runtime
+
 router = APIRouter(prefix="/api/system", tags=["system"])
 
 
 class ModeRequest(BaseModel):
+    """Тело запроса переключения режима коллектора."""
+
     mode: str
 
 
 @router.get("/mode")
 def get_mode():
-    from ..main import current_mode
-    return {"mode": current_mode}
+    """Возвращает текущий режим коллектора."""
+    return {"mode": runtime.mode}
 
 
 @router.post("/mode")
 def set_mode(req: ModeRequest):
-    from ..main import switch_collector
+    """Переключает режим коллектора (mock / ant)."""
     if req.mode not in ("mock", "ant"):
         raise HTTPException(status_code=400, detail="mode must be 'mock' or 'ant'")
-    switch_collector(req.mode)
+    runtime.switch(req.mode)
     return {"mode": req.mode}

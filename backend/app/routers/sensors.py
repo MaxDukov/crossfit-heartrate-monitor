@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from ..database import get_db
-from ..models import Sensor
+from ..models import Athlete, Sensor
 from ..schemas import SensorAssign, SensorOut
 
 router = APIRouter(prefix="/api/sensors", tags=["sensors"])
@@ -39,7 +39,6 @@ def assign_sensor(device_id: int, data: SensorAssign, db: Session = Depends(get_
     if sensor.ignored:
         raise HTTPException(400, "Датчик проигнорирован — верните его в активные")
 
-    from ..models import Athlete
     athlete = db.query(Athlete).filter(Athlete.id == data.athlete_id).first()
     if not athlete:
         raise HTTPException(404, "Спортсмен не найден")

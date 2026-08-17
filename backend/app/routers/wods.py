@@ -54,7 +54,7 @@ def select_wod(req: WodSelectRequest, db: Session = Depends(get_db)):
     try:
         wod = create_wod_from_template(db, req.template_id, req.group_level)
     except ValueError as e:
-        raise HTTPException(404, str(e))
+        raise HTTPException(404, str(e)) from e
     movements = db.query(WodMovement).filter(
         WodMovement.wod_id == wod.id
     ).order_by(WodMovement.sort_order).all()
@@ -64,7 +64,7 @@ def select_wod(req: WodSelectRequest, db: Session = Depends(get_db)):
 @router.get("/active")
 def get_active_wod(db: Session = Depends(get_db)):
     """Возвращает текущий активный WoD или null."""
-    wod = db.query(Wod).filter(Wod.is_active == True).first()
+    wod = db.query(Wod).filter(Wod.is_active.is_(True)).first()
     if not wod:
         return None
     movements = db.query(WodMovement).filter(
@@ -76,7 +76,7 @@ def get_active_wod(db: Session = Depends(get_db)):
 @router.post("/active/end", status_code=204)
 def end_active_wod(db: Session = Depends(get_db)):
     """Деактивирует текущий активный WoD."""
-    db.query(Wod).filter(Wod.is_active == True).update({"is_active": False})
+    db.query(Wod).filter(Wod.is_active.is_(True)).update({"is_active": False})
     db.commit()
 
 

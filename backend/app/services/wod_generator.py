@@ -183,7 +183,7 @@ def generate_wods(db: Session, theme: str, group_level: str = "intermediate") ->
         suitable = templates
 
     if not suitable:
-        _logger.warning(f"No suitable templates for theme={theme}")
+        _logger.warning("No suitable templates for theme=%s", theme)
         return []
 
     # Разделяем на категории
@@ -238,7 +238,7 @@ def create_wod_from_template(
         raise ValueError(f"Template {template_id} not found")
 
     # Деактивируем предыдущие активные WoD
-    db.query(Wod).filter(Wod.is_active == True).update({"is_active": False})
+    db.query(Wod).filter(Wod.is_active.is_(True)).update({"is_active": False})
 
     wod = Wod(
         name=template.name,

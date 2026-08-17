@@ -1,3 +1,4 @@
+# pylint: disable=line-too-long
 """Каталог инвентаря для сид-данных."""
 
 EQUIPMENT_SEED = [

@@ -1,3 +1,5 @@
+"""Настройка SQLAlchemy: engine, сессии, миграции SQLite."""
+
 import os
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
@@ -10,7 +12,7 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
 class Base(DeclarativeBase):
-    pass
+    """Базовый класс всех ORM-моделей."""
 
 
 def get_db():
