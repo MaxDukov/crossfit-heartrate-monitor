@@ -1,0 +1,466 @@
+<!-- Split-screen 4×4 v5 — LIGHT, bright zones — vertical cards, WOD table 3-col (rowspan), leaderboard, WOD fonts −15% -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CF-MONITOR // SPLIT-SCREEN 4×4 v5 — LIGHT BRIGHT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F1F5F9;
+    --text: #0F172A;
+    --text-dim: #475569;
+    --text-muted: #64748B;
+    --border: rgba(15,23,42,0.10);
+    --card-surface: #FFFFFF;
+    --z1: #15FD07;
+    --z2: #15FD07;
+    --z3: #FDE507;
+    --z4: #FD0707;
+    --work: #16A34A;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    height: 100vh;
+    margin: 0;
+    overflow: hidden;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ===== GRID SHELL ===== */
+  .shell {
+    display: grid;
+    grid-template-columns: 3fr 1fr;
+    grid-template-rows: 1fr 165px;
+    grid-template-areas:
+      "main right"
+      "bottom bottom";
+    gap: 8px;
+    padding: 8px;
+    height: 100vh;
+  }
+
+  .area-main    { grid-area: main; }
+  .area-right   { grid-area: right; }
+  .area-bottom  { grid-area: bottom; }
+
+  /* ===== MAIN AREA ===== */
+  .area-main {
+    background: var(--card-surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 18px;
+    min-height: 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+
+  .wod-title {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 16px;
+    font-size: clamp(1.7rem, 3.4vw, 4.25rem);
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    margin: 0;
+    line-height: 1;
+    text-transform: uppercase;
+    color: var(--text);
+  }
+  .wod-tag {
+    color: var(--text-muted);
+  }
+
+  .timer {
+    font-family: 'Inter', monospace;
+    font-variant-numeric: tabular-nums;
+    font-size: clamp(2.55rem, 6.8vw, 8.5rem);
+    font-weight: 800;
+    color: var(--work);
+    line-height: 1;
+    margin: 0;
+    letter-spacing: -0.03em;
+    text-shadow: 0 0 40px rgba(22,163,74,0.15);
+  }
+
+  .phase-tag {
+    font-size: 0.64rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--work);
+    background: rgba(22,163,74,0.10);
+    border: 1px solid rgba(22,163,74,0.25);
+    padding: 4px 12px;
+    border-radius: 999px;
+  }
+
+  /* ===== WOD TABLE (3-col) ===== */
+  .wod-table {
+    width: 80%;
+    max-width: 520px;
+    border-collapse: collapse;
+    font-size: clamp(0.94rem, 1.53vw, 1.7rem);
+    font-weight: 600;
+  }
+  .wod-table th {
+    text-align: left;
+    font-size: clamp(0.6rem, 0.72vw, 0.77rem);
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding: 8px 16px;
+    border-bottom: 2px solid var(--border);
+  }
+  .wod-table th:nth-child(1) { width: 18%; text-align: center; }
+  .wod-table th:nth-child(2) { width: 18%; }
+  .wod-table td {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+  }
+  .wod-table td.rounds {
+    font-weight: 900;
+    font-variant-numeric: tabular-nums;
+    color: var(--work);
+    font-size: 1.3em;
+    text-align: center;
+    vertical-align: middle;
+  }
+  .wod-table td.reps {
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    color: var(--text);
+  }
+  .wod-table td.exercise { color: var(--text-dim); }
+  .wod-table tr:last-child td { border-bottom: none; }
+
+  /* ===== GROUP STATS ===== */
+  .group-stats {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+    font-variant-numeric: tabular-nums;
+    font-size: 0.81rem;
+    color: var(--text-muted);
+    font-weight: 600;
+  }
+  .group-stats b {
+    color: var(--text);
+    font-weight: 800;
+    margin-right: 4px;
+  }
+  .group-stats .sep {
+    color: var(--border);
+  }
+
+  /* ===== LEADERBOARD ===== */
+  .leaderboard {
+    width: 100%;
+    max-width: 480px;
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    text-align: left;
+  }
+  .lb-head {
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding: 0 12px 4px;
+  }
+  .lb-row {
+    display: grid;
+    grid-template-columns: 28px 1fr auto auto;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    background: rgba(15,23,42,0.03);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-weight: 600;
+  }
+  .lb-rank { font-size: 0.94rem; }
+  .lb-name { color: var(--text); }
+  .lb-kcal {
+    font-variant-numeric: tabular-nums;
+    color: var(--text-dim);
+    font-size: 0.77rem;
+  }
+  .lb-zone {
+    font-size: 0.6rem;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: rgba(220,38,38,0.12);
+    color: var(--z4);
+    border: 1px solid rgba(220,38,38,0.30);
+  }
+  .lb-row.z3 .lb-zone {
+    background: rgba(202,138,4,0.12);
+    color: var(--z3);
+    border-color: rgba(202,138,4,0.30);
+  }
+
+  /* ===== UNIFIED CARD ===== */
+  .area-right {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 0;
+  }
+
+  .area-bottom {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+
+  .card {
+    container-type: inline-size;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 2px;
+    padding: 8px 12px;
+    background: linear-gradient(135deg,
+      color-mix(in srgb, var(--zc) 15%, transparent),
+      var(--card-surface));
+    border: 1px solid var(--border);
+    border-left: 9px solid var(--zc);
+    border-radius: 12px;
+    min-width: 0;
+    overflow: hidden;
+  }
+  .area-right .card {
+    flex: 1 1 0;
+    min-height: 0;
+  }
+  .card .name {
+    font-weight: 700;
+    font-size: clamp(2.3rem, 3.06vw, 3.06rem);
+    line-height: 1;
+    overflow: hidden;
+    letter-spacing: -0.02em;
+  }
+  .card .vitals-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 8px;
+  }
+  .card .bpm {
+    font-variant-numeric: tabular-nums;
+    font-weight: 800;
+    color: var(--zc);
+    font-size: clamp(2.8rem, 4vw, 4.4rem);
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+  .card .heart {
+    color: var(--zc);
+    font-size: clamp(1.2rem, 1.6vw, 2rem);
+  }
+  .card .kcal {
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    color: var(--text-dim);
+    font-size: clamp(1.6rem, 2vw, 2.4rem);
+    white-space: nowrap;
+    line-height: 1;
+  }
+  .card .kcal .fire { color: #F97316; }
+  .card .spark {
+    width: 100%;
+    height: 20px;
+    display: block;
+  }
+</style>
+</head>
+<body>
+  <div class="shell">
+
+    <!-- MAIN -->
+    <main class="area-main">
+      <h1 class="wod-title"><span class="wod-tag">WOD:</span> AMRAP 20:00</h1>
+      <span class="phase-tag">Work Phase</span>
+      <div class="timer">14:32</div>
+      <table class="wod-table">
+        <thead>
+          <tr><th>Раунды</th><th>Повторы</th><th>Упражнение</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="rounds" rowspan="3">5×</td><td class="reps">10</td><td class="exercise">Thrusters (40/25 кг)</td></tr>
+          <tr><td class="reps">15</td><td class="exercise">Pull-ups</td></tr>
+          <tr><td class="reps">20</td><td class="exercise">Box Jumps (60/50 см)</td></tr>
+        </tbody>
+      </table>
+
+      <div class="group-stats">
+        <span><b>Avg HR:</b>128</span>
+        <span class="sep">|</span>
+        <span><b>Total kcal:</b>891</span>
+        <span class="sep">|</span>
+        <span><b>Active:</b>8</span>
+      </div>
+
+      <section class="leaderboard">
+        <div class="lb-head">Leaderboard · Top Effort</div>
+        <div class="lb-row">
+          <span class="lb-rank">🥇</span>
+          <span class="lb-name">Захар</span>
+          <span class="lb-kcal">245 kcal</span>
+          <span class="lb-zone">Z4</span>
+        </div>
+        <div class="lb-row">
+          <span class="lb-rank">🥈</span>
+          <span class="lb-name">Дина</span>
+          <span class="lb-kcal">218 kcal</span>
+          <span class="lb-zone">Z4</span>
+        </div>
+        <div class="lb-row z3">
+          <span class="lb-rank">🥉</span>
+          <span class="lb-name">Глеб</span>
+          <span class="lb-kcal">142 kcal</span>
+          <span class="lb-zone">Z3</span>
+        </div>
+      </section>
+    </main>
+
+    <!-- RIGHT SIDEBAR — 4 cards -->
+    <aside class="area-right">
+      <div class="card" style="--zc: var(--z1)">
+        <span class="name">Анна</span>
+        <div class="vitals-row">
+          <span class="bpm">68</span>
+          <span class="heart">♥</span>
+          <span class="kcal"><span class="fire">🔥</span> 12</span>
+        </div>
+        <svg class="spark" viewBox="0 0 120 40" preserveAspectRatio="none">
+          <polyline fill="rgba(10,138,6,0.12)" stroke="none" points="0,28 12,30 24,26 36,28 48,24 60,30 72,26 84,28 96,24 108,30 120,28 120,40 0,40"/>
+          <polyline fill="none" stroke="var(--z1)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points="0,28 12,30 24,26 36,28 48,24 60,30 72,26 84,28 96,24 108,30 120,28"/>
+        </svg>
+      </div>
+
+      <div class="card" style="--zc: var(--z2)">
+        <span class="name">Борис</span>
+        <div class="vitals-row">
+          <span class="bpm">82</span>
+          <span class="heart">♥</span>
+          <span class="kcal"><span class="fire">🔥</span> 28</span>
+        </div>
+        <svg class="spark" viewBox="0 0 120 40" preserveAspectRatio="none">
+          <polyline fill="rgba(10,138,6,0.12)" stroke="none" points="0,26 12,24 24,28 36,22 48,26 60,20 72,24 84,18 96,22 108,20 120,18 120,40 0,40"/>
+          <polyline fill="none" stroke="var(--z2)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points="0,26 12,24 24,28 36,22 48,26 60,20 72,24 84,18 96,22 108,20 120,18"/>
+        </svg>
+      </div>
+
+      <div class="card" style="--zc: var(--z3)">
+        <span class="name">Вера</span>
+        <div class="vitals-row">
+          <span class="bpm">122</span>
+          <span class="heart">♥</span>
+          <span class="kcal"><span class="fire">🔥</span> 65</span>
+        </div>
+        <svg class="spark" viewBox="0 0 120 40" preserveAspectRatio="none">
+          <polyline fill="rgba(202,138,4,0.12)" stroke="none" points="0,30 12,26 24,22 36,18 48,20 60,14 72,16 84,12 96,14 108,10 120,8 120,40 0,40"/>
+          <polyline fill="none" stroke="var(--z3)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points="0,30 12,26 24,22 36,18 48,20 60,14 72,16 84,12 96,14 108,10 120,8"/>
+        </svg>
+      </div>
+
+      <div class="card" style="--zc: var(--z3)">
+        <span class="name">Глеб</span>
+        <div class="vitals-row">
+          <span class="bpm">148</span>
+          <span class="heart">♥</span>
+          <span class="kcal"><span class="fire">🔥</span> 142</span>
+        </div>
+        <svg class="spark" viewBox="0 0 120 40" preserveAspectRatio="none">
+          <polyline fill="rgba(202,138,4,0.12)" stroke="none" points="0,28 12,24 24,20 36,16 48,12 60,14 72,10 84,8 96,6 108,8 120,4 120,40 0,40"/>
+          <polyline fill="none" stroke="var(--z3)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points="0,28 12,24 24,20 36,16 48,12 60,14 72,10 84,8 96,6 108,8 120,4"/>
+        </svg>
+      </div>
+    </aside>
+
+    <!-- BOTTOM ROW — 4 cards -->
+    <section class="area-bottom">
+      <div class="card" style="--zc: var(--z4)">
+        <span class="name">Дина</span>
+        <div class="vitals-row">
+          <span class="bpm">175</span>
+          <span class="heart">♥</span>
+          <span class="kcal"><span class="fire">🔥</span> 218</span>
+        </div>
+        <svg class="spark" viewBox="0 0 120 40" preserveAspectRatio="none">
+          <polyline fill="rgba(220,38,38,0.12)" stroke="none" points="0,32 12,28 24,22 36,18 48,14 60,10 72,14 84,8 96,4 108,9 120,6 120,40 0,40"/>
+          <polyline fill="none" stroke="var(--z4)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points="0,32 12,28 24,22 36,18 48,14 60,10 72,14 84,8 96,4 108,9 120,6"/>
+        </svg>
+      </div>
+
+      <div class="card" style="--zc: var(--z3)">
+        <span class="name">Егор</span>
+        <div class="vitals-row">
+          <span class="bpm">132</span>
+          <span class="heart">♥</span>
+          <span class="kcal"><span class="fire">🔥</span> 96</span>
+        </div>
+        <svg class="spark" viewBox="0 0 120 40" preserveAspectRatio="none">
+          <polyline fill="rgba(202,138,4,0.12)" stroke="none" points="0,34 12,30 24,28 36,24 48,20 60,22 72,16 84,18 96,12 108,10 120,8 120,40 0,40"/>
+          <polyline fill="none" stroke="var(--z3)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points="0,34 12,30 24,28 36,24 48,20 60,22 72,16 84,18 96,12 108,10 120,8"/>
+        </svg>
+      </div>
+
+      <div class="card" style="--zc: var(--z2)">
+        <span class="name">Жанна</span>
+        <div class="vitals-row">
+          <span class="bpm">92</span>
+          <span class="heart">♥</span>
+          <span class="kcal"><span class="fire">🔥</span> 35</span>
+        </div>
+        <svg class="spark" viewBox="0 0 120 40" preserveAspectRatio="none">
+          <polyline fill="rgba(10,138,6,0.12)" stroke="none" points="0,24 12,26 24,22 36,26 48,24 60,28 72,24 84,26 96,22 108,26 120,24 120,40 0,40"/>
+          <polyline fill="none" stroke="var(--z2)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points="0,24 12,26 24,22 36,26 48,24 60,28 72,24 84,26 96,22 108,26 120,24"/>
+        </svg>
+      </div>
+
+      <div class="card" style="--zc: var(--z4)">
+        <span class="name">Захар</span>
+        <div class="vitals-row">
+          <span class="bpm">182</span>
+          <span class="heart">♥</span>
+          <span class="kcal"><span class="fire">🔥</span> 245</span>
+        </div>
+        <svg class="spark" viewBox="0 0 120 40" preserveAspectRatio="none">
+          <polyline fill="rgba(220,38,38,0.12)" stroke="none" points="0,30 12,24 24,20 36,14 48,10 60,6 72,4 84,3 96,2 108,2 120,1 120,40 0,40"/>
+          <polyline fill="none" stroke="var(--z4)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points="0,30 12,24 24,20 36,14 48,10 60,6 72,4 84,3 96,2 108,2 120,1"/>
+        </svg>
+      </div>
+    </section>
+
+  </div>
+</body>
+</html>

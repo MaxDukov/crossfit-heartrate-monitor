@@ -2,7 +2,7 @@ import { create } from "zustand";
 import type { HrUpdate, Sensor } from "../types";
 import { api } from "../lib/api";
 
-interface HrPoint {
+export interface HrPoint {
   t: number;
   hr: number;
 }
@@ -54,12 +54,17 @@ export const useHrStore = create<HrState>((set, get) => ({
           };
         });
       } else if (msg.type === "new_sensor") {
-      set((s) => ({
-          newSensors: s.newSensors.includes(msg.device_id)
-            ? s.newSensors
-            : [...s.newSensors, msg.device_id],
-        }));
-        get().fetchSensors();
+        get().fetchSensors().then(() => {
+          const sensor = get().sensors.find(
+            (s) => s.device_id === msg.device_id,
+          );
+          if (sensor && sensor.athlete_id) return;
+          set((s) => ({
+            newSensors: s.newSensors.includes(msg.device_id)
+              ? s.newSensors
+              : [...s.newSensors, msg.device_id],
+          }));
+        });
       }
     };
 

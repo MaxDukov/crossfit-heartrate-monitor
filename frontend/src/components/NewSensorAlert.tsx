@@ -1,6 +1,6 @@
 import { useHrStore } from "../lib/store";
 import { api } from "../lib/api";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 
 export default function NewSensorAlert() {
   const { newSensors, dismissNewSensor, fetchSensors } = useHrStore();
@@ -8,6 +8,24 @@ export default function NewSensorAlert() {
   const [athletesList, setAthletesList] = useState<
     { id: string; name: string }[]
   >([]);
+  const timersRef = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
+
+  useEffect(() => {
+    for (const deviceId of newSensors) {
+      if (timersRef.current.has(deviceId)) continue;
+      const t = setTimeout(() => {
+        dismissNewSensor(deviceId);
+        timersRef.current.delete(deviceId);
+      }, 3000);
+      timersRef.current.set(deviceId, t);
+    }
+  }, [newSensors, dismissNewSensor]);
+
+  useEffect(() => {
+    return () => {
+      timersRef.current.forEach(clearTimeout);
+    };
+  }, []);
 
   if (newSensors.length === 0) return null;
 
