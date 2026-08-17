@@ -10,6 +10,7 @@ const navItems = [
   { to: "/sensors", label: "Датчики" },
   { to: "/sessions", label: "Тренировки" },
   { to: "/equipment", label: "Инвентарь" },
+  { to: "/settings", label: "Настроики" },
 ];
 
 export default function Layout() {

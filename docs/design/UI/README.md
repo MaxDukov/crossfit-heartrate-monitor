@@ -42,6 +42,14 @@
 | [split-screen-4+4.html](split-screen-4+4.html) | тёмная | по зоне | 4 в столбце + 4 в строке = 8 атлетов |
 | [split-screen-4+4-v2.html](split-screen-4+4-v2.html) | тёмная | по зоне | Увеличенные шрифты |
 | [split-screen-4+4-light-v2.html](split-screen-4+4-light-v2.html) | светлая | по зоне | Увеличенные шрифты |
+| [split-screen-4+4-neutral-v3.html](split-screen-4+4-neutral-v3.html) | тёмная | по зоне | Вертикальные карты: имя, пульс+ккал в строку, спарклайн снизу; имя ×2.55, пульс/ккал ×2; нижний ряд 165px; 9px зон-линия; WOD-таблица, шрифты −15% |
+| [split-screen-4+4-light-neutral-v3.html](split-screen-4+4-light-neutral-v3.html) | светлая | по зоне | Вертикальные карты: имя, пульс+ккал в строку, спарклайн снизу; имя ×2.55, пульс/ккал ×2; нижний ряд 165px; 9px зон-линия; WOD-таблица, шрифты −15% |
+| [split-screen-4+4-neutral-v4.html](split-screen-4+4-neutral-v4.html) | тёмная | по зоне | Вертикальные карты, яркие цвета зон `#15FD07` `#FDE507` `#FD0707`, шрифты −15% |
+| [split-screen-4+4-light-neutral-v4.html](split-screen-4+4-light-neutral-v4.html) | светлая | по зоне | Вертикальные карты, яркие цвета зон `#15FD07` `#FDE507` `#FD0707`, шрифты −15% |
+| [split-screen-4+4-neutral-v5.html](split-screen-4+4-neutral-v5.html) | тёмная | по зоне | Вертикальные карты, WOD: двоеточие, 3-кол таблица (Раунды\|Повторы\|Упражнение), шрифты −15% |
+| [split-screen-4+4-light-neutral-v5.html](split-screen-4+4-light-neutral-v5.html) | светлая | по зоне | Вертикальные карты, WOD: двоеточие, 3-кол таблица (Раунды\|Повторы\|Упражнение), шрифты −15% |
+| [split-screen-4+4-neutral-v6.html](split-screen-4+4-neutral-v6.html) | тёмная | по зоне | Вертикальные карты, лидерборд убран, медали 🥇🥈🥉 в карточках, +15% шрифты центра |
+| [split-screen-4+4-light-neutral-v6.html](split-screen-4+4-light-neutral-v6.html) | светлая | по зоне | Вертикальные карты, лидерборд убран, медали 🥇🥈🥉 в карточках, +15% шрифты центра |
 
 #### Tri-column 20-60-20 (карточки слева/справа, WoD в центре)
 
