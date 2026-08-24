@@ -4,10 +4,9 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import func
 
 from ..database import get_db
-from ..models import Session as TrainingSession, SessionAthlete, HrReading, Athlete
+from ..models import Session as TrainingSession, SessionAthlete, Athlete
 from ..schemas import SessionCreate, SessionOut, SessionAthleteAdd
 
 router = APIRouter(prefix="/api/sessions", tags=["sessions"])

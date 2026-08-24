@@ -1,0 +1,25 @@
+[MAIN]
+# Проект работает на Python 3.11 (Docker), pylint может запускаться локально со старым Python
+py-version=3.11
+
+# Модули данных содержат длинные русские тексты описаний — не код
+ignore-paths=.*backend/app/data/(movements|wod_templates|equipment)[.]py
+
+# Зависимости бэкенда установлены в venv/Docker, а не в системном Python
+ignored-modules=fastapi,pydantic,sqlalchemy,openant
+
+[MESSAGES CONTROL]
+disable=
+    import-error,
+    too-few-public-methods,
+    duplicate-code,
+    cyclic-import,
+    import-outside-toplevel,
+    broad-exception-caught,
+    fixme
+
+[FORMAT]
+max-line-length=100
+
+[BASIC]
+good-names=i,j,k,e,db,ws,c,s,t,m,f,n,_

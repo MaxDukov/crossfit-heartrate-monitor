@@ -36,7 +36,8 @@ def athlete_stats(athlete_id: str, db: Session = Depends(get_db)):
 
     duration = (
         db.query(func.sum(
-            func.strftime("%s", SessionAthlete.left_at) - func.strftime("%s", SessionAthlete.joined_at)
+            func.strftime("%s", SessionAthlete.left_at)
+            - func.strftime("%s", SessionAthlete.joined_at)
         ))
         .filter(SessionAthlete.athlete_id == athlete_id, SessionAthlete.left_at.isnot(None))
         .scalar() or 0
