@@ -51,6 +51,7 @@ class MockCollector:
         self._prev_hr: dict[int, int] = {}
 
     def start(self):
+        """Запускает mock-коллектор в фоновом потоке."""
         if self._running:
             return
         self._running = True
@@ -59,10 +60,12 @@ class MockCollector:
         _logger.info("Mock collector started (8 virtual sensors)")
 
     def stop(self):
+        """Останавливает генерацию mock-данных."""
         self._running = False
         _logger.info("Mock collector stopped")
 
     def _run(self):
+        """Основной цикл генерации (работает в отдельном потоке)."""
         self._ensure_mock_athletes()
 
         for device_id in MOCK_RANGES:
@@ -71,7 +74,7 @@ class MockCollector:
                 try:
                     self._on_new_sensor(device_id)
                 except Exception as e:
-                    _logger.error(f"on_new_sensor callback error: {e}")
+                    _logger.error("on_new_sensor callback error: %s", e)
             time.sleep(0.3)
 
         while self._running:
@@ -95,7 +98,7 @@ class MockCollector:
                     try:
                         self._on_hr_data(device_id, hr, battery)
                     except Exception as e:
-                        _logger.error(f"on_hr_data callback error: {e}")
+                        _logger.error("on_hr_data callback error: %s", e)
 
             time.sleep(2.0)
 
@@ -130,12 +133,13 @@ class MockCollector:
             db.commit()
             _logger.info("Mock athletes created and assigned")
         except Exception as e:
-            _logger.error(f"Mock athletes setup error: {e}")
+            _logger.error("Mock athletes setup error: %s", e)
             db.rollback()
         finally:
             db.close()
 
     def _upsert_sensor(self, device_id: int):
+        """Создаёт или обновляет запись датчика в БД."""
         db = SessionLocal()
         try:
             sensor = db.query(Sensor).filter(Sensor.device_id == device_id).first()
@@ -144,12 +148,13 @@ class MockCollector:
                 db.add(sensor)
                 db.commit()
         except Exception as e:
-            _logger.error(f"DB upsert sensor error: {e}")
+            _logger.error("DB upsert sensor error: %s", e)
             db.rollback()
         finally:
             db.close()
 
     def _update_sensor_hr(self, device_id: int, hr: int, battery: int):
+        """Обновляет последние показания датчика в БД."""
         db = SessionLocal()
         try:
             sensor = db.query(Sensor).filter(Sensor.device_id == device_id).first()
@@ -160,7 +165,7 @@ class MockCollector:
                     sensor.battery_level = battery
                 db.commit()
         except Exception as e:
-            _logger.error(f"DB update sensor HR error: {e}")
+            _logger.error("DB update sensor HR error: %s", e)
             db.rollback()
         finally:
             db.close()

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+"""Legacy веб-сервер (Flask + SocketIO) для мониторинга ЧСС."""
 import sqlite3
 import logging
 from flask import Flask, render_template, jsonify, request
@@ -63,11 +64,17 @@ def get_athletes():
     """Get list of all athletes"""
     conn = sqlite3.connect('athletes.db')
     c = conn.cursor()
-    c.execute('SELECT id, first_name, last_name, max_hr, sensor_id FROM athletes ORDER BY last_name, first_name')
-    athletes = [{'id': row[0], 'first_name': row[1], 'last_name': row[2], 'max_hr': row[3], 'sensor_id': row[4]} 
-               for row in c.fetchall()]
+    c.execute(
+        'SELECT id, first_name, last_name, max_hr, sensor_id '
+        'FROM athletes ORDER BY last_name, first_name'
+    )
+    rows = [
+        {'id': row[0], 'first_name': row[1], 'last_name': row[2],
+         'max_hr': row[3], 'sensor_id': row[4]}
+        for row in c.fetchall()
+    ]
     conn.close()
-    return jsonify(athletes)
+    return jsonify(rows)
 
 @app.route('/api/athletes', methods=['POST'])
 def add_athlete():
@@ -75,7 +82,7 @@ def add_athlete():
     data = request.json
     if not all(k in data for k in ('first_name', 'last_name', 'max_hr')):
         return jsonify({'error': 'Missing required fields'}), 400
-    
+
     conn = sqlite3.connect('athletes.db')
     c = conn.cursor()
     try:
@@ -97,25 +104,28 @@ def update_athlete(athlete_id):
     data = request.json
     if not all(k in data for k in ('first_name', 'last_name', 'max_hr')):
         return jsonify({'error': 'Missing required fields'}), 400
-    
+
     conn = sqlite3.connect('athletes.db')
     c = conn.cursor()
     try:
         # Получаем текущий sensor_id перед обновлением
         c.execute('SELECT sensor_id FROM athletes WHERE id = ?', (athlete_id,))
         current_sensor = c.fetchone()
-        
+
         # Обновляем данные спортсмена
         c.execute('''
-            UPDATE athletes 
+            UPDATE athletes
             SET first_name = ?, last_name = ?, max_hr = ?
             WHERE id = ?
         ''', (data['first_name'], data['last_name'], data['max_hr'], athlete_id))
-        
+
         # Если у спортсмена был привязан датчик, сохраняем эту привязку
         if current_sensor and current_sensor[0]:
-            c.execute('UPDATE athletes SET sensor_id = ? WHERE id = ?', (current_sensor[0], athlete_id))
-            
+            c.execute(
+                'UPDATE athletes SET sensor_id = ? WHERE id = ?',
+                (current_sensor[0], athlete_id)
+            )
+
         conn.commit()
         conn.close()
         return jsonify({'message': 'Athlete updated successfully'})
@@ -143,7 +153,7 @@ def bind_sensor(athlete_id):
     data = request.json
     if 'sensor_id' not in data:
         return jsonify({'error': 'Missing sensor_id'}), 400
-    
+
     conn = sqlite3.connect('athletes.db')
     c = conn.cursor()
     try:
@@ -177,10 +187,14 @@ def get_sensor_athlete(sensor_id):
     """Get athlete bound to sensor"""
     conn = sqlite3.connect('athletes.db')
     c = conn.cursor()
-    c.execute('SELECT id, first_name, last_name, max_hr FROM athletes WHERE sensor_id = ?', (sensor_id,))
+    c.execute(
+        'SELECT id, first_name, last_name, max_hr '
+        'FROM athletes WHERE sensor_id = ?',
+        (sensor_id,)
+    )
     athlete = c.fetchone()
     conn.close()
-    
+
     if athlete:
         return jsonify({
             'id': athlete[0],
@@ -194,15 +208,15 @@ def update_sensor_data(sensor_id, heart_rate, timestamp):
     """Update sensor data and emit through WebSocket"""
     if sensor_id not in sensors_data:
         sensors_data[sensor_id] = {'times': [], 'heart_rates': []}
-    
+
     sensors_data[sensor_id]['heart_rates'].append(heart_rate)
     sensors_data[sensor_id]['times'].append(timestamp)
-    
+
     # Limit number of points
     if len(sensors_data[sensor_id]['heart_rates']) > 100:
         sensors_data[sensor_id]['heart_rates'].pop(0)
         sensors_data[sensor_id]['times'].pop(0)
-    
+
     socketio.emit('heart_rate_data', {
         'sensor_id': sensor_id,
         'heart_rate': heart_rate,
@@ -233,4 +247,4 @@ def run_web_server():
     socketio.run(app, host='0.0.0.0', port=5000, debug=False)
 
 if __name__ == "__main__":
-    run_web_server() 
+    run_web_server()

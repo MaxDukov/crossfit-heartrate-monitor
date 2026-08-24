@@ -15,7 +15,6 @@ ANT+ монитор сердечного ритма — поддержка до 
 
 import argparse
 import logging
-import sys
 from datetime import datetime
 
 from openant.devices import ANTPLUS_NETWORK_KEY
@@ -96,7 +95,7 @@ def make_on_device_data(sensor_index, device):
     """
     last_hr = [None]
 
-    def on_device_data(page, page_name, data):
+    def on_device_data(_page, _page_name, data):
         if not isinstance(data, HeartRateData):
             return
 

@@ -1,5 +1,7 @@
 """SQLAlchemy ORM-модели приложения."""
 
+# pylint: disable=too-few-public-methods
+
 import uuid
 from datetime import datetime, timezone
 

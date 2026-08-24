@@ -1,5 +1,7 @@
 """Pydantic-схемы для валидации запросов и ответов API."""
 
+# pylint: disable=missing-class-docstring,too-few-public-methods
+
 from datetime import datetime
 from pydantic import BaseModel, Field, field_validator
 
@@ -159,6 +161,7 @@ class MovementOut(BaseModel):
     @field_validator("themes", "equipment_keys", mode="before")
     @classmethod
     def split_comma(cls, v):
+        """Преобразует строку с запятыми в список."""
         if isinstance(v, str):
             return [s.strip() for s in v.split(",") if s.strip()]
         return v

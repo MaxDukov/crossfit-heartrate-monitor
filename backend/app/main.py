@@ -4,6 +4,7 @@
 и WebSocket для real-time трансляции ЧСС на фронтенд.
 """
 
+import time
 import asyncio
 import logging
 import os
@@ -12,7 +13,6 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
 
 from .database import init_db
 from .data.seed import seed_db
@@ -21,6 +21,7 @@ from .database import SessionLocal
 from .hr_zones import calc_zone, calc_percent, calc_calories_per_min
 from .services.ws_manager import manager
 from .services.mock_collector import MockCollector
+from .routers import athletes, sensors, sessions, analytics, equipment, wods, system
 
 _logger = logging.getLogger(__name__)
 
@@ -33,9 +34,8 @@ _calories_accum: dict[int, float] = {}
 _last_hr_time: dict[int, float] = {}
 
 
-def _on_hr_data(device_id: int, hr: int, battery: int):
+def _on_hr_data(device_id: int, hr: int, _battery: int):
     """Callback из ANT+ collector: рассылает HR данные через WebSocket."""
-    import time as _time
     db = SessionLocal()
     try:
         sensor = db.query(Sensor).filter(Sensor.device_id == device_id).first()
@@ -56,7 +56,7 @@ def _on_hr_data(device_id: int, hr: int, battery: int):
         zone = calc_zone(hr, max_hr)
         pct = calc_percent(hr, max_hr)
 
-        now = _time.monotonic()
+        now = time.monotonic()
         prev_t = _last_hr_time.get(device_id)
         if prev_t is not None:
             dt_min = (now - prev_t) / 60.0
@@ -81,7 +81,7 @@ def _on_hr_data(device_id: int, hr: int, battery: int):
         if _main_loop and _main_loop.is_running():
             asyncio.run_coroutine_threadsafe(manager.broadcast(payload), _main_loop)
     except Exception as e:
-        _logger.error(f"HR data callback error: {e}")
+        _logger.error("HR data callback error: %s", e)
     finally:
         db.close()
 
@@ -102,15 +102,18 @@ def _start_collector(mode: str):
         collector = MockCollector(on_hr_data=_on_hr_data, on_new_sensor=_on_new_sensor)
     else:
         from .services.ant_collector import AntCollector
-        collector = AntCollector(max_sensors=8, on_hr_data=_on_hr_data, on_new_sensor=_on_new_sensor)
+        collector = AntCollector(
+            max_sensors=8,
+            on_hr_data=_on_hr_data,
+            on_new_sensor=_on_new_sensor,
+        )
     collector.start()
     current_mode = mode
-    _logger.info(f"Collector started ({mode})")
+    _logger.info("Collector started (%s)", mode)
 
 
 def switch_collector(mode: str):
     """Останавливает текущий коллектор и запускает новый."""
-    global collector, _calories_accum, _last_hr_time
     if collector:
         collector.stop()
     _calories_accum.clear()
@@ -119,7 +122,7 @@ def switch_collector(mode: str):
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(_app: FastAPI):
     """Управление жизненным циклом: startup/shutdown."""
     global _main_loop
     _main_loop = asyncio.get_running_loop()
@@ -151,8 +154,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-from .routers import athletes, sensors, sessions, analytics, equipment, wods, system
-
 app.include_router(athletes.router)
 app.include_router(sensors.router)
 app.include_router(sessions.router)
@@ -180,7 +181,10 @@ async def websocket_endpoint(ws: WebSocket):
 
 
 FRONTEND_DIR = os.environ.get("CF_FRONTEND_DIR", "")
-print(f"[CF-MONITOR] CF_FRONTEND_DIR={FRONTEND_DIR}, isdir={os.path.isdir(FRONTEND_DIR) if FRONTEND_DIR else 'N/A'}")
+print(
+    f"[CF-MONITOR] CF_FRONTEND_DIR={FRONTEND_DIR}, "
+    f"isdir={os.path.isdir(FRONTEND_DIR) if FRONTEND_DIR else 'N/A'}"
+)
 
 if FRONTEND_DIR and os.path.isdir(FRONTEND_DIR):
     print(f"[CF-MONITOR] Mounting static files from {FRONTEND_DIR}")
