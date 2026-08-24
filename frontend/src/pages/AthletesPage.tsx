@@ -139,7 +139,8 @@ export default function AthletesPage() {
   const inputCls = "bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded px-3 py-2 text-sm text-slate-900 dark:text-white";
 
   return (
-    <div className="max-w-2xl mx-auto p-6" style={{ paddingBottom: kbField ? "34vh" : undefined }}>
+    <div className="h-full overflow-y-auto" style={{ paddingBottom: kbField ? "34vh" : undefined }}>
+      <div className="max-w-2xl mx-auto p-6">
       <h1 className="text-2xl font-bold mb-6 text-slate-900 dark:text-slate-100">Спортсмены</h1>
 
       <div className="flex flex-wrap gap-3 mb-2">
@@ -275,6 +276,7 @@ export default function AthletesPage() {
             </div>
           )
         )}
+      </div>
       </div>
 
       {kbField && (

@@ -32,7 +32,8 @@ export default function SessionsPage() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto p-6">
+    <div className="h-full overflow-y-auto">
+      <div className="max-w-2xl mx-auto p-6">
       <h1 className="text-2xl font-bold mb-6 text-slate-900 dark:text-slate-100">Тренировки</h1>
 
       {active ? (
@@ -94,6 +95,7 @@ export default function SessionsPage() {
             </div>
           </div>
         ))}
+      </div>
       </div>
     </div>
   );
