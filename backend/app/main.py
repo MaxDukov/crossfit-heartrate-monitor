@@ -13,6 +13,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from starlette.exceptions import HTTPException
 
 from .database import init_db
 from .data.seed import seed_db
@@ -188,4 +189,20 @@ print(
 
 if FRONTEND_DIR and os.path.isdir(FRONTEND_DIR):
     print(f"[CF-MONITOR] Mounting static files from {FRONTEND_DIR}")
-    app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="static")
+
+    class SPAStaticFiles(StaticFiles):
+        """StaticFiles с SPA-fallback: неизвестные пути отдают index.html,
+
+        чтобы клиентские роуты (/athletes, /sensors) работали при F5/прямом входе.
+        """
+
+        async def get_response(self, path: str, scope):  # type: ignore[override]
+            """Отдать файл; для неизвестных путей — index.html (SPA-роутинг)."""
+            try:
+                return await super().get_response(path, scope)
+            except HTTPException as exc:
+                if exc.status_code == 404 and not path.startswith("api/"):
+                    return await super().get_response("index.html", scope)
+                raise
+
+    app.mount("/", SPAStaticFiles(directory=FRONTEND_DIR, html=True), name="static")
