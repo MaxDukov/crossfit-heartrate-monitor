@@ -117,7 +117,7 @@ func scaleReps(reps sql.NullInt64, level string) sql.NullInt64 {
 }
 
 // weightStepFor — шаг округления веса по снаряду движения:
-// гири идут с шагом 2 кг (…12-14-16-18-20-24), штанга/гантели — 2.5 кг.
+// гири — фиксированный набор, штанга/гантели — 2.5 кг (бамперы).
 func weightStepFor(d *sql.DB, movementKey string) float64 {
 	var eq sql.NullString
 	if err := d.QueryRow(`SELECT equipment_keys FROM movements WHERE "key" = ?`, movementKey).Scan(&eq); err != nil {
@@ -127,6 +127,33 @@ func weightStepFor(d *sql.DB, movementKey string) float64 {
 		return 2.0
 	}
 	return 2.5
+}
+
+// kettlebellSet — доступные в зале веса гирь, кг.
+var kettlebellSet = [...]int{12, 14, 16, 18, 20, 24, 28, 32}
+
+func snapToKettlebellSet(w int) int {
+	if w <= kettlebellSet[0] {
+		return kettlebellSet[0]
+	}
+	if w >= kettlebellSet[len(kettlebellSet)-1] {
+		return kettlebellSet[len(kettlebellSet)-1]
+	}
+	best := kettlebellSet[0]
+	for _, kw := range kettlebellSet {
+		d := w - kw
+		if d < 0 {
+			d = -d
+		}
+		bd := w - best
+		if bd < 0 {
+			bd = -bd
+		}
+		if d < bd || (d == bd && kw < best) { // ничья — легче
+			best = kw
+		}
+	}
+	return best
 }
 
 func scaleWeight(weight sql.NullInt64, level string, step float64) sql.NullInt64 {
@@ -140,8 +167,9 @@ func scaleWeight(weight sql.NullInt64, level string, step float64) sql.NullInt64
 	scaled := pythonRound(float64(weight.Int64) * mult)
 	var rounded int
 	if step == 2.0 {
-		// Гири: округление к чётным килограммам (12-14-16-18…).
-		rounded = pythonRound(float64(scaled)/step) * 2
+		// Гири: в зале есть только фиксированный набор (…12-14-16-18-20-24-28-32).
+		// Снапим к ближайшему доступному весу, при равных — в меньшую сторону.
+		rounded = snapToKettlebellSet(scaled)
 	} else {
 		// Округление до ближайших 2.5 кг (banker's rounding + усечение, как в Python:
 		// round(scaled/2.5)*2.5 → int() усекает .5: 32.5 → 32).
