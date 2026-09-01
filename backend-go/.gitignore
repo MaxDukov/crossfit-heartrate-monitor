@@ -1,0 +1,4 @@
+cf-server
+*.db
+*.db-wal
+*.db-shm
