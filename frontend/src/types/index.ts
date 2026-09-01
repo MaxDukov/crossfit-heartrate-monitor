@@ -162,3 +162,187 @@ export const FORMAT_LABELS: Record<string, string> = {
   death_by: "Death By",
   strength: "Силовая",
 };
+
+// ── Планирование тренировок (draft1.MD) ─────────────────────
+
+export interface CycleSummary {
+  id: string;
+  name: string;
+  goal: string | null;
+  weeks: number;
+  start_date: string;
+  status: "planned" | "active" | "completed";
+  modality_priority: string | null;
+  created_at: string | null;
+  groups_count: number;
+  slots_total: number;
+  slots_filled: number;
+  slots_completed: number;
+  fill_percent: number;
+}
+
+export interface CycleGroup {
+  id: string;
+  name: string;
+  weekdays: number[];
+  weekdays_names: string[];
+}
+
+export type SlotStatus = "empty" | "planned" | "in_progress" | "completed" | "skipped";
+
+export interface SlotView {
+  id: string;
+  group_id: string;
+  group_name: string;
+  slot_date: string;
+  day_number: number;
+  status: SlotStatus;
+  wod_id: string | null;
+  template_id: string | null;
+  wod_name: string | null;
+  wod_format: string | null;
+  intensity: string | null;
+  theme: string | null;
+  notes: string | null;
+}
+
+export interface CycleDetail extends CycleSummary {
+  groups: CycleGroup[];
+  slots: SlotView[];
+  warnings: string[] | null;
+}
+
+export interface Recommendation extends WodVariant {
+  reason: string;
+}
+
+export interface SlotDetail {
+  id: string;
+  cycle_id: string;
+  group_id: string;
+  group_name: string;
+  slot_date: string;
+  day_number: number;
+  status: SlotStatus;
+  template_id: string | null;
+  wod_id: string | null;
+  notes: string | null;
+  session_id: string | null;
+  wod: Wod | null;
+  participants: { id: string; name: string; max_hr: number }[];
+  results: WorkoutResult[];
+}
+
+export interface WorkoutResult {
+  id: string;
+  athlete_id: string;
+  athlete_name: string;
+  time_seconds: number | null;
+  rounds: number | null;
+  reps: number | null;
+  weight_kg: number | null;
+  scaled_version: string | null;
+  rpe: number | null;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface PRInfo {
+  is_pr: boolean;
+  type?: string;
+  description?: string;
+  previous_best?: number | null;
+  new_value?: number | null;
+}
+
+export interface SaveResultResponse {
+  result_id: string;
+  pr: PRInfo;
+  previous_attempts: { date: string; value: number; kind: string }[];
+}
+
+export interface Movement {
+  key: string;
+  name: string;
+  modality: string;
+  muscle_group: string;
+  themes: string;
+  equipment_keys: string;
+  difficulty: string;
+  scaling_beginner: string | null;
+  scaling_intermediate: string | null;
+}
+
+export interface WodTemplateItem {
+  template_id: string;
+  name: string;
+  format: string;
+  duration_min: number;
+  intensity: string;
+  theme: string;
+  is_benchmark: boolean;
+  movements_count: number;
+}
+
+export interface GroupCycleStats {
+  group_id: string;
+  name: string;
+  slots_total: number;
+  slots_filled: number;
+  slots_completed: number;
+  slots_skipped: number;
+}
+
+export interface ThemeStat {
+  theme: string;
+  theme_name: string;
+  planned: number;
+  done: number;
+}
+
+export interface AthleteCycleStats {
+  athlete_id: string;
+  name: string;
+  workouts_done: number;
+  avg_rpe: number | null;
+  total_volume_kg: number;
+  pr_count: number;
+}
+
+export interface RMProgress {
+  athlete_name: string;
+  movement_key: string;
+  movement_name: string;
+  date: string;
+  value: number;
+}
+
+export interface CycleAnalytics {
+  slots_total: number;
+  slots_filled: number;
+  slots_completed: number;
+  slots_skipped: number;
+  fill_percent: number;
+  completion_percent: number;
+  groups: GroupCycleStats[];
+  themes: ThemeStat[];
+  athletes: AthleteCycleStats[];
+  rm_progress: RMProgress[];
+  advice: string[];
+}
+
+export const STATUS_LABELS: Record<SlotStatus, string> = {
+  empty: "Свободен",
+  planned: "Запланирован",
+  in_progress: "Идёт",
+  completed: "Проведён",
+  skipped: "Пропущен",
+};
+
+export const MODALITY_LABELS: Record<string, string> = {
+  strength: "Сила",
+  gymnastics: "Гимнастика",
+  cardio: "Кардио",
+};
+
+export const WEEKDAY_LABELS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];

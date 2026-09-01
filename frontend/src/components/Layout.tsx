@@ -5,12 +5,9 @@ import { useEffect } from "react";
 
 const navItems = [
   { to: "/", label: "Монитор" },
-  { to: "/wod-builder", label: "WoD" },
-  { to: "/athletes", label: "Спортсмены" },
-  { to: "/sensors", label: "Датчики" },
-  { to: "/sessions", label: "Тренировки" },
-  { to: "/equipment", label: "Инвентарь" },
-  { to: "/settings", label: "Настроики" },
+  { to: "/wod", label: "WoD" },
+  { to: "/history", label: "История" },
+  { to: "/settings", label: "Настройки" },
 ];
 
 export default function Layout() {

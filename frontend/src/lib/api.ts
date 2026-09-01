@@ -1,4 +1,4 @@
-import type { Athlete, Sensor, Session, SessionStats, AthleteStats, Equipment, GymInventoryItem, Wod, WodVariant } from "../types";
+import type { Athlete, Sensor, Session, SessionStats, AthleteStats, Equipment, GymInventoryItem, Wod, WodVariant, CycleSummary, CycleDetail, Recommendation, SlotDetail, SaveResultResponse, Movement, WodTemplateItem, CycleAnalytics } from "../types";
 
 const BASE = "/api";
 
@@ -81,6 +81,84 @@ export const api = {
     active: () => request<Wod | null>("/wods/active"),
     endActive: () => request<void>("/wods/active/end", { method: "POST" }),
     history: (limit = 20) => request<Wod[]>(`/wods/history?limit=${limit}`),
+    templates: (params?: { theme?: string; search?: string; limit?: number }) => {
+      const q = new URLSearchParams();
+      if (params?.theme) q.set("theme", params.theme);
+      if (params?.search) q.set("search", params.search);
+      q.set("limit", String(params?.limit ?? 100));
+      return request<WodTemplateItem[]>(`/wods/templates?${q}`);
+    },
+    template: (id: string, groupLevel = "intermediate") =>
+      request<WodVariant>(`/wods/templates/${id}?group_level=${groupLevel}`),
+    custom: (data: {
+      name?: string;
+      format: string;
+      duration_min: number;
+      intensity: string;
+      theme: string;
+      description?: string;
+      movements: { movement_key: string; reps?: number | null; weight_male?: number | null; weight_female?: number | null; rounds_note?: string }[];
+    }) =>
+      request<{ template_id: string; warnings: string[] | null }>("/wods/custom", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+  },
+  cycles: {
+    list: () => request<CycleSummary[]>("/cycles"),
+    create: (data: {
+      name: string;
+      goal?: string;
+      weeks: number;
+      start_date: string;
+      modality_priority?: string;
+      groups: { name: string; weekdays: number[] }[];
+    }) =>
+      request<{ id: string; warnings: string[] | null }>("/cycles", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    get: (id: string) => request<CycleDetail>(`/cycles/${id}`),
+    setStatus: (id: string, status: string) =>
+      request<{ id: string; status: string }>(`/cycles/${id}/status`, {
+        method: "PUT",
+        body: JSON.stringify({ status }),
+      }),
+    delete: (id: string) => request<void>(`/cycles/${id}`, { method: "DELETE" }),
+    analytics: (id: string) => request<CycleAnalytics>(`/cycles/${id}/analytics`),
+  },
+  slots: {
+    get: (id: string) => request<SlotDetail>(`/slots/${id}`),
+    recommendations: (id: string, groupLevel = "intermediate") =>
+      request<Recommendation[]>(`/slots/${id}/recommendations?group_level=${groupLevel}`),
+    assign: (id: string, templateId: string, groupLevel = "intermediate") =>
+      request<{ slot_id: string; wod_id: string; warnings: string[] | null }>(`/slots/${id}/assign`, {
+        method: "POST",
+        body: JSON.stringify({ template_id: templateId, group_level: groupLevel }),
+      }),
+    unassign: (id: string) => request<void>(`/slots/${id}/assign`, { method: "DELETE" }),
+    updateMovements: (id: string, movements: { movement_key: string; reps: number | null; weight_male: number | null; weight_female: number | null }[]) =>
+      request<Wod>(`/slots/${id}/movements`, {
+        method: "PUT",
+        body: JSON.stringify({ movements }),
+      }),
+    start: (id: string) => request<{ slot_id: string; session_id: string }>(`/slots/${id}/start`, { method: "POST" }),
+    complete: (id: string) => request<void>(`/slots/${id}/complete`, { method: "POST" }),
+    saveResult: (id: string, data: {
+      athlete_id: string;
+      time_seconds?: number | null;
+      rounds?: number | null;
+      reps?: number | null;
+      weight_kg?: number | null;
+      scaled_version?: string;
+      rpe?: number | null;
+      notes?: string;
+      movements?: { movement_key: string; weight_kg?: number | null; reps?: number | null }[];
+    }) => request<SaveResultResponse>(`/slots/${id}/results`, { method: "POST", body: JSON.stringify(data) }),
+  },
+  movements: {
+    list: (search?: string) =>
+      request<Movement[]>(`/movements${search ? `?search=${encodeURIComponent(search)}` : ""}`),
   },
   system: {
     getMode: () => request<{ mode: string }>("/system/mode"),
