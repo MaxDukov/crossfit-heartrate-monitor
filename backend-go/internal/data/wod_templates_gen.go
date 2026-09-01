@@ -1,6 +1,14 @@
 package data
 
-// WodTemplatesSeed — шаблоны тренировок (сгенерировано из app/data/wod_templates.py).
+// WodTemplatesSeed — шаблоны тренировок.
+//
+// Принципы наполнения (расписание зала: 10 мин разминка + 5 мин инструктаж +
+// 30–40 мин основная часть + 5–10 мин заминка):
+//   - «длинная» основная часть: AMRAP/EMOM/лесенка 30 мин, chipper/for_time 20–25 мин;
+//   - «пара» по 15 мин: короткие метконы со штангой и спринты;
+//   - бенчмарки — классические, не меняются;
+//   - дистанции (бег/гребля/велосипед) хранятся в названии движения,
+//     reps всегда NULL — иначе множители уровня портят метраж (500 м × 0.75 = 375).
 var WodTemplatesSeed = []WodTemplateItem{
 	{
 		Name: "Fran", Format: "for_time", DurationMin: 5, Intensity: "high", Theme: "full_body", IsBenchmark: true,
@@ -14,7 +22,7 @@ var WodTemplatesSeed = []WodTemplateItem{
 		Name: "Helen", Format: "for_time", DurationMin: 12, Intensity: "high", Theme: "cardio_metcon", IsBenchmark: true,
 		Description: "3 раунда: бег 400 м + 21 мах гирей (24/16 кг) + 12 подтягиваний",
 		Movements: []WodTemplateMovementItem{
-			{MovementKey: "run", MovementName: "Бег 400 м", Reps: intPtr(400), SortOrder: 0},
+			{MovementKey: "run", MovementName: "Бег 400 м", SortOrder: 0},
 			{MovementKey: "kettlebell_swing", MovementName: "Махи гирей", Reps: intPtr(21), WeightMale: intPtr(24), WeightFemale: intPtr(16), SortOrder: 1},
 			{MovementKey: "pull_up", MovementName: "Подтягивания", Reps: intPtr(12), SortOrder: 2},
 		},
@@ -61,11 +69,11 @@ var WodTemplatesSeed = []WodTemplateItem{
 		Name: "Murph", Format: "chipper", DurationMin: 45, Intensity: "high", Theme: "full_body", IsBenchmark: true,
 		Description: "Бег 1 миля + 100 PU + 200 PU + 300 приседаний + бег 1 миля",
 		Movements: []WodTemplateMovementItem{
-			{MovementKey: "run", MovementName: "Бег 1 миля (1600 м)", Reps: intPtr(1600), SortOrder: 0},
+			{MovementKey: "run", MovementName: "Бег 1 миля (1600 м)", SortOrder: 0},
 			{MovementKey: "pull_up", MovementName: "Подтягивания", Reps: intPtr(100), SortOrder: 1},
 			{MovementKey: "push_up", MovementName: "Отжимания", Reps: intPtr(200), SortOrder: 2},
 			{MovementKey: "air_squat", MovementName: "Приседания", Reps: intPtr(300), SortOrder: 3},
-			{MovementKey: "run", MovementName: "Бег 1 миля (1600 м)", Reps: intPtr(1600), SortOrder: 4},
+			{MovementKey: "run", MovementName: "Бег 1 миля (1600 м)", SortOrder: 4},
 		},
 	},
 	{
@@ -89,7 +97,7 @@ var WodTemplatesSeed = []WodTemplateItem{
 		Name: "Nancy", Format: "for_time", DurationMin: 15, Intensity: "medium", Theme: "legs", IsBenchmark: true,
 		Description: "5 раундов: бег 400 м + 15 оверхед-приседаний (43/30 кг)",
 		Movements: []WodTemplateMovementItem{
-			{MovementKey: "run", MovementName: "Бег 400 м", Reps: intPtr(400), SortOrder: 0},
+			{MovementKey: "run", MovementName: "Бег 400 м", SortOrder: 0},
 			{MovementKey: "overhead_squat", MovementName: "Оверхед-приседания", Reps: intPtr(15), WeightMale: intPtr(43), WeightFemale: intPtr(30), SortOrder: 1},
 		},
 	},
@@ -125,14 +133,15 @@ var WodTemplatesSeed = []WodTemplateItem{
 		Name: "Eva", Format: "for_time", DurationMin: 45, Intensity: "high", Theme: "cardio_metcon", IsBenchmark: true,
 		Description: "5 раундов: бег 800 м + 30 KB swing (24/16 кг) + 30 подтягиваний",
 		Movements: []WodTemplateMovementItem{
-			{MovementKey: "run", MovementName: "Бег 800 м", Reps: intPtr(800), SortOrder: 0},
+			{MovementKey: "run", MovementName: "Бег 800 м", SortOrder: 0},
 			{MovementKey: "kettlebell_swing", MovementName: "Махи гирей", Reps: intPtr(30), WeightMale: intPtr(24), WeightFemale: intPtr(16), SortOrder: 1},
 			{MovementKey: "pull_up", MovementName: "Подтягивания", Reps: intPtr(30), SortOrder: 2},
 		},
 	},
+	// ── Ноги ──
 	{
-		Name: "Leg Burner", Format: "amrap", DurationMin: 12, Intensity: "high", Theme: "legs", IsBenchmark: false,
-		Description: "12 мин AMRAP: 20 wall ball + 20 запрыгиваний на бокс + 20 махи гирей",
+		Name: "Leg Burner", Format: "amrap", DurationMin: 30, Intensity: "high", Theme: "legs", IsBenchmark: false,
+		Description: "30 мин AMRAP: 20 wall ball (9/6) + 20 запрыгиваний на бокс + 20 махи гирей (24/16)",
 		Movements: []WodTemplateMovementItem{
 			{MovementKey: "wall_ball", MovementName: "Wall ball", Reps: intPtr(20), WeightMale: intPtr(9), WeightFemale: intPtr(6), SortOrder: 0},
 			{MovementKey: "box_jump", MovementName: "Запрыгивания", Reps: intPtr(20), SortOrder: 1},
@@ -140,79 +149,82 @@ var WodTemplatesSeed = []WodTemplateItem{
 		},
 	},
 	{
-		Name: "Squat Ladder", Format: "ladder", DurationMin: 15, Intensity: "medium", Theme: "legs", IsBenchmark: false,
-		Description: "EMOM 10: чётная мин — 10 фронтальных приседаний, нечётная — 10 выпадов",
+		Name: "Squat Ladder", Format: "ladder", DurationMin: 30, Intensity: "medium", Theme: "legs", IsBenchmark: false,
+		Description: "EMOM 30: чётная минута — 10 фронтальных приседаний (35/25), нечётная — 10 выпадов с шагом (35/25)",
 		Movements: []WodTemplateMovementItem{
-			{MovementKey: "front_squat", MovementName: "Фронтальные приседания", Reps: intPtr(10), WeightMale: intPtr(43), WeightFemale: intPtr(30), SortOrder: 0, RoundsNote: "Чётные минуты"},
-			{MovementKey: "walking_lunge", MovementName: "Выпады с шагом", Reps: intPtr(10), WeightMale: intPtr(43), WeightFemale: intPtr(30), SortOrder: 1, RoundsNote: "Нечётные минуты"},
+			{MovementKey: "front_squat", MovementName: "Фронтальные приседания", Reps: intPtr(10), WeightMale: intPtr(35), WeightFemale: intPtr(25), SortOrder: 0, RoundsNote: "Чётные минуты"},
+			{MovementKey: "walking_lunge", MovementName: "Выпады с шагом", Reps: intPtr(10), WeightMale: intPtr(35), WeightFemale: intPtr(25), SortOrder: 1, RoundsNote: "Нечётные минуты"},
 		},
 	},
 	{
-		Name: "Wall Ball Hell", Format: "for_time", DurationMin: 10, Intensity: "high", Theme: "legs", IsBenchmark: false,
-		Description: "100-80-60-40-20: wall ball + воздушные приседания",
+		Name: "Wall Ball Hell", Format: "for_time", DurationMin: 25, Intensity: "high", Theme: "legs", IsBenchmark: false,
+		Description: "100-80-60-40-20: wall ball (9/6) + воздушные приседания",
 		Movements: []WodTemplateMovementItem{
 			{MovementKey: "wall_ball", MovementName: "Wall ball", WeightMale: intPtr(9), WeightFemale: intPtr(6), SortOrder: 0, RoundsNote: "100-80-60-40-20"},
 			{MovementKey: "air_squat", MovementName: "Приседания", SortOrder: 1, RoundsNote: "100-80-60-40-20"},
 		},
 	},
 	{
-		Name: "Pistols & Box", Format: "for_time", DurationMin: 15, Intensity: "medium", Theme: "legs", IsBenchmark: false,
+		Name: "Pistols & Box", Format: "for_time", DurationMin: 20, Intensity: "medium", Theme: "legs", IsBenchmark: false,
 		Description: "5 раундов: 10 пистолетов + 15 запрыгиваний на бокс + бег 400 м",
 		Movements: []WodTemplateMovementItem{
 			{MovementKey: "pistol_squat", MovementName: "Писталеты", Reps: intPtr(10), SortOrder: 0},
 			{MovementKey: "box_jump", MovementName: "Запрыгивания", Reps: intPtr(15), SortOrder: 1},
-			{MovementKey: "run", MovementName: "Бег 400 м", Reps: intPtr(400), SortOrder: 2},
+			{MovementKey: "run", MovementName: "Бег 400 м", SortOrder: 2},
 		},
 	},
 	{
-		Name: "Deadlift Metcon", Format: "amrap", DurationMin: 10, Intensity: "high", Theme: "legs", IsBenchmark: false,
-		Description: "10 мин AMRAP: 10 становая (70/50) + 20 бёрпи + 30 воздушных приседаний",
+		Name: "Deadlift Metcon", Format: "amrap", DurationMin: 15, Intensity: "high", Theme: "legs", IsBenchmark: false,
+		Description: "15 мин AMRAP: 8 становая (70/50) + 16 бёрпи + 24 воздушных приседаний",
 		Movements: []WodTemplateMovementItem{
-			{MovementKey: "deadlift", MovementName: "Становая тяга", Reps: intPtr(10), WeightMale: intPtr(70), WeightFemale: intPtr(50), SortOrder: 0},
-			{MovementKey: "burpee", MovementName: "Бёрпи", Reps: intPtr(20), SortOrder: 1},
-			{MovementKey: "air_squat", MovementName: "Приседания", Reps: intPtr(30), SortOrder: 2},
+			{MovementKey: "deadlift", MovementName: "Становая тяга", Reps: intPtr(8), WeightMale: intPtr(70), WeightFemale: intPtr(50), SortOrder: 0},
+			{MovementKey: "burpee", MovementName: "Бёрпи", Reps: intPtr(16), SortOrder: 1},
+			{MovementKey: "air_squat", MovementName: "Приседания", Reps: intPtr(24), SortOrder: 2},
 		},
 	},
+	// ── Руки / Плечи ──
 	{
-		Name: "Push Press Burner", Format: "amrap", DurationMin: 10, Intensity: "high", Theme: "arms_shoulders", IsBenchmark: false,
-		Description: "10 мин AMRAP: 10 жимовой толчок (43/30) + 15 отжиманий + 200 м бег",
+		Name: "Push Press Burner", Format: "amrap", DurationMin: 15, Intensity: "high", Theme: "arms_shoulders", IsBenchmark: false,
+		Description: "15 мин AMRAP: 10 жимовой толчок (43/30) + 15 отжиманий + 200 м бег",
 		Movements: []WodTemplateMovementItem{
 			{MovementKey: "push_press", MovementName: "Жимовой толчок", Reps: intPtr(10), WeightMale: intPtr(43), WeightFemale: intPtr(30), SortOrder: 0},
 			{MovementKey: "push_up", MovementName: "Отжимания", Reps: intPtr(15), SortOrder: 1},
-			{MovementKey: "run", MovementName: "Бег 200 м", Reps: intPtr(200), SortOrder: 2},
+			{MovementKey: "run", MovementName: "Бег 200 м", SortOrder: 2},
 		},
 	},
 	{
-		Name: "HSPU Hell", Format: "emom", DurationMin: 12, Intensity: "high", Theme: "arms_shoulders", IsBenchmark: false,
-		Description: "12 мин EMOM: 8 HSPU + 10 отжиманий на кольцах",
+		Name: "HSPU Hell", Format: "emom", DurationMin: 30, Intensity: "high", Theme: "arms_shoulders", IsBenchmark: false,
+		Description: "EMOM 30, 3 блока: 6 HSPU / 8 отжиманий на кольцах / 45с планка",
 		Movements: []WodTemplateMovementItem{
-			{MovementKey: "handstand_push_up", MovementName: "HSPU", Reps: intPtr(8), SortOrder: 0},
-			{MovementKey: "ring_dip", MovementName: "Отжимания на кольцах", Reps: intPtr(10), SortOrder: 1},
+			{MovementKey: "handstand_push_up", MovementName: "HSPU", Reps: intPtr(6), SortOrder: 0, RoundsNote: "Начиная с 1-й, каждая 3-я минута"},
+			{MovementKey: "ring_dip", MovementName: "Отжимания на кольцах", Reps: intPtr(8), SortOrder: 1, RoundsNote: "Начиная со 2-й, каждая 3-я минута"},
+			{MovementKey: "plank", MovementName: "Планка 45с", Reps: intPtr(1), SortOrder: 2, RoundsNote: "Начиная с 3-й, каждая 3-я минута"},
 		},
 	},
 	{
-		Name: "Shoulder Destroyer", Format: "for_time", DurationMin: 12, Intensity: "high", Theme: "arms_shoulders", IsBenchmark: false,
-		Description: "5 раундов: 12 армейский жим (43/30) + 15 отжиманий + 12 жим гантелей",
+		Name: "Shoulder Destroyer", Format: "for_time", DurationMin: 20, Intensity: "high", Theme: "arms_shoulders", IsBenchmark: false,
+		Description: "5 раундов: 12 жимовой толчок (43/30) + 15 отжиманий + 12 жим гантелей (15/10)",
 		Movements: []WodTemplateMovementItem{
-			{MovementKey: "shoulder_press", MovementName: "Армейский жим", Reps: intPtr(12), WeightMale: intPtr(43), WeightFemale: intPtr(30), SortOrder: 0},
+			{MovementKey: "push_press", MovementName: "Жимовой толчок", Reps: intPtr(12), WeightMale: intPtr(43), WeightFemale: intPtr(30), SortOrder: 0},
 			{MovementKey: "push_up", MovementName: "Отжимания", Reps: intPtr(15), SortOrder: 1},
 			{MovementKey: "dumbbell_press", MovementName: "Жим гантелей", Reps: intPtr(12), WeightMale: intPtr(15), WeightFemale: intPtr(10), SortOrder: 2},
 		},
 	},
 	{
-		Name: "Devil Press Sprint", Format: "for_time", DurationMin: 10, Intensity: "high", Theme: "arms_shoulders", IsBenchmark: false,
+		Name: "Devil Press Sprint", Format: "for_time", DurationMin: 20, Intensity: "high", Theme: "arms_shoulders", IsBenchmark: false,
 		Description: "5 раундов: 10 devil press (2×15/10 кг) + 15 бёрпи",
 		Movements: []WodTemplateMovementItem{
 			{MovementKey: "devil_press", MovementName: "Devil press", Reps: intPtr(10), WeightMale: intPtr(15), WeightFemale: intPtr(10), SortOrder: 0},
 			{MovementKey: "burpee", MovementName: "Бёрпи", Reps: intPtr(15), SortOrder: 1},
 		},
 	},
+	// ── Толчок (C&J) ──
 	{
 		Name: "Clean Complex", Format: "emom", DurationMin: 12, Intensity: "medium", Theme: "clean_jerk", IsBenchmark: false,
-		Description: "12 мин EMOM: 3 power clean + 1 push jerk (60/40 кг)",
+		Description: "12 мин EMOM: 3 power clean + 1 push jerk (60/40 кг), комплекс без скидывания",
 		Movements: []WodTemplateMovementItem{
-			{MovementKey: "power_clean", MovementName: "Power clean", Reps: intPtr(3), WeightMale: intPtr(60), WeightFemale: intPtr(40), SortOrder: 0},
-			{MovementKey: "push_jerk", MovementName: "Push jerk", Reps: intPtr(1), WeightMale: intPtr(60), WeightFemale: intPtr(40), SortOrder: 1},
+			{MovementKey: "power_clean", MovementName: "Power clean", Reps: intPtr(3), WeightMale: intPtr(60), WeightFemale: intPtr(40), SortOrder: 0, RoundsNote: "Комплекс без скидывания"},
+			{MovementKey: "push_jerk", MovementName: "Push jerk", Reps: intPtr(1), WeightMale: intPtr(60), WeightFemale: intPtr(40), SortOrder: 1, RoundsNote: "Комплекс без скидывания"},
 		},
 	},
 	{
@@ -223,37 +235,39 @@ var WodTemplatesSeed = []WodTemplateItem{
 		},
 	},
 	{
-		Name: "Hang Power Metcon", Format: "amrap", DurationMin: 10, Intensity: "high", Theme: "clean_jerk", IsBenchmark: false,
-		Description: "10 мин AMRAP: 10 hang power clean (50/35) + 10 толчков гантелей + 10 бёрпи",
+		Name: "Hang Power Metcon", Format: "amrap", DurationMin: 15, Intensity: "high", Theme: "clean_jerk", IsBenchmark: false,
+		Description: "15 мин AMRAP: 8 hang power clean (50/35) + 8 взятие гантелей (15/10) + 8 бёрпи",
 		Movements: []WodTemplateMovementItem{
-			{MovementKey: "hang_power_clean", MovementName: "Hang power clean", Reps: intPtr(10), WeightMale: intPtr(50), WeightFemale: intPtr(35), SortOrder: 0},
-			{MovementKey: "db_clean", MovementName: "Взятие гантелей", Reps: intPtr(10), WeightMale: intPtr(15), WeightFemale: intPtr(10), SortOrder: 1},
-			{MovementKey: "burpee", MovementName: "Бёрпи", Reps: intPtr(10), SortOrder: 2},
+			{MovementKey: "hang_power_clean", MovementName: "Hang power clean", Reps: intPtr(8), WeightMale: intPtr(50), WeightFemale: intPtr(35), SortOrder: 0},
+			{MovementKey: "db_clean", MovementName: "Взятие гантелей", Reps: intPtr(8), WeightMale: intPtr(15), WeightFemale: intPtr(10), SortOrder: 1},
+			{MovementKey: "burpee", MovementName: "Бёрпи", Reps: intPtr(8), SortOrder: 2},
 		},
 	},
 	{
-		Name: "Clean & Box", Format: "for_time", DurationMin: 12, Intensity: "medium", Theme: "clean_jerk", IsBenchmark: false,
-		Description: "5 раундов: 10 power clean (50/35) + 15 запрыгиваний на бокс",
+		Name: "Clean & Box", Format: "for_time", DurationMin: 25, Intensity: "medium", Theme: "clean_jerk", IsBenchmark: false,
+		Description: "6 раундов: 8 power clean (50/35) + 12 запрыгиваний на бокс",
 		Movements: []WodTemplateMovementItem{
-			{MovementKey: "power_clean", MovementName: "Power clean", Reps: intPtr(10), WeightMale: intPtr(50), WeightFemale: intPtr(35), SortOrder: 0},
-			{MovementKey: "box_jump", MovementName: "Запрыгивания", Reps: intPtr(15), SortOrder: 1},
+			{MovementKey: "power_clean", MovementName: "Power clean", Reps: intPtr(8), WeightMale: intPtr(50), WeightFemale: intPtr(35), SortOrder: 0},
+			{MovementKey: "box_jump", MovementName: "Запрыгивания", Reps: intPtr(12), SortOrder: 1},
+		},
+	},
+	// ── Рывок ──
+	{
+		Name: "Snatch Skill", Format: "emom", DurationMin: 15, Intensity: "low", Theme: "snatch", IsBenchmark: false,
+		Description: "EMOM 15, 3 блока: 3 power snatch (40/25) / 3 OHS (40/25) / 10 good morning (20/15)",
+		Movements: []WodTemplateMovementItem{
+			{MovementKey: "power_snatch", MovementName: "Power snatch", Reps: intPtr(3), WeightMale: intPtr(40), WeightFemale: intPtr(25), SortOrder: 0, RoundsNote: "Начиная с 1-й, каждая 3-я минута"},
+			{MovementKey: "overhead_squat", MovementName: "OHS", Reps: intPtr(3), WeightMale: intPtr(40), WeightFemale: intPtr(25), SortOrder: 1, RoundsNote: "Начиная со 2-й, каждая 3-я минута"},
+			{MovementKey: "good_morning", MovementName: "Good morning", Reps: intPtr(10), WeightMale: intPtr(20), WeightFemale: intPtr(15), SortOrder: 2, RoundsNote: "Начиная с 3-й, каждая 3-я минута"},
 		},
 	},
 	{
-		Name: "Snatch Skill", Format: "emom", DurationMin: 12, Intensity: "low", Theme: "snatch", IsBenchmark: false,
-		Description: "12 мин EMOM: 2 power snatch + 2 OHS (40/25 кг)",
-		Movements: []WodTemplateMovementItem{
-			{MovementKey: "power_snatch", MovementName: "Power snatch", Reps: intPtr(2), WeightMale: intPtr(40), WeightFemale: intPtr(25), SortOrder: 0},
-			{MovementKey: "overhead_squat", MovementName: "OHS", Reps: intPtr(2), WeightMale: intPtr(40), WeightFemale: intPtr(25), SortOrder: 1},
-		},
-	},
-	{
-		Name: "Snatch Burner", Format: "amrap", DurationMin: 8, Intensity: "high", Theme: "snatch", IsBenchmark: false,
-		Description: "8 мин AMRAP: 10 рывок гантели + 10 бёрпи + 200 м бег",
+		Name: "Snatch Burner", Format: "amrap", DurationMin: 20, Intensity: "high", Theme: "snatch", IsBenchmark: false,
+		Description: "20 мин AMRAP: 10 рывок гантели (20/15) + 10 бёрпи + 200 м бег",
 		Movements: []WodTemplateMovementItem{
 			{MovementKey: "alt_db_snatch", MovementName: "Рывок гантели", Reps: intPtr(10), WeightMale: intPtr(20), WeightFemale: intPtr(15), SortOrder: 0},
 			{MovementKey: "burpee", MovementName: "Бёрпи", Reps: intPtr(10), SortOrder: 1},
-			{MovementKey: "run", MovementName: "Бег 200 м", Reps: intPtr(200), SortOrder: 2},
+			{MovementKey: "run", MovementName: "Бег 200 м", SortOrder: 2},
 		},
 	},
 	{
@@ -272,30 +286,32 @@ var WodTemplatesSeed = []WodTemplateItem{
 			{MovementKey: "push_up", MovementName: "Отжимания", Reps: intPtr(21), SortOrder: 1},
 		},
 	},
+	// ── Кардио / Metcon ──
 	{
-		Name: "Cardio Blast", Format: "amrap", DurationMin: 15, Intensity: "high", Theme: "cardio_metcon", IsBenchmark: false,
-		Description: "15 мин AMRAP: 500 м гребля + 15 бёрпи + 30 дабл-андеров",
+		Name: "Cardio Blast", Format: "amrap", DurationMin: 30, Intensity: "high", Theme: "cardio_metcon", IsBenchmark: false,
+		Description: "30 мин AMRAP: 500 м гребля + 15 бёрпи + 30 дабл-андеров (раунд ≈ 4 мин, ориентир 7–8 раундов)",
 		Movements: []WodTemplateMovementItem{
-			{MovementKey: "cal_row", MovementName: "Гребля 500 м", Reps: intPtr(500), SortOrder: 0},
+			{MovementKey: "cal_row", MovementName: "Гребля 500 м", SortOrder: 0},
 			{MovementKey: "burpee", MovementName: "Бёрпи", Reps: intPtr(15), SortOrder: 1},
 			{MovementKey: "double_under", MovementName: "Double-under", Reps: intPtr(30), SortOrder: 2},
 		},
 	},
 	{
-		Name: "Rowing Hell", Format: "for_time", DurationMin: 20, Intensity: "high", Theme: "cardio_metcon", IsBenchmark: false,
+		Name: "Rowing Hell", Format: "for_time", DurationMin: 25, Intensity: "high", Theme: "cardio_metcon", IsBenchmark: false,
 		Description: "5 раундов: 500 м гребля + 25 бёрпи + 200 м бег",
 		Movements: []WodTemplateMovementItem{
-			{MovementKey: "cal_row", MovementName: "Гребля 500 м", Reps: intPtr(500), SortOrder: 0},
+			{MovementKey: "cal_row", MovementName: "Гребля 500 м", SortOrder: 0},
 			{MovementKey: "burpee", MovementName: "Бёрпи", Reps: intPtr(25), SortOrder: 1},
-			{MovementKey: "run", MovementName: "Бег 200 м", Reps: intPtr(200), SortOrder: 2},
+			{MovementKey: "run", MovementName: "Бег 200 м", SortOrder: 2},
 		},
 	},
 	{
-		Name: "Bike & Burpee", Format: "emom", DurationMin: 12, Intensity: "high", Theme: "cardio_metcon", IsBenchmark: false,
-		Description: "12 мин EMOM: 10 кал AirBike + 10 бёрпи",
+		Name: "Bike & Burpee", Format: "emom", DurationMin: 30, Intensity: "high", Theme: "cardio_metcon", IsBenchmark: false,
+		Description: "EMOM 30, 3 блока: 10 кал AirBike / 6 бёрпи / 24 дабл-андера",
 		Movements: []WodTemplateMovementItem{
-			{MovementKey: "cal_bike", MovementName: "AirBike 10 кал", Reps: intPtr(10), SortOrder: 0},
-			{MovementKey: "burpee", MovementName: "Бёрпи", Reps: intPtr(10), SortOrder: 1},
+			{MovementKey: "cal_bike", MovementName: "AirBike 10 кал", SortOrder: 0, RoundsNote: "Начиная с 1-й, каждая 3-я минута"},
+			{MovementKey: "burpee", MovementName: "Бёрпи", Reps: intPtr(6), SortOrder: 1, RoundsNote: "Начиная со 2-й, каждая 3-я минута"},
+			{MovementKey: "double_under", MovementName: "Double-under", Reps: intPtr(24), SortOrder: 2, RoundsNote: "Начиная с 3-й, каждая 3-я минута"},
 		},
 	},
 	{
@@ -316,7 +332,7 @@ var WodTemplatesSeed = []WodTemplateItem{
 		},
 	},
 	{
-		Name: "Double Under Burner", Format: "for_time", DurationMin: 8, Intensity: "medium", Theme: "cardio_metcon", IsBenchmark: false,
+		Name: "Double Under Burner", Format: "for_time", DurationMin: 15, Intensity: "medium", Theme: "cardio_metcon", IsBenchmark: false,
 		Description: "5 раундов: 50 дабл-андеров + 20 ситапов + 10 отжиманий",
 		Movements: []WodTemplateMovementItem{
 			{MovementKey: "double_under", MovementName: "Double-under", Reps: intPtr(50), SortOrder: 0},
@@ -324,8 +340,9 @@ var WodTemplatesSeed = []WodTemplateItem{
 			{MovementKey: "push_up", MovementName: "Отжимания", Reps: intPtr(10), SortOrder: 2},
 		},
 	},
+	// ── Гимнастика ──
 	{
-		Name: "Pull-up Pyramid", Format: "ladder", DurationMin: 12, Intensity: "high", Theme: "gymnastics", IsBenchmark: false,
+		Name: "Pull-up Pyramid", Format: "ladder", DurationMin: 20, Intensity: "high", Theme: "gymnastics", IsBenchmark: false,
 		Description: "1-2-3-4-5-6-7-8-9-10: подтягивания + отжимания. И обратно.",
 		Movements: []WodTemplateMovementItem{
 			{MovementKey: "pull_up", MovementName: "Подтягивания", SortOrder: 0, RoundsNote: "1-2-3-4-5-6-7-8-9-10"},
@@ -334,15 +351,16 @@ var WodTemplatesSeed = []WodTemplateItem{
 	},
 	{
 		Name: "Muscle-up Skill", Format: "emom", DurationMin: 15, Intensity: "medium", Theme: "gymnastics", IsBenchmark: false,
-		Description: "15 мин EMOM: 3 chest-to-bar + 3 отжимания на кольцах",
+		Description: "EMOM 15, 3 блока: 5 chest-to-bar / 8 отжиманий на кольцах / 30с hollow hold",
 		Movements: []WodTemplateMovementItem{
-			{MovementKey: "chest_to_bar", MovementName: "Chest-to-bar", Reps: intPtr(3), SortOrder: 0},
-			{MovementKey: "ring_dip", MovementName: "Отжимания на кольцах", Reps: intPtr(3), SortOrder: 1},
+			{MovementKey: "chest_to_bar", MovementName: "Chest-to-bar", Reps: intPtr(5), SortOrder: 0, RoundsNote: "Начиная с 1-й, каждая 3-я минута"},
+			{MovementKey: "ring_dip", MovementName: "Отжимания на кольцах", Reps: intPtr(8), SortOrder: 1, RoundsNote: "Начиная со 2-й, каждая 3-я минута"},
+			{MovementKey: "hollow_hold", MovementName: "Hollow hold 30с", Reps: intPtr(1), SortOrder: 2, RoundsNote: "Начиная с 3-й, каждая 3-я минута"},
 		},
 	},
 	{
-		Name: "T2B Burner", Format: "amrap", DurationMin: 10, Intensity: "high", Theme: "gymnastics", IsBenchmark: false,
-		Description: "10 мин AMRAP: 10 toes-to-bar + 15 отжиманий + 20 воздушных приседаний",
+		Name: "T2B Burner", Format: "amrap", DurationMin: 20, Intensity: "high", Theme: "gymnastics", IsBenchmark: false,
+		Description: "20 мин AMRAP: 10 toes-to-bar + 15 отжиманий + 20 воздушных приседаний",
 		Movements: []WodTemplateMovementItem{
 			{MovementKey: "toes_to_bar", MovementName: "Toes-to-bar", Reps: intPtr(10), SortOrder: 0},
 			{MovementKey: "push_up", MovementName: "Отжимания", Reps: intPtr(15), SortOrder: 1},
@@ -350,25 +368,27 @@ var WodTemplatesSeed = []WodTemplateItem{
 		},
 	},
 	{
-		Name: "Handstand Work", Format: "emom", DurationMin: 10, Intensity: "low", Theme: "gymnastics", IsBenchmark: false,
-		Description: "10 мин EMOM: 30с стойка на руках у стены + 5 HSPU",
+		Name: "Handstand Work", Format: "emom", DurationMin: 15, Intensity: "low", Theme: "gymnastics", IsBenchmark: false,
+		Description: "EMOM 15, 3 блока: 30с стойка на руках у стены / 5 HSPU / 10 отжиманий",
 		Movements: []WodTemplateMovementItem{
-			{MovementKey: "handstand_walk", MovementName: "Стойка на руках", Reps: intPtr(1), SortOrder: 0, RoundsNote: "30 секунд"},
-			{MovementKey: "handstand_push_up", MovementName: "HSPU", Reps: intPtr(5), SortOrder: 1},
+			{MovementKey: "handstand_walk", MovementName: "Стойка на руках 30с", SortOrder: 0, RoundsNote: "Начиная с 1-й, каждая 3-я минута"},
+			{MovementKey: "handstand_push_up", MovementName: "HSPU", Reps: intPtr(5), SortOrder: 1, RoundsNote: "Начиная со 2-й, каждая 3-я минута"},
+			{MovementKey: "push_up", MovementName: "Отжимания", Reps: intPtr(10), SortOrder: 2, RoundsNote: "Начиная с 3-й, каждая 3-я минута"},
 		},
 	},
 	{
-		Name: "Rope Climb Metcon", Format: "for_time", DurationMin: 12, Intensity: "medium", Theme: "gymnastics", IsBenchmark: false,
+		Name: "Rope Climb Metcon", Format: "for_time", DurationMin: 25, Intensity: "medium", Theme: "gymnastics", IsBenchmark: false,
 		Description: "5 раундов: 3 лазания по канату + 15 подтягиваний + 400 м бег",
 		Movements: []WodTemplateMovementItem{
 			{MovementKey: "rope_climb", MovementName: "Лазание по канату", Reps: intPtr(3), SortOrder: 0},
 			{MovementKey: "pull_up", MovementName: "Подтягивания", Reps: intPtr(15), SortOrder: 1},
-			{MovementKey: "run", MovementName: "Бег 400 м", Reps: intPtr(400), SortOrder: 2},
+			{MovementKey: "run", MovementName: "Бег 400 м", SortOrder: 2},
 		},
 	},
+	// ── Кор / Пресс ──
 	{
-		Name: "Core Crusher", Format: "amrap", DurationMin: 10, Intensity: "medium", Theme: "core", IsBenchmark: false,
-		Description: "10 мин AMRAP: 20 ситапов + 15 русские скручивания + 10 toes-to-bar + 30с планка",
+		Name: "Core Crusher", Format: "amrap", DurationMin: 20, Intensity: "medium", Theme: "core", IsBenchmark: false,
+		Description: "20 мин AMRAP: 20 ситапов + 15 русские скручивания + 10 toes-to-bar + 30с планка",
 		Movements: []WodTemplateMovementItem{
 			{MovementKey: "sit_up", MovementName: "Ситапы", Reps: intPtr(20), SortOrder: 0},
 			{MovementKey: "russian_twist", MovementName: "Русские скручивания", Reps: intPtr(15), SortOrder: 1},
@@ -377,10 +397,10 @@ var WodTemplatesSeed = []WodTemplateItem{
 		},
 	},
 	{
-		Name: "GHD Hell", Format: "for_time", DurationMin: 10, Intensity: "high", Theme: "core", IsBenchmark: false,
-		Description: "5 раундов: 30 GHD ситапов + 15 разгибаний на GHD + 30с hollow hold",
+		Name: "GHD Hell", Format: "for_time", DurationMin: 20, Intensity: "high", Theme: "core", IsBenchmark: false,
+		Description: "5 раундов: 20 GHD ситапов + 15 разгибаний на GHD + 30с hollow hold",
 		Movements: []WodTemplateMovementItem{
-			{MovementKey: "ghd_sit_up", MovementName: "GHD ситапы", Reps: intPtr(30), SortOrder: 0},
+			{MovementKey: "ghd_sit_up", MovementName: "GHD ситапы", Reps: intPtr(20), SortOrder: 0},
 			{MovementKey: "back_extension", MovementName: "Разгибания на GHD", Reps: intPtr(15), SortOrder: 1},
 			{MovementKey: "hollow_hold", MovementName: "Hollow hold", Reps: intPtr(1), SortOrder: 2, RoundsNote: "30 секунд"},
 		},
@@ -396,25 +416,27 @@ var WodTemplatesSeed = []WodTemplateItem{
 		},
 	},
 	{
-		Name: "V-Up Burner", Format: "emom", DurationMin: 10, Intensity: "medium", Theme: "core", IsBenchmark: false,
-		Description: "10 мин EMOM: 15 V-up + 10 подъём коленей в висе",
+		Name: "V-Up Burner", Format: "emom", DurationMin: 15, Intensity: "medium", Theme: "core", IsBenchmark: false,
+		Description: "EMOM 15, 3 блока: 15 V-up / 10 подъём коленей в висе / 20 русские скручивания",
 		Movements: []WodTemplateMovementItem{
-			{MovementKey: "v_up", MovementName: "V-up", Reps: intPtr(15), SortOrder: 0},
-			{MovementKey: "hanging_knee_raise", MovementName: "Подъём коленей в висе", Reps: intPtr(10), SortOrder: 1},
+			{MovementKey: "v_up", MovementName: "V-up", Reps: intPtr(15), SortOrder: 0, RoundsNote: "Начиная с 1-й, каждая 3-я минута"},
+			{MovementKey: "hanging_knee_raise", MovementName: "Подъём коленей в висе", Reps: intPtr(10), SortOrder: 1, RoundsNote: "Начиная со 2-й, каждая 3-я минута"},
+			{MovementKey: "russian_twist", MovementName: "Русские скручивания", Reps: intPtr(20), SortOrder: 2, RoundsNote: "Начиная с 3-й, каждая 3-я минута"},
 		},
 	},
+	// ── Полное тело ──
 	{
-		Name: "Full Body Blitz", Format: "amrap", DurationMin: 12, Intensity: "high", Theme: "full_body", IsBenchmark: false,
-		Description: "12 мин AMRAP: 10 трастер (43/30) + 10 бёрпи + 10 подтягиваний + 200 м бег",
+		Name: "Full Body Blitz", Format: "amrap", DurationMin: 30, Intensity: "high", Theme: "full_body", IsBenchmark: false,
+		Description: "30 мин AMRAP: 10 wall ball (9/6) + 10 отжиманий + 10 подтягиваний + 200 м бег",
 		Movements: []WodTemplateMovementItem{
-			{MovementKey: "thruster", MovementName: "Трастер", Reps: intPtr(10), WeightMale: intPtr(43), WeightFemale: intPtr(30), SortOrder: 0},
-			{MovementKey: "burpee", MovementName: "Бёрпи", Reps: intPtr(10), SortOrder: 1},
+			{MovementKey: "wall_ball", MovementName: "Wall ball", Reps: intPtr(10), WeightMale: intPtr(9), WeightFemale: intPtr(6), SortOrder: 0},
+			{MovementKey: "push_up", MovementName: "Отжимания", Reps: intPtr(10), SortOrder: 1},
 			{MovementKey: "pull_up", MovementName: "Подтягивания", Reps: intPtr(10), SortOrder: 2},
-			{MovementKey: "run", MovementName: "Бег 200 м", Reps: intPtr(200), SortOrder: 3},
+			{MovementKey: "run", MovementName: "Бег 200 м", SortOrder: 3},
 		},
 	},
 	{
-		Name: "Thruster & Pull", Format: "for_time", DurationMin: 15, Intensity: "high", Theme: "full_body", IsBenchmark: false,
+		Name: "Thruster & Pull", Format: "for_time", DurationMin: 25, Intensity: "high", Theme: "full_body", IsBenchmark: false,
 		Description: "21-18-15-12-9-6-3: трастер (43/30) + chest-to-bar",
 		Movements: []WodTemplateMovementItem{
 			{MovementKey: "thruster", MovementName: "Трастер", WeightMale: intPtr(43), WeightFemale: intPtr(30), SortOrder: 0, RoundsNote: "21-18-15-12-9-6-3"},
@@ -422,11 +444,11 @@ var WodTemplatesSeed = []WodTemplateItem{
 		},
 	},
 	{
-		Name: "Dumbbell Complex", Format: "amrap", DurationMin: 10, Intensity: "high", Theme: "full_body", IsBenchmark: false,
-		Description: "10 мин AMRAP: 50 дабл-андеров + 10 man maker (2×15/10 кг)",
+		Name: "Dumbbell Complex", Format: "amrap", DurationMin: 15, Intensity: "high", Theme: "full_body", IsBenchmark: false,
+		Description: "15 мин AMRAP: 40 дабл-андеров + 8 man maker (2×15/10 кг)",
 		Movements: []WodTemplateMovementItem{
-			{MovementKey: "double_under", MovementName: "Double-under", Reps: intPtr(50), SortOrder: 0},
-			{MovementKey: "man_maker", MovementName: "Man maker", Reps: intPtr(10), WeightMale: intPtr(15), WeightFemale: intPtr(10), SortOrder: 1},
+			{MovementKey: "double_under", MovementName: "Double-under", Reps: intPtr(40), SortOrder: 0},
+			{MovementKey: "man_maker", MovementName: "Man maker", Reps: intPtr(8), WeightMale: intPtr(15), WeightFemale: intPtr(10), SortOrder: 1},
 		},
 	},
 	{
@@ -448,25 +470,25 @@ var WodTemplatesSeed = []WodTemplateItem{
 			{MovementKey: "sumo_deadlift", MovementName: "SDHP (становая сумо)", WeightMale: intPtr(34), WeightFemale: intPtr(25), SortOrder: 1, RoundsNote: "1 мин на станцию"},
 			{MovementKey: "box_jump", MovementName: "Запрыгивания на бокс", SortOrder: 2, RoundsNote: "1 мин на станцию"},
 			{MovementKey: "push_press", MovementName: "Push press", WeightMale: intPtr(34), WeightFemale: intPtr(25), SortOrder: 3, RoundsNote: "1 мин на станцию"},
-			{MovementKey: "cal_row", MovementName: "Гребля 14 кал", Reps: intPtr(14), SortOrder: 4, RoundsNote: "1 мин на станцию"},
+			{MovementKey: "cal_row", MovementName: "Гребля 14 кал", SortOrder: 4, RoundsNote: "1 мин на станцию"},
 		},
 	},
 	{
-		Name: "Sandbag Special", Format: "for_time", DurationMin: 15, Intensity: "medium", Theme: "full_body", IsBenchmark: false,
+		Name: "Sandbag Special", Format: "for_time", DurationMin: 25, Intensity: "medium", Theme: "full_body", IsBenchmark: false,
 		Description: "5 раундов: 15 взятие мешка + 200 м бег с мешком + 15 бёрпи",
 		Movements: []WodTemplateMovementItem{
 			{MovementKey: "sandbag_clean", MovementName: "Взятие мешка", Reps: intPtr(15), SortOrder: 0},
-			{MovementKey: "run", MovementName: "Бег с мешком 200 м", Reps: intPtr(200), SortOrder: 1},
+			{MovementKey: "run", MovementName: "Бег с мешком 200 м", SortOrder: 1},
 			{MovementKey: "burpee", MovementName: "Бёрпи", Reps: intPtr(15), SortOrder: 2},
 		},
 	},
 	{
-		Name: "KB Domination", Format: "amrap", DurationMin: 12, Intensity: "high", Theme: "full_body", IsBenchmark: false,
-		Description: "12 мин AMRAP: 15 KB clean + 15 KB swing + 15 goblet squat",
+		Name: "KB Domination", Format: "amrap", DurationMin: 20, Intensity: "high", Theme: "full_body", IsBenchmark: false,
+		Description: "20 мин AMRAP: 12 KB clean (24/16) + 12 KB swing + 12 goblet squat",
 		Movements: []WodTemplateMovementItem{
-			{MovementKey: "kb_clean", MovementName: "Взятие гири", Reps: intPtr(15), WeightMale: intPtr(24), WeightFemale: intPtr(16), SortOrder: 0},
-			{MovementKey: "kettlebell_swing", MovementName: "Махи гирей", Reps: intPtr(15), WeightMale: intPtr(24), WeightFemale: intPtr(16), SortOrder: 1},
-			{MovementKey: "goblet_squat", MovementName: "Goblet squat", Reps: intPtr(15), WeightMale: intPtr(24), WeightFemale: intPtr(16), SortOrder: 2},
+			{MovementKey: "kb_clean", MovementName: "Взятие гири", Reps: intPtr(12), WeightMale: intPtr(24), WeightFemale: intPtr(16), SortOrder: 0},
+			{MovementKey: "kettlebell_swing", MovementName: "Махи гирей", Reps: intPtr(12), WeightMale: intPtr(24), WeightFemale: intPtr(16), SortOrder: 1},
+			{MovementKey: "goblet_squat", MovementName: "Goblet squat", Reps: intPtr(12), WeightMale: intPtr(24), WeightFemale: intPtr(16), SortOrder: 2},
 		},
 	},
 }

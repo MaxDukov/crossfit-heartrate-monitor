@@ -329,6 +329,16 @@ func Seed(d *sql.DB) error {
 			}
 		}
 		slog.Info("seeded equipment", "count", len(data.EquipmentSeed))
+	} else {
+		for _, it := range data.EquipmentSeed {
+			if _, err := d.Exec(
+				`INSERT INTO equipment ("key", name, category, icon) VALUES (?, ?, ?, ?)
+				 ON CONFLICT("key") DO UPDATE SET name = excluded.name, category = excluded.category, icon = excluded.icon`,
+				it.Key, it.Name, it.Category, it.Icon,
+			); err != nil {
+				return fmt.Errorf("refresh equipment: %w", err)
+			}
+		}
 	}
 
 	// ── Движения ──
@@ -348,6 +358,22 @@ func Seed(d *sql.DB) error {
 			}
 		}
 		slog.Info("seeded movements", "count", len(data.MovementsSeed))
+	} else {
+		for _, mv := range data.MovementsSeed {
+			if _, err := d.Exec(
+				`INSERT INTO movements ("key", name, modality, muscle_group, themes, equipment_keys, difficulty, scaling_beginner, scaling_intermediate)
+				 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+				 ON CONFLICT("key") DO UPDATE SET name = excluded.name, modality = excluded.modality,
+				   muscle_group = excluded.muscle_group, themes = excluded.themes,
+				   equipment_keys = excluded.equipment_keys, difficulty = excluded.difficulty,
+				   scaling_beginner = excluded.scaling_beginner, scaling_intermediate = excluded.scaling_intermediate`,
+				mv.Key, mv.Name, mv.Modality, mv.MuscleGroup,
+				joinCSV(mv.Themes), joinCSV(mv.EquipmentKeys),
+				mv.Difficulty, nullStr(mv.ScalingBeginner), nullStr(mv.ScalingIntermediate),
+			); err != nil {
+				return fmt.Errorf("refresh movements: %w", err)
+			}
+		}
 	}
 
 	// ── Шаблоны тренировок ──
@@ -356,35 +382,102 @@ func Seed(d *sql.DB) error {
 	}
 	if n == 0 {
 		for _, tpl := range data.WodTemplatesSeed {
-			tplID := NewUUID()
-			desc := any(nil)
-			if tpl.Description != "" {
-				desc = tpl.Description
-			}
-			if _, err := d.Exec(
-				`INSERT INTO wod_templates (id, name, format, duration_min, intensity, theme, is_benchmark, description)
-				 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-				tplID, tpl.Name, tpl.Format, tpl.DurationMin, tpl.Intensity, tpl.Theme, tpl.IsBenchmark, desc,
-			); err != nil {
-				return fmt.Errorf("seed wod template %s: %w", tpl.Name, err)
-			}
-			for _, m := range tpl.Movements {
-				rn := any(nil)
-				if m.RoundsNote != "" {
-					rn = m.RoundsNote
-				}
-				if _, err := d.Exec(
-					`INSERT INTO wod_template_movements (id, template_id, movement_key, movement_name, reps, weight_male, weight_female, sort_order, rounds_note)
-					 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-					NewUUID(), tplID, m.MovementKey, m.MovementName,
-					nullIntPtr(m.Reps), nullIntPtr(m.WeightMale), nullIntPtr(m.WeightFemale),
-					m.SortOrder, rn,
-				); err != nil {
-					return fmt.Errorf("seed wod movement %s: %w", m.MovementKey, err)
-				}
+			if err := insertWodTemplate(d, tpl); err != nil {
+				return err
 			}
 		}
 		slog.Info("seeded wod templates", "count", len(data.WodTemplatesSeed))
+	} else {
+		refreshed, err := refreshSeedTemplates(d)
+		if err != nil {
+			return err
+		}
+		if refreshed > 0 {
+			slog.Info("refreshed seed wod templates", "count", refreshed)
+		}
+	}
+	return nil
+}
+
+// refreshSeedTemplates обновляет контент сид-шаблонов в существующей БД
+// (по имени): длительность, описание и набор движений. Пользовательские
+// шаблоны (автоимя «формат · тема · дата») не совпадают с сид-именами
+// и остаются нетронутыми. Возвращает число обновлённых шаблонов.
+func refreshSeedTemplates(d *sql.DB) (int, error) {
+	updated := 0
+	for _, tpl := range data.WodTemplatesSeed {
+		var id string
+		err := d.QueryRow(`SELECT id FROM wod_templates WHERE name = ?`, tpl.Name).Scan(&id)
+		if err == sql.ErrNoRows {
+			if err := insertWodTemplate(d, tpl); err != nil {
+				return updated, err
+			}
+			updated++
+			continue
+		}
+		if err != nil {
+			return updated, err
+		}
+		desc := any(nil)
+		if tpl.Description != "" {
+			desc = tpl.Description
+		}
+		if _, err := d.Exec(
+			`UPDATE wod_templates SET format = ?, duration_min = ?, intensity = ?, theme = ?, is_benchmark = ?, description = ? WHERE id = ?`,
+			tpl.Format, tpl.DurationMin, tpl.Intensity, tpl.Theme, tpl.IsBenchmark, desc, id,
+		); err != nil {
+			return updated, fmt.Errorf("refresh wod template %s: %w", tpl.Name, err)
+		}
+		if _, err := d.Exec(`DELETE FROM wod_template_movements WHERE template_id = ?`, id); err != nil {
+			return updated, fmt.Errorf("clear movements %s: %w", tpl.Name, err)
+		}
+		for _, m := range tpl.Movements {
+			rn := any(nil)
+			if m.RoundsNote != "" {
+				rn = m.RoundsNote
+			}
+			if _, err := d.Exec(
+				`INSERT INTO wod_template_movements (id, template_id, movement_key, movement_name, reps, weight_male, weight_female, sort_order, rounds_note)
+				 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+				NewUUID(), id, m.MovementKey, m.MovementName,
+				nullIntPtr(m.Reps), nullIntPtr(m.WeightMale), nullIntPtr(m.WeightFemale),
+				m.SortOrder, rn,
+			); err != nil {
+				return updated, fmt.Errorf("refresh wod movement %s: %w", m.MovementKey, err)
+			}
+		}
+		updated++
+	}
+	return updated, nil
+}
+
+func insertWodTemplate(d *sql.DB, tpl data.WodTemplateItem) error {
+	tplID := NewUUID()
+	desc := any(nil)
+	if tpl.Description != "" {
+		desc = tpl.Description
+	}
+	if _, err := d.Exec(
+		`INSERT INTO wod_templates (id, name, format, duration_min, intensity, theme, is_benchmark, description)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+		tplID, tpl.Name, tpl.Format, tpl.DurationMin, tpl.Intensity, tpl.Theme, tpl.IsBenchmark, desc,
+	); err != nil {
+		return fmt.Errorf("seed wod template %s: %w", tpl.Name, err)
+	}
+	for _, m := range tpl.Movements {
+		rn := any(nil)
+		if m.RoundsNote != "" {
+			rn = m.RoundsNote
+		}
+		if _, err := d.Exec(
+			`INSERT INTO wod_template_movements (id, template_id, movement_key, movement_name, reps, weight_male, weight_female, sort_order, rounds_note)
+			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			NewUUID(), tplID, m.MovementKey, m.MovementName,
+			nullIntPtr(m.Reps), nullIntPtr(m.WeightMale), nullIntPtr(m.WeightFemale),
+			m.SortOrder, rn,
+		); err != nil {
+			return fmt.Errorf("seed wod movement %s: %w", m.MovementKey, err)
+		}
 	}
 	return nil
 }

@@ -139,6 +139,17 @@ func CreateCustomWod(d *sql.DB, in CustomWodInput) (string, []string, error) {
 	if in.DurationMin >= 25 && in.Intensity == "high" {
 		warnings = append(warnings, "Высокоинтенсивная работа дольше 25 минут — это гликолитический стимул, не аэробный")
 	}
+	// EMOM-ротация: 3 блока упражнений (по минуте на блок).
+	if in.Format == "emom" && len(in.Movements) != 3 {
+		warnings = append(warnings, fmt.Sprintf(
+			"EMOM: рекомендуется 3 блока упражнений (ротация по минутам), сейчас блоков %d", len(in.Movements)))
+	}
+	// Основная часть занятия: 30–40 мин (длинная тренировка) или пара по ~15 мин.
+	if in.Format == "amrap" || in.Format == "for_time" || in.Format == "chipper" || in.Format == "ladder" {
+		if in.DurationMin >= 18 && in.DurationMin < 28 {
+			warnings = append(warnings, "Основная часть занятия — 30–40 мин: удлините тренировку либо запланируйте пару по ~15 мин")
+		}
+	}
 
 	// Автоимя: протокол + фокус + дата.
 	name := strings.TrimSpace(in.Name)

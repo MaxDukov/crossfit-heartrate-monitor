@@ -3,11 +3,17 @@ package handlers
 import (
 	"database/sql"
 	"net/http"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 
 	"github.com/maxdukov/cf/backend-go/internal/services"
 )
+
+// normalizeYo приводит «ё» к «е» — поиск «берпи» находит «Бёрпи».
+func normalizeYo(s string) string {
+	return strings.ReplaceAll(s, "ё", "е")
+}
 
 // ── Wods: генерация и управление тренировками дня ─────────────
 
@@ -294,17 +300,11 @@ func (a *App) CreateCustomWod(w http.ResponseWriter, r *http.Request) {
 
 // ListMovements: GET /api/movements?search= — каталог для конструктора.
 func (a *App) ListMovements(w http.ResponseWriter, r *http.Request) {
-	search := r.URL.Query().Get("search")
+	search := normalizeYo(strings.ToLower(r.URL.Query().Get("search")))
 	q := `SELECT "key", name, modality, muscle_group, themes, equipment_keys, difficulty, scaling_beginner, scaling_intermediate
-	      FROM movements`
-	args := []any{}
-	if search != "" {
-		q += ` WHERE name LIKE ? OR "key" LIKE ?`
-		args = append(args, "%"+search+"%", "%"+search+"%")
-	}
-	q += ` ORDER BY name LIMIT 200`
+	      FROM movements ORDER BY name LIMIT 200`
 
-	rows, err := a.DB.Query(q, args...)
+	rows, err := a.DB.Query(q)
 	if err != nil {
 		httpError(w, 500, err.Error())
 		return
@@ -316,6 +316,12 @@ func (a *App) ListMovements(w http.ResponseWriter, r *http.Request) {
 		var key, name, modality, muscle, themes, eq, difficulty string
 		var sb, si sql.NullString
 		if rows.Scan(&key, &name, &modality, &muscle, &themes, &eq, &difficulty, &sb, &si) == nil {
+			// Поиск без учёта «ё» и регистра: «берпи» находит «Бёрпи».
+			if search != "" &&
+				!strings.Contains(normalizeYo(strings.ToLower(name)), search) &&
+				!strings.Contains(normalizeYo(strings.ToLower(key)), search) {
+				continue
+			}
 			out = append(out, map[string]any{
 				"key":                  key,
 				"name":                 name,

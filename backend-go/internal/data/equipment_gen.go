@@ -19,4 +19,6 @@ var EquipmentSeed = []EquipmentItem{
 	{Key: "sandbag", Name: "Мешок (sandbag)", Category: "freeweights", Icon: "🎒"},
 	{Key: "parallettes", Name: "Паралетсы", Category: "misc", Icon: "📊"},
 	{Key: "plate", Name: "Диски (бамперы)", Category: "barbells", Icon: "⭕"},
+	{Key: "bosu", Name: "Полусфера Bosu", Category: "misc", Icon: "🟣"},
+	{Key: "ski_erg", Name: "Ски-эрг (SkiErg)", Category: "cardio", Icon: "🎿"},
 }

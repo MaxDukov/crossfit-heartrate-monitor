@@ -116,7 +116,20 @@ func scaleReps(reps sql.NullInt64, level string) sql.NullInt64 {
 	return sql.NullInt64{Int64: int64(scaled), Valid: true}
 }
 
-func scaleWeight(weight sql.NullInt64, level string) sql.NullInt64 {
+// weightStepFor — шаг округления веса по снаряду движения:
+// гири идут с шагом 2 кг (…12-14-16-18-20-24), штанга/гантели — 2.5 кг.
+func weightStepFor(d *sql.DB, movementKey string) float64 {
+	var eq sql.NullString
+	if err := d.QueryRow(`SELECT equipment_keys FROM movements WHERE "key" = ?`, movementKey).Scan(&eq); err != nil {
+		return 2.5
+	}
+	if eq.Valid && strings.Contains(eq.String, "kettlebell") {
+		return 2.0
+	}
+	return 2.5
+}
+
+func scaleWeight(weight sql.NullInt64, level string, step float64) sql.NullInt64 {
 	if !weight.Valid {
 		return sql.NullInt64{}
 	}
@@ -125,9 +138,15 @@ func scaleWeight(weight sql.NullInt64, level string) sql.NullInt64 {
 		mult = 1.0
 	}
 	scaled := pythonRound(float64(weight.Int64) * mult)
-	// Округление до ближайших 2.5 кг (banker's rounding + усечение, как в Python:
-	// round(scaled/2.5)*2.5 → int() усекает .5: 32.5 → 32).
-	rounded := pythonRound(float64(scaled)/2.5) * 5 / 2
+	var rounded int
+	if step == 2.0 {
+		// Гири: округление к чётным килограммам (12-14-16-18…).
+		rounded = pythonRound(float64(scaled)/step) * 2
+	} else {
+		// Округление до ближайших 2.5 кг (banker's rounding + усечение, как в Python:
+		// round(scaled/2.5)*2.5 → int() усекает .5: 32.5 → 32).
+		rounded = pythonRound(float64(scaled)/2.5) * 5 / 2
+	}
 	return sql.NullInt64{Int64: int64(rounded), Valid: true}
 }
 
@@ -177,8 +196,8 @@ func buildWodFromTemplate(d *sql.DB, tpl wodTemplateRow, level string) WodVarian
 			MovementKey:  m.MovementKey,
 			MovementName: m.MovementName,
 			Reps:         nullInt64ToPtr(scaleReps(m.Reps, level)),
-			WeightMale:   nullInt64ToPtr(scaleWeight(m.WeightMale, level)),
-			WeightFemale: nullInt64ToPtr(scaleWeight(m.WeightFemale, level)),
+			WeightMale:   nullInt64ToPtr(scaleWeight(m.WeightMale, level, weightStepFor(d, m.MovementKey))),
+			WeightFemale: nullInt64ToPtr(scaleWeight(m.WeightFemale, level, weightStepFor(d, m.MovementKey))),
 			SortOrder:    m.SortOrder,
 			ScalingNote:  getScalingNote(d, m.MovementKey, level),
 			RoundsNote:   nullStrToPtr(m.RoundsNote),
@@ -409,8 +428,8 @@ func createWodFromTemplate(d *sql.DB, templateID, groupLevel string, active bool
 		inserts = append(inserts, movInsert{
 			key: tm.MovementKey, name: tm.MovementName,
 			reps:      scaleReps(tm.Reps, groupLevel),
-			wm:        scaleWeight(tm.WeightMale, groupLevel),
-			wf:        scaleWeight(tm.WeightFemale, groupLevel),
+			wm:        scaleWeight(tm.WeightMale, groupLevel, weightStepFor(d, tm.MovementKey)),
+			wf:        scaleWeight(tm.WeightFemale, groupLevel, weightStepFor(d, tm.MovementKey)),
 			sortOrder: tm.SortOrder, scalingNote: scalingNote, roundsNote: roundsNote,
 		})
 	}
