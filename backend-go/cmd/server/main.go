@@ -15,10 +15,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
-	"github.com/go-chi/cors"
-
 	appconfig "github.com/maxdukov/cf/backend-go/internal/config"
 	"github.com/maxdukov/cf/backend-go/internal/db"
 	"github.com/maxdukov/cf/backend-go/internal/handlers"
@@ -52,67 +48,9 @@ func main() {
 	hr := services.NewHRProcessor(d, hub)
 	app := handlers.NewApp(cfg, d, hub, hr)
 
-	r := chi.NewRouter()
-	r.Use(middleware.Recoverer)
-	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins: []string{"*"},
-		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders: []string{"*"},
-	}))
-
-	r.Get("/api/health", app.Health)
-	r.Get("/ws", hub.HandleWS)
-
-	r.Route("/api/athletes", func(r chi.Router) {
-		r.Get("/", app.ListAthletes)
-		r.Post("/", app.CreateAthlete)
-		r.Put("/{athlete_id}", app.UpdateAthlete)
-		r.Delete("/{athlete_id}", app.DeleteAthlete)
-	})
-	r.Route("/api/sensors", func(r chi.Router) {
-		r.Get("/", app.ListSensors)
-		r.Post("/{device_id}/assign", app.AssignSensor)
-		r.Delete("/{device_id}/assign", app.UnassignSensor)
-		r.Post("/{device_id}/ignore", app.IgnoreSensor)
-		r.Post("/{device_id}/unignore", app.UnignoreSensor)
-	})
-	r.Route("/api/sessions", func(r chi.Router) {
-		r.Get("/", app.ListSessions)
-		r.Post("/", app.CreateSession)
-		r.Get("/active", app.GetActiveSession)
-		r.Post("/{session_id}/end", app.EndSession)
-		r.Post("/{session_id}/athletes", app.AddAthleteToSession)
-		r.Delete("/{session_id}/athletes/{athlete_id}", app.RemoveAthleteFromSession)
-	})
-	r.Route("/api/analytics", func(r chi.Router) {
-		r.Get("/athletes/{athlete_id}/stats", app.AthleteStats)
-		r.Get("/athletes/{athlete_id}/history", app.AthleteHistory)
-	})
-	r.Route("/api/equipment", func(r chi.Router) {
-		r.Get("/", app.ListEquipment)
-		r.Get("/inventory", app.ListInventory)
-		r.Put("/inventory", app.UpdateInventory)
-	})
-	r.Route("/api/wods", func(r chi.Router) {
-		r.Post("/generate", app.GenerateWods)
-		r.Post("/select", app.SelectWod)
-		r.Get("/active", app.GetActiveWod)
-		r.Post("/active/end", app.EndActiveWod)
-		r.Get("/history", app.ListWodHistory)
-	})
-	r.Route("/api/system", func(r chi.Router) {
-		r.Get("/mode", app.GetMode)
-		r.Post("/mode", app.SetMode)
-	})
-
-	// SPA-статика (если задан CF_FRONTEND_DIR).
+	r := handlers.NewRouter(app, cfg.FrontendDir)
 	if cfg.FrontendDir != "" {
 		slog.Info("mounting static files", "dir", cfg.FrontendDir)
-		r.Get("/*", handlers.NewSPAHandler(cfg.FrontendDir).ServeHTTP)
-	} else {
-		r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-			_, _ = w.Write([]byte("CF-Monitor backend (Go)"))
-		})
 	}
 
 	app.StartCollector()

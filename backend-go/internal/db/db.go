@@ -12,10 +12,12 @@ import (
 	"github.com/maxdukov/cf/backend-go/internal/data"
 )
 
-// Format дат в SQLite — идентичен формату SQLAlchemy
+// DBTimeLayout — формат дат в SQLite, идентичный формату SQLAlchemy
 // ("2006-01-02 15:04:05.000000"), чтобы Python- и Go-версии
 // могли параллельно работать с одной БД.
-const dbTimeLayout = "2006-01-02 15:04:05.000000"
+const DBTimeLayout = "2006-01-02 15:04:05.000000"
+
+const dbTimeLayout = DBTimeLayout
 
 // NowDB возвращает текущее UTC-время в формате БД.
 func NowDB() string { return time.Now().UTC().Format(dbTimeLayout) }
@@ -175,6 +177,87 @@ func Migrate(d *sql.DB) error {
 			rounds_note VARCHAR(100),
 			FOREIGN KEY(wod_id) REFERENCES wods (id) ON DELETE CASCADE
 		)`,
+		// ── Планирование тренировочного процесса (draft1.MD) ──
+		`CREATE TABLE IF NOT EXISTS training_cycles (
+			id VARCHAR(36) NOT NULL PRIMARY KEY,
+			name VARCHAR(200) NOT NULL,
+			goal TEXT,
+			weeks INTEGER NOT NULL DEFAULT 8,
+			start_date DATE NOT NULL,
+			status VARCHAR(20) NOT NULL DEFAULT 'planned',
+			modality_priority VARCHAR(30),
+			created_at DATETIME
+		)`,
+		`CREATE TABLE IF NOT EXISTS cycle_groups (
+			id VARCHAR(36) NOT NULL PRIMARY KEY,
+			cycle_id VARCHAR(36) NOT NULL,
+			name VARCHAR(100) NOT NULL,
+			weekdays TEXT NOT NULL,
+			FOREIGN KEY(cycle_id) REFERENCES training_cycles (id) ON DELETE CASCADE
+		)`,
+		`CREATE TABLE IF NOT EXISTS cycle_slots (
+			id VARCHAR(36) NOT NULL PRIMARY KEY,
+			cycle_id VARCHAR(36) NOT NULL,
+			group_id VARCHAR(36) NOT NULL,
+			slot_date DATE NOT NULL,
+			day_number INTEGER NOT NULL,
+			status VARCHAR(20) NOT NULL DEFAULT 'empty',
+			wod_id VARCHAR(36),
+			template_id VARCHAR(36),
+			session_id VARCHAR(36),
+			notes TEXT,
+			FOREIGN KEY(cycle_id) REFERENCES training_cycles (id) ON DELETE CASCADE,
+			FOREIGN KEY(group_id) REFERENCES cycle_groups (id) ON DELETE CASCADE,
+			FOREIGN KEY(wod_id) REFERENCES wods (id) ON DELETE SET NULL,
+			FOREIGN KEY(session_id) REFERENCES sessions (id) ON DELETE SET NULL
+		)`,
+		`CREATE INDEX IF NOT EXISTS ix_cs_cycle_date ON cycle_slots (cycle_id, slot_date)`,
+		`CREATE TABLE IF NOT EXISTS workout_results (
+			id VARCHAR(36) NOT NULL PRIMARY KEY,
+			slot_id VARCHAR(36),
+			athlete_id VARCHAR(36) NOT NULL,
+			wod_id VARCHAR(36),
+			time_seconds INTEGER,
+			rounds INTEGER,
+			reps INTEGER,
+			weight_kg FLOAT,
+			scaled_version VARCHAR(20),
+			rpe INTEGER,
+			notes TEXT,
+			created_at DATETIME,
+			FOREIGN KEY(slot_id) REFERENCES cycle_slots (id) ON DELETE CASCADE,
+			FOREIGN KEY(athlete_id) REFERENCES athletes (id) ON DELETE CASCADE,
+			FOREIGN KEY(wod_id) REFERENCES wods (id) ON DELETE SET NULL
+		)`,
+		`CREATE INDEX IF NOT EXISTS ix_wr_athlete ON workout_results (athlete_id, created_at)`,
+		`CREATE TABLE IF NOT EXISTS result_movements (
+			id VARCHAR(36) NOT NULL PRIMARY KEY,
+			result_id VARCHAR(36) NOT NULL,
+			movement_key VARCHAR(80) NOT NULL,
+			weight_kg FLOAT,
+			reps INTEGER,
+			FOREIGN KEY(result_id) REFERENCES workout_results (id) ON DELETE CASCADE
+		)`,
+		`CREATE TABLE IF NOT EXISTS personal_records (
+			id VARCHAR(36) NOT NULL PRIMARY KEY,
+			athlete_id VARCHAR(36) NOT NULL,
+			record_type VARCHAR(20) NOT NULL,
+			context VARCHAR(120) NOT NULL,
+			value FLOAT NOT NULL,
+			achieved_at DATETIME,
+			slot_id VARCHAR(36),
+			FOREIGN KEY(athlete_id) REFERENCES athletes (id) ON DELETE CASCADE,
+			FOREIGN KEY(slot_id) REFERENCES cycle_slots (id) ON DELETE SET NULL
+		)`,
+		`CREATE INDEX IF NOT EXISTS ix_pr_athlete ON personal_records (athlete_id, record_type, context)`,
+		`CREATE TABLE IF NOT EXISTS athlete_1rm (
+			athlete_id VARCHAR(36) NOT NULL,
+			movement_key VARCHAR(80) NOT NULL,
+			est_1rm FLOAT NOT NULL,
+			updated_at DATETIME,
+			PRIMARY KEY (athlete_id, movement_key),
+			FOREIGN KEY(athlete_id) REFERENCES athletes (id) ON DELETE CASCADE
+		)`,
 	}
 	for _, s := range stmts {
 		if _, err := d.Exec(s); err != nil {
@@ -189,6 +272,7 @@ func Migrate(d *sql.DB) error {
 		{"sensors", "ignored", "ALTER TABLE sensors ADD COLUMN ignored BOOLEAN DEFAULT 0 NOT NULL"},
 		{"athletes", "weight_kg", "ALTER TABLE athletes ADD COLUMN weight_kg FLOAT"},
 		{"athletes", "age", "ALTER TABLE athletes ADD COLUMN age INTEGER"},
+		{"wods", "template_id", "ALTER TABLE wods ADD COLUMN template_id VARCHAR(36)"},
 	}
 	for _, a := range alters {
 		exists, err := columnExists(d, a.table, a.column)

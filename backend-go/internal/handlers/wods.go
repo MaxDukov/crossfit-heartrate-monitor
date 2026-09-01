@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"net/http"
 
+	"github.com/go-chi/chi/v5"
+
 	"github.com/maxdukov/cf/backend-go/internal/services"
 )
 
@@ -188,6 +190,146 @@ func (a *App) wodToJSON(w http.ResponseWriter, wodID string) map[string]any {
 		"created_at":   isoOrNull(createdAt),
 		"movements":    movements,
 	}
+}
+
+// ── Библиотека шаблонов (Экраны 3–5 draft1.MD) ────────────────
+
+// ListWodTemplates: GET /api/wods/templates?theme=&search=&limit=50.
+func (a *App) ListWodTemplates(w http.ResponseWriter, r *http.Request) {
+	theme := r.URL.Query().Get("theme")
+	search := r.URL.Query().Get("search")
+	limit := intQueryParam(r, "limit", 50)
+	if limit <= 0 || limit > 500 {
+		limit = 50
+	}
+
+	where := "1=1"
+	args := []any{}
+	if theme != "" {
+		where += " AND theme = ?"
+		args = append(args, theme)
+	}
+	if search != "" {
+		where += " AND name LIKE ?"
+		args = append(args, "%"+search+"%")
+	}
+
+	type tplItem struct {
+		ID          string
+		Name        string
+		Format      string
+		DurationMin int
+		Intensity   string
+		Theme       string
+		IsBenchmark bool
+		MovCount    int
+	}
+	var items []tplItem
+	{
+		q := `SELECT t.id, t.name, t.format, t.duration_min, t.intensity, t.theme, COALESCE(t.is_benchmark,0),
+		      (SELECT COUNT(*) FROM wod_template_movements m WHERE m.template_id = t.id)
+		      FROM wod_templates t WHERE ` + where + ` ORDER BY COALESCE(t.is_benchmark,0) DESC, t.name LIMIT ?`
+		args = append(args, limit)
+		rows, err := a.DB.Query(q, args...)
+		if err != nil {
+			httpError(w, 500, err.Error())
+			return
+		}
+		for rows.Next() {
+			var it tplItem
+			if rows.Scan(&it.ID, &it.Name, &it.Format, &it.DurationMin, &it.Intensity, &it.Theme, &it.IsBenchmark, &it.MovCount) == nil {
+				items = append(items, it)
+			}
+		}
+		_ = rows.Close()
+	}
+
+	out := []map[string]any{}
+	for _, it := range items {
+		out = append(out, map[string]any{
+			"template_id":     it.ID,
+			"name":            it.Name,
+			"format":          it.Format,
+			"duration_min":    it.DurationMin,
+			"intensity":       it.Intensity,
+			"theme":           it.Theme,
+			"is_benchmark":    it.IsBenchmark,
+			"movements_count": it.MovCount,
+		})
+	}
+	writeJSON(w, 200, out)
+}
+
+// GetWodTemplate: GET /api/wods/templates/{template_id} — полная карточка.
+func (a *App) GetWodTemplate(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "template_id")
+	level := r.URL.Query().Get("group_level")
+	if level == "" {
+		level = "intermediate"
+	}
+	variants := services.BuildTemplatePreview(a.DB, id, level)
+	if variants == nil {
+		httpError(w, 404, "Шаблон не найден")
+		return
+	}
+	writeJSON(w, 200, variants)
+}
+
+// CreateCustomWod: POST /api/wods/custom — конструктор (Экран 4).
+func (a *App) CreateCustomWod(w http.ResponseWriter, r *http.Request) {
+	var req services.CustomWodInput
+	if !decodeJSON(w, r, &req) {
+		return
+	}
+	tplID, warnings, err := services.CreateCustomWod(a.DB, req)
+	if err != nil {
+		httpError(w, 400, err.Error())
+		return
+	}
+	writeJSON(w, 201, map[string]any{
+		"template_id": tplID,
+		"warnings":    warnings,
+	})
+}
+
+// ListMovements: GET /api/movements?search= — каталог для конструктора.
+func (a *App) ListMovements(w http.ResponseWriter, r *http.Request) {
+	search := r.URL.Query().Get("search")
+	q := `SELECT "key", name, modality, muscle_group, themes, equipment_keys, difficulty, scaling_beginner, scaling_intermediate
+	      FROM movements`
+	args := []any{}
+	if search != "" {
+		q += ` WHERE name LIKE ? OR "key" LIKE ?`
+		args = append(args, "%"+search+"%", "%"+search+"%")
+	}
+	q += ` ORDER BY name LIMIT 200`
+
+	rows, err := a.DB.Query(q, args...)
+	if err != nil {
+		httpError(w, 500, err.Error())
+		return
+	}
+	defer func() { _ = rows.Close() }()
+
+	out := []map[string]any{}
+	for rows.Next() {
+		var key, name, modality, muscle, themes, eq, difficulty string
+		var sb, si sql.NullString
+		if rows.Scan(&key, &name, &modality, &muscle, &themes, &eq, &difficulty, &sb, &si) == nil {
+			out = append(out, map[string]any{
+				"key":                  key,
+				"name":                 name,
+				"modality":             modality,
+				"muscle_group":         muscle,
+				"themes":               themes,
+				"equipment_keys":       eq,
+				"difficulty":           difficulty,
+				"scaling_beginner":     nullStr(sb),
+				"scaling_intermediate": nullStr(si),
+			})
+		}
+	}
+	writeJSON(w, 200, out)
 }
 
 // ── System: режим коллектора (mock / ant) ─────────────────────

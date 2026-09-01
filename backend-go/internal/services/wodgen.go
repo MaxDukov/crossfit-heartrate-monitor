@@ -364,6 +364,15 @@ func templateHasEquipment(d *sql.DB, tpl wodTemplateRow, available map[string]bo
 // CreateWodFromTemplate создаёт активный WoD из выбранного шаблона.
 // Возвращает ID созданного WoD; ошибка — если шаблон не найден.
 func CreateWodFromTemplate(d *sql.DB, templateID, groupLevel string) (string, error) {
+	return createWodFromTemplate(d, templateID, groupLevel, true)
+}
+
+// CreateWodForSlot создаёт НЕактивный WoD (экземпляр слота).
+func CreateWodForSlot(d *sql.DB, templateID, groupLevel string) (string, error) {
+	return createWodFromTemplate(d, templateID, groupLevel, false)
+}
+
+func createWodFromTemplate(d *sql.DB, templateID, groupLevel string, active bool) (string, error) {
 	var tpl wodTemplateRow
 	err := d.QueryRow(`
 		SELECT id, name, format, duration_min, intensity, theme, COALESCE(is_benchmark, 0), description
@@ -412,19 +421,25 @@ func CreateWodFromTemplate(d *sql.DB, templateID, groupLevel string) (string, er
 	}
 	defer func() { _ = tx.Rollback() }()
 
-	if _, err := tx.Exec(`UPDATE wods SET is_active = 0 WHERE is_active = 1`); err != nil {
-		return "", err
+	if active {
+		if _, err := tx.Exec(`UPDATE wods SET is_active = 0 WHERE is_active = 1`); err != nil {
+			return "", err
+		}
 	}
 
+	activeFlag := 0
+	if active {
+		activeFlag = 1
+	}
 	wodID := db.NewUUID()
 	var desc any
 	if tpl.Description.Valid {
 		desc = tpl.Description.String
 	}
 	if _, err := tx.Exec(`
-		INSERT INTO wods (id, name, format, duration_min, intensity, theme, group_level, description, is_active, created_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?)`,
-		wodID, tpl.Name, tpl.Format, tpl.DurationMin, tpl.Intensity, tpl.Theme, groupLevel, desc, db.NowDB(),
+		INSERT INTO wods (id, name, format, duration_min, intensity, theme, group_level, description, is_active, created_at, template_id)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		wodID, tpl.Name, tpl.Format, tpl.DurationMin, tpl.Intensity, tpl.Theme, groupLevel, desc, activeFlag, db.NowDB(), templateID,
 	); err != nil {
 		return "", err
 	}
