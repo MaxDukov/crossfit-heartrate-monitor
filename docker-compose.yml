@@ -1,8 +1,9 @@
 services:
   backend:
-    build: ./backend
-    ports:
-      - "8000:8000"
+    build: ./backend-go
+    # Порт наружу не публикуем — фронтенд проксирует /api и /ws.
+    # root нужен для доступа к ANT+ USB-стику (/dev/bus/usb принадлежит root).
+    user: "0:0"
     volumes:
       - ./data:/data
     environment:
@@ -15,7 +16,9 @@ services:
   frontend:
     build: ./frontend
     ports:
+      # :80 — прямой доступ; :8000 — kiosk-браузер хоста (прежний адрес python-бэкенда)
       - "80:80"
+      - "8000:80"
     depends_on:
       - backend
     restart: unless-stopped
