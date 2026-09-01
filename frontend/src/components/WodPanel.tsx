@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../lib/api";
+import { localDate } from "../lib/useActiveWod";
 import type { Wod } from "../types";
 import { FORMAT_LABELS, LEVEL_LABELS, THEME_LABELS } from "../types";
 import WorkoutTimer from "./WorkoutTimer";
@@ -8,7 +9,7 @@ export default function WodPanel() {
   const [wod, setWod] = useState<Wod | null>(null);
   const [collapsed, setCollapsed] = useState(false);
 
-  const fetchActive = () => api.wods.active().then(setWod);
+  const fetchActive = () => api.wods.active(localDate()).then(setWod);
 
   useEffect(() => {
     fetchActive();
@@ -34,6 +35,11 @@ export default function WodPanel() {
             {collapsed ? "▼" : "▲"} Свернуть
           </span>
           <h2 className="text-lg font-bold text-slate-900 dark:text-white">{wod.name}</h2>
+          {wod.source === "slot" && (
+            <span className="text-xs bg-emerald-600/20 text-emerald-600 dark:text-emerald-400 px-2 py-1 rounded font-medium">
+              По плану на сегодня
+            </span>
+          )}
           <span className="text-xs bg-blue-600/20 text-blue-600 dark:text-blue-400 px-2 py-1 rounded font-medium">
             {FORMAT_LABELS[wod.format] || wod.format}
           </span>
@@ -44,12 +50,18 @@ export default function WodPanel() {
             {LEVEL_LABELS[wod.group_level] || wod.group_level}
           </span>
         </div>
-        <button
-          onClick={endWod}
-          className="text-xs px-3 py-1.5 bg-red-600/20 hover:bg-red-600/40 text-red-600 dark:text-red-400 rounded font-medium transition-colors"
-        >
-          Завершить
-        </button>
+        {wod.source === "slot" ? (
+          <span className="text-xs px-3 py-1.5 bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded font-medium">
+            Из плана — назначьте слот в «Планировании», чтобы начать
+          </span>
+        ) : (
+          <button
+            onClick={endWod}
+            className="text-xs px-3 py-1.5 bg-red-600/20 hover:bg-red-600/40 text-red-600 dark:text-red-400 rounded font-medium transition-colors"
+          >
+            Завершить
+          </button>
+        )}
       </div>
 
       {!collapsed && (

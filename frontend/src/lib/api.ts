@@ -78,7 +78,8 @@ export const api = {
         method: "POST",
         body: JSON.stringify({ template_id: templateId, group_level: groupLevel }),
       }),
-    active: () => request<Wod | null>("/wods/active"),
+    active: (date?: string) =>
+      request<Wod | null>(`/wods/active${date ? `?date=${date}` : ""}`),
     endActive: () => request<void>("/wods/active/end", { method: "POST" }),
     history: (limit = 20) => request<Wod[]>(`/wods/history?limit=${limit}`),
     templates: (params?: { theme?: string; search?: string; limit?: number }) => {

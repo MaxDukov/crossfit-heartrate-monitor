@@ -1,11 +1,14 @@
-import type { HrUpdate } from "../../types";
+import { useEffect, useState } from "react";
+import type { HrUpdate, Wod } from "../../types";
+import { FORMAT_LABELS } from "../../types";
 
 interface Props {
   variant: "tri" | "split";
   entries: HrUpdate[];
+  wod?: Wod | null;
 }
 
-export default function MainPanel({ variant, entries }: Props) {
+export default function MainPanel({ variant, entries, wod }: Props) {
   const avgHr =
     entries.length > 0
       ? Math.round(entries.reduce((s, e) => s + e.heart_rate, 0) / entries.length)
@@ -13,6 +16,32 @@ export default function MainPanel({ variant, entries }: Props) {
   const totalKcal = entries.reduce((s, e) => s + Math.round(e.calories), 0);
 
   const triFont = variant === "tri";
+
+  const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
+  useEffect(() => {
+    if (!wod) return;
+    let s = (wod.duration_min || 0) * 60;
+    const tickFn = () => {
+      setSecondsLeft(s);
+      s = Math.max(0, s - 1);
+    };
+    const t0 = setTimeout(tickFn, 0);
+    const id = setInterval(tickFn, 1000);
+    return () => {
+      clearTimeout(t0);
+      clearInterval(id);
+    };
+  }, [wod?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const mmss =
+    wod && secondsLeft !== null
+      ? `${Math.floor(secondsLeft / 60)}:${String(secondsLeft % 60).padStart(2, "0")}`
+      : wod
+      ? `${wod.duration_min}:00`
+      : "14:32";
+
+  const formatLabel = wod ? FORMAT_LABELS[wod.format] || wod.format : "AMRAP";
+  const wodTitle = wod ? `${formatLabel} ${wod.duration_min}:00` : "AMRAP 20:00";
 
   return (
     <div
@@ -49,7 +78,7 @@ export default function MainPanel({ variant, entries }: Props) {
           color: "var(--mon-text)",
         }}
       >
-        <span style={{ color: "var(--mon-text-muted)" }}>WOD:</span> AMRAP 20:00
+        <span style={{ color: "var(--mon-text-muted)" }}>WOD:</span> {wodTitle}
       </h1>
 
       <span
@@ -67,7 +96,7 @@ export default function MainPanel({ variant, entries }: Props) {
           borderRadius: 999,
         }}
       >
-        Work Phase
+        {wod ? wod.name : "Work Phase"}
       </span>
 
       <div
@@ -84,7 +113,7 @@ export default function MainPanel({ variant, entries }: Props) {
           width: "90%",
         }}
       >
-        14:32
+        {mmss}
       </div>
 
       <table
@@ -107,19 +136,39 @@ export default function MainPanel({ variant, entries }: Props) {
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td style={tdRounds} rowSpan={3}>5×</td>
-            <td style={tdReps}>10</td>
-            <td style={tdExercise}>Thrusters (40/25 кг)</td>
-          </tr>
-          <tr>
-            <td style={tdReps}>15</td>
-            <td style={tdExercise}>Pull-ups</td>
-          </tr>
-          <tr>
-            <td style={tdReps}>20</td>
-            <td style={tdExercise}>Box Jumps (60/50 см)</td>
-          </tr>
+          {wod ? (
+            wod.movements.map((m, idx) => (
+              <tr key={idx}>
+                <td style={tdRounds}>
+                  {m.rounds_note && (idx === 0 || wod.movements[idx - 1].rounds_note !== m.rounds_note)
+                    ? m.rounds_note
+                    : ""}
+                </td>
+                <td style={tdReps}>{m.reps ?? "—"}</td>
+                <td style={tdExercise}>
+                  {m.movement_name}
+                  {m.weight_male ? ` (${m.weight_male}/${m.weight_female} кг)` : ""}
+                  {m.scaling_note ? ` · ${m.scaling_note}` : ""}
+                </td>
+              </tr>
+            ))
+          ) : (
+            <>
+              <tr>
+                <td style={tdRounds} rowSpan={3}>5×</td>
+                <td style={tdReps}>10</td>
+                <td style={tdExercise}>Thrusters (40/25 кг)</td>
+              </tr>
+              <tr>
+                <td style={tdReps}>15</td>
+                <td style={tdExercise}>Pull-ups</td>
+              </tr>
+              <tr>
+                <td style={tdReps}>20</td>
+                <td style={tdExercise}>Box Jumps (60/50 см)</td>
+              </tr>
+            </>
+          )}
         </tbody>
       </table>
 

@@ -104,6 +104,7 @@ export interface Wod {
   is_active: boolean;
   created_at: string;
   movements: WodMovement[];
+  source?: "active" | "slot";
 }
 
 export interface WodVariant {

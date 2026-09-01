@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 
@@ -67,15 +68,22 @@ func (a *App) SelectWod(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 200, out)
 }
 
-// GetActiveWod: GET /api/wods/active — текущий активный WoD или null.
+// GetActiveWod: GET /api/wods/active — текущий активный WoD; если активного
+// нет — тренировка, запланированная слотом на дату ?date=YYYY-MM-DD
+// (дата берётся из часов клиента), иначе null.
+// Ответ содержит source: "active" | "slot".
 func (a *App) GetActiveWod(w http.ResponseWriter, r *http.Request) {
 	var wodID string
+	source := "active"
 	err := a.DB.QueryRow(`SELECT id FROM wods WHERE is_active = 1 LIMIT 1`).Scan(&wodID)
 	if err == sql.ErrNoRows {
-		writeJSON(w, 200, nil)
-		return
-	}
-	if err != nil {
+		slotWod, ok := a.scheduledWodForDate(r.URL.Query().Get("date"))
+		if !ok {
+			writeJSON(w, 200, nil)
+			return
+		}
+		wodID, source = slotWod, "slot"
+	} else if err != nil {
 		httpError(w, 500, err.Error())
 		return
 	}
@@ -84,7 +92,30 @@ func (a *App) GetActiveWod(w http.ResponseWriter, r *http.Request) {
 		httpError(w, 500, "active wod query failed")
 		return
 	}
+	out["source"] = source
 	writeJSON(w, 200, out)
+}
+
+// scheduledWodForDate возвращает WoD запланированного (status='planned')
+// слота на указанную дату; при нескольких — из активного цикла, затем по дате.
+func (a *App) scheduledWodForDate(date string) (string, bool) {
+	if date == "" {
+		date = time.Now().Format("2006-01-02")
+	}
+	if _, err := time.Parse("2006-01-02", date); err != nil {
+		return "", false
+	}
+	var wodID sql.NullString
+	err := a.DB.QueryRow(`
+		SELECT s.wod_id FROM cycle_slots s
+		JOIN training_cycles c ON c.id = s.cycle_id
+		WHERE DATE(s.slot_date) = ? AND s.status = 'planned' AND s.wod_id IS NOT NULL
+		ORDER BY CASE c.status WHEN 'active' THEN 0 ELSE 1 END, s.slot_date
+		LIMIT 1`, date).Scan(&wodID)
+	if err != nil || !wodID.Valid {
+		return "", false
+	}
+	return wodID.String, true
 }
 
 // EndActiveWod: POST /api/wods/active/end (204)

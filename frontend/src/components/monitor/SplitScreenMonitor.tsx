@@ -1,4 +1,5 @@
 import { useHrStore } from "../../lib/store";
+import { useActiveWod } from "../../lib/useActiveWod";
 import NewSensorAlert from "../NewSensorAlert";
 import SplitScreenCard from "./SplitScreenCard";
 import MainPanel from "./MainPanel";
@@ -8,6 +9,7 @@ export default function SplitScreenMonitor() {
   const hrData = useHrStore((s) => s.hrData);
   const hrHistory = useHrStore((s) => s.hrHistory);
   const sensors = useHrStore((s) => s.sensors);
+  const wod = useActiveWod();
 
   const assignedDeviceIds = new Set(
     sensors.filter((s) => s.athlete_id).map((s) => s.device_id)
@@ -36,7 +38,7 @@ export default function SplitScreenMonitor() {
         }}
       >
         <div style={{ gridArea: "main", minHeight: 0 }}>
-          <MainPanel variant="split" entries={entries} />
+          <MainPanel variant="split" entries={entries} wod={wod} />
         </div>
 
         <aside
