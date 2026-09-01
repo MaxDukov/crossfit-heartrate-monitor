@@ -51,8 +51,11 @@ func Open(path string) (*sql.DB, error) {
 	if err != nil {
 		return nil, fmt.Errorf("open sqlite: %w", err)
 	}
-	// Один writer-коннект: SQLite плохо переносит конкурентные записи.
-	d.SetMaxOpenConns(1)
+	// WAL позволяет конкурентное чтение; записи сериализует busy_timeout.
+	// Пул > 1: одна потерянная по любой причине коннект не морозит сервер.
+	d.SetMaxOpenConns(4)
+	// Брошенные idle-коннекты возвращаются системе.
+	d.SetConnMaxIdleTime(5 * time.Minute)
 	return d, nil
 }
 

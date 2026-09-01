@@ -367,3 +367,12 @@ func (a *App) Health(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, 200, map[string]string{"status": "ok"})
 }
+
+// DBStats exposes sql.DB pool counters; used to detect connection leaks.
+func (a *App) DBStats(w http.ResponseWriter, r *http.Request) {
+	s := a.DB.Stats()
+	writeJSON(w, 200, map[string]any{
+		"in_use": s.InUse, "open": s.OpenConnections, "idle": s.Idle,
+		"wait_count": s.WaitCount, "wait_duration_ms": s.WaitDuration.Milliseconds(),
+	})
+}

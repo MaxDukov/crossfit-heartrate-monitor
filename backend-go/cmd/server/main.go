@@ -69,6 +69,29 @@ func main() {
 		}
 	}()
 
+	// Watchdog: если БД недоступна 2 минуты подряд — аварийный выход,
+	// чтобы контейнер перезапустился (restart: unless-stopped) и киоск
+	// не остался с «замороженным» бэкендом.
+	go func() {
+		failures := 0
+		for {
+			time.Sleep(30 * time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			err := d.PingContext(ctx)
+			cancel()
+			if err == nil {
+				failures = 0
+				continue
+			}
+			failures++
+			slog.Error("db watchdog: ping failed", "consecutive", failures, "err", err)
+			if failures >= 4 {
+				slog.Error("db watchdog: database unresponsive for 2 minutes, exiting for restart")
+				os.Exit(1)
+			}
+		}
+	}()
+
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 	<-stop

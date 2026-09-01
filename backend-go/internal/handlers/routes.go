@@ -3,6 +3,7 @@ package handlers
 
 import (
 	"net/http"
+	"net/http/pprof"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -20,6 +21,19 @@ func NewRouter(a *App, frontendDir string) chi.Router {
 	}))
 
 	r.Get("/api/health", a.Health)
+	r.Get("/api/debug/dbstats", a.DBStats)
+	// pprof — диагностика зависаний (goroutine-дамп) через docker exec;
+	// наружу порт не публикуется.
+	r.Get("/debug/pprof/", pprof.Index)
+	r.Get("/debug/pprof/cmdline", pprof.Cmdline)
+	r.Get("/debug/pprof/profile", pprof.Profile)
+	r.Get("/debug/pprof/symbol", pprof.Symbol)
+	r.Get("/debug/pprof/trace", pprof.Trace)
+	r.Get("/debug/pprof/goroutine", pprof.Index)
+	r.Get("/debug/pprof/allocs", pprof.Index)
+	r.Get("/debug/pprof/block", pprof.Index)
+	r.Get("/debug/pprof/mutex", pprof.Index)
+	r.Get("/debug/pprof/heap", pprof.Index)
 	r.Get("/ws", a.Hub.HandleWS)
 
 	r.Route("/api/athletes", func(r chi.Router) {
