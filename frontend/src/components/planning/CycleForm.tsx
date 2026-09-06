@@ -18,8 +18,8 @@ export default function CycleForm({
     return d.toISOString().slice(0, 10);
   });
   const [modality, setModality] = useState("strength");
-  const [groups, setGroups] = useState<{ name: string; weekdays: number[] }[]>([
-    { name: "Группа А", weekdays: [2, 4, 6] },
+  const [groups, setGroups] = useState<{ name: string; weekdays: number[]; thirdDayOff: boolean }[]>([
+    { name: "Группа А", weekdays: [2, 4, 6], thirdDayOff: false },
   ]);
   const [warnings, setWarnings] = useState<string[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -50,7 +50,11 @@ export default function CycleForm({
         weeks,
         start_date: startDate,
         modality_priority: modality,
-        groups: groups.filter((g) => g.weekdays.length > 0),
+        groups: groups.filter((g) => g.weekdays.length > 0).map((g) => ({
+          name: g.name,
+          weekdays: g.weekdays,
+          third_day_off_cycle: g.thirdDayOff,
+        })),
       });
       if (res.warnings && res.warnings.length > 0) {
         setWarnings(res.warnings);
@@ -150,7 +154,7 @@ export default function CycleForm({
             <button
               className="text-sm text-emerald-600 dark:text-emerald-400"
               onClick={() =>
-                setGroups((gs) => [...gs, { name: `Группа ${String.fromCharCode(65 + gs.length)}`, weekdays: [] }])
+                setGroups((gs) => [...gs, { name: `Группа ${String.fromCharCode(65 + gs.length)}`, weekdays: [], thirdDayOff: false }])
               }
             >
               + группа
@@ -172,12 +176,21 @@ export default function CycleForm({
                 {WD.map((label, idx) => {
                   const wd = idx + 1;
                   const on = g.weekdays.includes(wd);
+                  const isThirdDay =
+                    g.thirdDayOff && g.weekdays.filter((w) => w <= wd).length === 3 && on;
                   return (
                     <button
                       key={wd}
                       onClick={() => toggleWeekday(gi, wd)}
+                      title={
+                        isThirdDay
+                          ? "3-й тренировочный день — вне цикла (техника, тесты 1ПМ)"
+                          : undefined
+                      }
                       className={`w-9 h-9 rounded text-xs font-semibold ${
-                        on
+                        isThirdDay
+                          ? "bg-amber-500 text-white ring-2 ring-amber-300"
+                          : on
                           ? "bg-emerald-600 text-white"
                           : "bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400"
                       }`}
@@ -186,6 +199,22 @@ export default function CycleForm({
                     </button>
                   );
                 })}
+                {/* Переключатель «третий день вне цикла» — колонкой третьего дня */}
+                <button
+                  onClick={() =>
+                    setGroups((gs) =>
+                      gs.map((x, i) => (i === gi ? { ...x, thirdDayOff: !x.thirdDayOff } : x))
+                    )
+                  }
+                  title="Каждый 3-й тренировочный день цикла планируется отдельно: отработка техники, тесты 1ПМ"
+                  className={`w-14 h-9 rounded text-[10px] font-bold leading-tight ${
+                    g.thirdDayOff
+                      ? "bg-amber-500 text-white"
+                      : "bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400"
+                  }`}
+                >
+                  3-й день<br />вне цикла
+                </button>
               </div>
               {groups.length > 1 && (
                 <button
@@ -199,7 +228,8 @@ export default function CycleForm({
           ))}
           <p className="text-xs text-slate-400 mt-1">
             Слоты создаются автоматически по дням недели. Система предупредит, если между
-            тренировками меньше 48 часов.
+            тренировками меньше 48 часов. «3-й день вне цикла»: каждый третий тренировочный день
+            группы планируется отдельно — отработка техники из текущего цикла, тестирование 1ПМ.
           </p>
         </div>
 

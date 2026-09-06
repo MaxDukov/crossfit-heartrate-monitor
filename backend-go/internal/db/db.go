@@ -205,6 +205,7 @@ func Migrate(d *sql.DB) error {
 			slot_date DATE NOT NULL,
 			day_number INTEGER NOT NULL,
 			status VARCHAR(20) NOT NULL DEFAULT 'empty',
+			kind VARCHAR(20) NOT NULL DEFAULT 'regular',
 			wod_id VARCHAR(36),
 			template_id VARCHAR(36),
 			session_id VARCHAR(36),
@@ -276,6 +277,7 @@ func Migrate(d *sql.DB) error {
 		{"athletes", "weight_kg", "ALTER TABLE athletes ADD COLUMN weight_kg FLOAT"},
 		{"athletes", "age", "ALTER TABLE athletes ADD COLUMN age INTEGER"},
 		{"wods", "template_id", "ALTER TABLE wods ADD COLUMN template_id VARCHAR(36)"},
+		{"cycle_slots", "kind", "ALTER TABLE cycle_slots ADD COLUMN kind VARCHAR(20) NOT NULL DEFAULT 'regular'"},
 	}
 	for _, a := range alters {
 		exists, err := columnExists(d, a.table, a.column)

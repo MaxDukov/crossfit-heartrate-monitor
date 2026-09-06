@@ -201,6 +201,16 @@ function GroupCalendar({
                     </span>
                     <span
                       className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
+                        s.kind === "off_cycle"
+                          ? "bg-amber-500/15 text-amber-600 dark:text-amber-400"
+                          : ""
+                      }`}
+                      title={s.kind === "off_cycle" ? "День вне цикла" : undefined}
+                    >
+                      {s.kind === "off_cycle" ? "ВЦ" : ""}
+                    </span>
+                    <span
+                      className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
                         s.status === "empty"
                           ? "text-slate-400"
                           : s.status === "completed"

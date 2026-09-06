@@ -113,7 +113,7 @@ export const api = {
       weeks: number;
       start_date: string;
       modality_priority?: string;
-      groups: { name: string; weekdays: number[] }[];
+      groups: { name: string; weekdays: number[]; third_day_off_cycle?: boolean }[];
     }) =>
       request<{ id: string; warnings: string[] | null }>("/cycles", {
         method: "POST",

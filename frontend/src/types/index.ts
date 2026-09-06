@@ -198,6 +198,7 @@ export interface SlotView {
   slot_date: string;
   day_number: number;
   status: SlotStatus;
+  kind: "regular" | "off_cycle";
   wod_id: string | null;
   template_id: string | null;
   wod_name: string | null;
@@ -225,6 +226,7 @@ export interface SlotDetail {
   slot_date: string;
   day_number: number;
   status: SlotStatus;
+  kind: "regular" | "off_cycle";
   template_id: string | null;
   wod_id: string | null;
   notes: string | null;

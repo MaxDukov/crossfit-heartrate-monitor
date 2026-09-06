@@ -112,13 +112,14 @@ func (a *App) GetSlot(w http.ResponseWriter, r *http.Request) {
 		dayNumber                                     int
 		templateID, notes, sessionID                  sql.NullString
 		wodID                                         sql.NullString
+		kind                                          string
 	)
 	err := a.DB.QueryRow(`
 		SELECT s.cycle_id, s.group_id, g.name, s.slot_date, s.day_number, s.status,
-		       s.template_id, s.notes, s.wod_id, s.session_id
+		       COALESCE(s.kind, 'regular'), s.template_id, s.notes, s.wod_id, s.session_id
 		FROM cycle_slots s JOIN cycle_groups g ON g.id = s.group_id
 		WHERE s.id = ?`, id,
-	).Scan(&cycleID, &groupID, &groupName, &slotDate, &dayNumber, &status, &templateID, &notes, &wodID, &sessionID)
+	).Scan(&cycleID, &groupID, &groupName, &slotDate, &dayNumber, &status, &kind, &templateID, &notes, &wodID, &sessionID)
 	if err == sql.ErrNoRows {
 		httpError(w, 404, "Слот не найден")
 		return
@@ -137,6 +138,7 @@ func (a *App) GetSlot(w http.ResponseWriter, r *http.Request) {
 		"slot_date":   slotDate,
 		"day_number":  dayNumber,
 		"status":      status,
+		"kind":        kind,
 		"template_id": nullStr(templateID),
 		"wod_id":      nullStr(wodID),
 		"notes":       nullStr(notes),

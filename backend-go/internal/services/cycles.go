@@ -52,9 +52,16 @@ func ThemeName(theme string) string {
 
 // CycleGroupInput — группа цикла с днями недели (ISO: 1=Пн … 7=Вс).
 type CycleGroupInput struct {
-	Name     string `json:"name"`
-	Weekdays []int  `json:"weekdays"`
+	Name             string `json:"name"`
+	Weekdays         []int  `json:"weekdays"`
+	ThirdDayOffCycle bool   `json:"third_day_off_cycle"`
 }
+
+// Подсказки тренеру для дней вне цикла (чередуются).
+const (
+	noteOffCycleTechnique = "Вне цикла · день техники: отработайте движение из текущего цикла (слабое звено) — 4×5 с паузами, лёгкий вес"
+	noteOffCycleTesting   = "Вне цикла · тестирование: 1ПМ по основному движению цикла — thorough разминка, 3 попытки, зафиксируйте результат"
+)
 
 // CreateCycleInput — запрос POST /api/cycles.
 type CreateCycleInput struct {
@@ -124,8 +131,8 @@ func CreateCycle(d *sql.DB, in CreateCycleInput) (string, []string, error) {
 
 	// Слоты считаем заранее (до транзакции).
 	type slotInsert struct {
-		groupID, date string
-		dayNumber     int
+		groupID, date, kind, notes string
+		dayNumber                  int
 	}
 	var allSlots []slotInsert
 
@@ -169,16 +176,27 @@ func CreateCycle(d *sql.DB, in CreateCycleInput) (string, []string, error) {
 		for day := start; day.Before(end); day = day.AddDate(0, 0, 1) {
 			if wdSet[isoWeekday(day)] {
 				dayNumber++
-				allSlots = append(allSlots, slotInsert{groupID: groupID, date: day.Format(slotDateLayout), dayNumber: dayNumber})
+				kind, notes := "regular", ""
+				if g.ThirdDayOffCycle && dayNumber%3 == 0 {
+					kind = "off_cycle"
+					notes = noteOffCycleTechnique
+					if (dayNumber/3)%2 == 0 {
+						notes = noteOffCycleTesting
+					}
+				}
+				allSlots = append(allSlots, slotInsert{
+					groupID: groupID, date: day.Format(slotDateLayout),
+					kind: kind, notes: notes, dayNumber: dayNumber,
+				})
 			}
 		}
 	}
 
 	for _, s := range allSlots {
 		if _, err := tx.Exec(`
-			INSERT INTO cycle_slots (id, cycle_id, group_id, slot_date, day_number, status)
-			VALUES (?, ?, ?, ?, ?, 'empty')`,
-			db.NewUUID(), cycleID, s.groupID, s.date, s.dayNumber,
+			INSERT INTO cycle_slots (id, cycle_id, group_id, slot_date, day_number, status, kind, notes)
+			VALUES (?, ?, ?, ?, ?, 'empty', ?, ?)`,
+			db.NewUUID(), cycleID, s.groupID, s.date, s.dayNumber, s.kind, nullIfEmpty(s.notes),
 		); err != nil {
 			return "", nil, err
 		}
@@ -277,8 +295,15 @@ func ListCycles(d *sql.DB) []CycleSummary {
 	return out
 }
 
-func isoDatePtr(s sql.NullString) *string {
-	if !s.Valid || s.String == "" {
+// nullIfEmpty — пустую строку пишем в БД как NULL.
+func nullIfEmpty(s string) any {
+	if strings.TrimSpace(s) == "" {
+		return nil
+	}
+	return s
+}
+
+func isoDatePtr(s sql.NullString) *string {	if !s.Valid || s.String == "" {
 		return nil
 	}
 	t, err := time.Parse(db.DBTimeLayout, s.String)
@@ -309,6 +334,7 @@ type SlotView struct {
 	SlotDate   string  `json:"slot_date"`
 	DayNumber  int     `json:"day_number"`
 	Status     string  `json:"status"`
+	Kind       string  `json:"kind"`
 	WodID      *string `json:"wod_id"`
 	TemplateID *string `json:"template_id"`
 	WodName    *string `json:"wod_name"`
@@ -364,7 +390,7 @@ func GetCycle(d *sql.DB, cycleID string) *CycleDetail {
 
 	// Слоты.
 	srows, err := d.Query(`
-		SELECT s.id, s.group_id, g.name, s.slot_date, s.day_number, s.status, s.wod_id, s.template_id, s.notes,
+		SELECT s.id, s.group_id, g.name, s.slot_date, s.day_number, s.status, COALESCE(s.kind, 'regular'), s.wod_id, s.template_id, s.notes,
 		       w.name, w.format, w.intensity, w.theme
 		FROM cycle_slots s
 		JOIN cycle_groups g ON g.id = s.group_id
@@ -378,7 +404,7 @@ func GetCycle(d *sql.DB, cycleID string) *CycleDetail {
 	for srows.Next() {
 		var s SlotView
 		var wodID, tplID, notes, wname, wformat, wintensity, wtheme sql.NullString
-		if err := srows.Scan(&s.ID, &s.GroupID, &s.GroupName, &s.SlotDate, &s.DayNumber, &s.Status,
+		if err := srows.Scan(&s.ID, &s.GroupID, &s.GroupName, &s.SlotDate, &s.DayNumber, &s.Status, &s.Kind,
 			&wodID, &tplID, &notes, &wname, &wformat, &wintensity, &wtheme); err != nil {
 			continue
 		}
@@ -487,17 +513,23 @@ func SlotRecommendations(d *sql.DB, slotID, groupLevel string) ([]Recommendation
 		groupLevel = "intermediate"
 	}
 
-	var cycleModality, slotDate, groupID string
+	var cycleModality, slotDate, groupID, kind string
 	err := d.QueryRow(`
-		SELECT COALESCE(c.modality_priority, ''), s.slot_date, s.group_id
+		SELECT COALESCE(c.modality_priority, ''), s.slot_date, s.group_id, COALESCE(s.kind, 'regular')
 		FROM cycle_slots s JOIN training_cycles c ON c.id = s.cycle_id
 		WHERE s.id = ?`, slotID,
-	).Scan(&cycleModality, &slotDate, &groupID)
+	).Scan(&cycleModality, &slotDate, &groupID, &kind)
 	if err == sql.ErrNoRows {
 		return nil, fmt.Errorf("слот не найден")
 	}
 	if err != nil {
 		return nil, err
+	}
+
+	// День вне цикла (техника/тесты) — штатные шаблоны не предлагаем,
+	// тренер видит подсказку в notes слота и назначает вручную.
+	if kind == "off_cycle" {
+		return []Recommendation{}, nil
 	}
 
 	// Темы предыдущих 2–3 заполненных слотов группы (не повторять стимул).

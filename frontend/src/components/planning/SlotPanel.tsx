@@ -155,7 +155,26 @@ export default function SlotPanel({
       )}
 
       {/* ── empty: Экран 3 — рекомендации ── */}
-      {slot.status === "empty" && !libraryMode && (
+      {slot.status === "empty" && !libraryMode && slot.kind === "off_cycle" && (
+        <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-500/30 rounded-lg p-3 mb-4">
+          <p className="text-sm font-semibold text-amber-700 dark:text-amber-300 mb-1">
+            День вне цикла — планируется отдельно
+          </p>
+          {slot.notes && (
+            <p className="text-sm text-amber-700/90 dark:text-amber-300/90">{slot.notes}</p>
+          )}
+          <p className="text-xs text-amber-600/70 dark:text-amber-400/70 mt-2">
+            Штатные рекомендации не показаны. Назначьте тренировку вручную из библиотеки.
+          </p>
+          <button
+            className="mt-2 text-sm text-amber-700 dark:text-amber-300 underline"
+            onClick={() => setLibraryMode(true)}
+          >
+            вся библиотека →
+          </button>
+        </div>
+      )}
+      {slot.status === "empty" && !libraryMode && slot.kind !== "off_cycle" && (
         <div>
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold text-slate-600 dark:text-slate-300">
