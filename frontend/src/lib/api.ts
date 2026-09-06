@@ -195,6 +195,8 @@ export const api = {
       request<{ key: string }>("/movements", { method: "POST", body: JSON.stringify(m) }),
     update: (key: string, m: MovementPayload) =>
       request<{ key: string }>(`/movements/${key}`, { method: "PUT", body: JSON.stringify(m) }),
+    delete: (key: string) =>
+      request<void>(`/movements/${key}`, { method: "DELETE" }),
   },
   system: {
     getMode: () => request<{ mode: string }>("/system/mode"),

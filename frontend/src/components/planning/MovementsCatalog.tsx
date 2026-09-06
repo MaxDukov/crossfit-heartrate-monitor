@@ -108,7 +108,7 @@ export default function MovementsCatalog() {
           onClose={() => setEditing(null)}
           onSaved={async (key) => {
             setEditing(null);
-            setSavedKey(key);
+            if (key) setSavedKey(key);
             await load();
           }}
         />
@@ -146,6 +146,7 @@ function MovementEditor({
   const [scalingIntermediate, setScalingIntermediate] = useState(movement?.scaling_intermediate ?? "");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const toggle = (list: string[], setList: (v: string[]) => void, v: string) =>
     setList(list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
@@ -177,6 +178,21 @@ function MovementEditor({
       onSaved(res.key);
     } catch (e) {
       setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const remove = async () => {
+    if (!movement) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await api.movements.delete(movement.key);
+      onSaved("");
+    } catch (e) {
+      setError((e as Error).message);
+      setConfirmDelete(false);
     } finally {
       setBusy(false);
     }
@@ -294,6 +310,29 @@ function MovementEditor({
           </div>
         )}
 
+        {confirmDelete ? (
+          <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-500/30 rounded-lg p-3 mb-3">
+            <p className="text-sm text-red-700 dark:text-red-300 mb-2">
+              Удалить «{movement?.name}» из каталога?
+            </p>
+            <div className="flex gap-2">
+              <button
+                className="bg-red-600 hover:bg-red-500 disabled:opacity-50 px-3 py-1.5 rounded text-sm font-medium text-white"
+                disabled={busy}
+                onClick={remove}
+              >
+                Удалить
+              </button>
+              <button
+                className="px-3 py-1.5 rounded text-sm text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+                onClick={() => setConfirmDelete(false)}
+              >
+                Не удалять
+              </button>
+            </div>
+          </div>
+        ) : null}
+
         <div className="flex gap-2">
           <button
             className="flex-1 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 px-4 py-2 rounded text-sm font-medium"
@@ -302,6 +341,14 @@ function MovementEditor({
           >
             {busy ? "Сохранение…" : "Сохранить"}
           </button>
+          {movement && !confirmDelete && (
+            <button
+              className="px-4 py-2 rounded text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30"
+              onClick={() => setConfirmDelete(true)}
+            >
+              Удалить
+            </button>
+          )}
           <button
             className="px-4 py-2 rounded text-sm text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
             onClick={onClose}

@@ -230,6 +230,10 @@ func Migrate(d *sql.DB) error {
 		// Бэкфилл: существующие дни с одной тренировкой (идемпотентно).
 		`INSERT OR IGNORE INTO slot_wods (slot_id, wod_id, position)
 			SELECT id, wod_id, 0 FROM cycle_slots WHERE wod_id IS NOT NULL`,
+		// Надгробия удалённых движений: seed-refresh не должен воскрешать их.
+		`CREATE TABLE IF NOT EXISTS movements_deleted (
+			"key" VARCHAR(80) NOT NULL PRIMARY KEY
+		)`,
 		`CREATE TABLE IF NOT EXISTS workout_results (
 			id VARCHAR(36) NOT NULL PRIMARY KEY,
 			slot_id VARCHAR(36),
@@ -378,7 +382,21 @@ func Seed(d *sql.DB) error {
 		}
 		slog.Info("seeded movements", "count", len(data.MovementsSeed))
 	} else {
+		// Ключи, удалённые тренером — не воскрешаем.
+		tomb := map[string]bool{}
+		if trows, err := d.Query(`SELECT "key" FROM movements_deleted`); err == nil {
+			for trows.Next() {
+				var k string
+				if trows.Scan(&k) == nil {
+					tomb[k] = true
+				}
+			}
+			_ = trows.Close()
+		}
 		for _, mv := range data.MovementsSeed {
+			if tomb[mv.Key] {
+				continue
+			}
 			// Refresh только штатного каталога: отредактированные тренером
 			// движения (is_custom = 1) не перетираются.
 			if _, err := d.Exec(

@@ -22,7 +22,7 @@ export default function App() {
           <Route path="/wod-builder" element={<Navigate to="/wod" replace />} />
           <Route path="/athletes" element={<Navigate to="/settings?tab=athletes" replace />} />
           <Route path="/sensors" element={<Navigate to="/settings?tab=sensors" replace />} />
-          <Route path="/equipment" element={<Navigate to="/settings?tab=equipment" replace />} />
+          <Route path="/equipment" element={<Navigate to="/wod" replace />} />
           <Route path="/sessions" element={<Navigate to="/history" replace />} />
         </Route>
       </Routes>

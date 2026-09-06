@@ -2,15 +2,13 @@ import { useStyle, type DashboardStyle } from "../lib/style";
 import { useSearchParams } from "react-router-dom";
 import AthletesPage from "./AthletesPage";
 import SensorsPage from "./SensorsPage";
-import EquipmentPage from "./EquipmentPage";
 
-type SettingsTab = "general" | "athletes" | "sensors" | "equipment";
+type SettingsTab = "general" | "athletes" | "sensors";
 
 const TABS: { id: SettingsTab; label: string }[] = [
   { id: "general", label: "Общие" },
   { id: "athletes", label: "Спортсмены" },
   { id: "sensors", label: "Датчики" },
-  { id: "equipment", label: "Инвентарь" },
 ];
 
 export default function SettingsPage() {
@@ -42,7 +40,6 @@ export default function SettingsPage() {
         {tab === "general" && <GeneralSettings />}
         {tab === "athletes" && <AthletesPage />}
         {tab === "sensors" && <SensorsPage />}
-        {tab === "equipment" && <EquipmentPage />}
       </div>
     </div>
   );

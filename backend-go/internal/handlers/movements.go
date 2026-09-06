@@ -156,6 +156,39 @@ func (a *App) CreateMovement(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 201, map[string]any{"key": key})
 }
 
+// DeleteMovement: DELETE /api/movements/{key} — убрать дубли и лишнее.
+// Движение, входящее в шаблоны тренировок, удалить нельзя (сломает веса).
+func (a *App) DeleteMovement(w http.ResponseWriter, r *http.Request) {
+	key := chi.URLParam(r, "key")
+	var n int
+	if err := a.DB.QueryRow(
+		`SELECT COUNT(DISTINCT template_id) FROM wod_template_movements WHERE movement_key = ?`, key,
+	).Scan(&n); err != nil {
+		httpError(w, 500, err.Error())
+		return
+	}
+	if n > 0 {
+		httpError(w, 409, fmt.Sprintf(
+			"движение входит в %d шаблон(ов) тренировок — сначала уберите его из шаблонов", n))
+		return
+	}
+	res, err := a.DB.Exec(`DELETE FROM movements WHERE "key" = ?`, key)
+	if err != nil {
+		httpError(w, 500, err.Error())
+		return
+	}
+	if rows, _ := res.RowsAffected(); rows == 0 {
+		httpError(w, 404, "упражнение не найдено")
+		return
+	}
+	// Надгробие: seed-refresh не должен вернуть движение после рестарта.
+	if _, err := a.DB.Exec(`INSERT OR IGNORE INTO movements_deleted ("key") VALUES (?)`, key); err != nil {
+		httpError(w, 500, err.Error())
+		return
+	}
+	w.WriteHeader(204)
+}
+
 // UpdateMovement: PUT /api/movements/{key} — правка признаков (is_custom = 1).
 func (a *App) UpdateMovement(w http.ResponseWriter, r *http.Request) {
 	key := chi.URLParam(r, "key")
