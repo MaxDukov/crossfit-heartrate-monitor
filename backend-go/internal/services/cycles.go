@@ -303,7 +303,8 @@ func nullIfEmpty(s string) any {
 	return s
 }
 
-func isoDatePtr(s sql.NullString) *string {	if !s.Valid || s.String == "" {
+func isoDatePtr(s sql.NullString) *string {
+	if !s.Valid || s.String == "" {
 		return nil
 	}
 	t, err := time.Parse(db.DBTimeLayout, s.String)
@@ -329,28 +330,69 @@ type CycleGroup struct {
 
 // SlotConflict — запланированный слот третьего дня при включении режима.
 type SlotConflict struct {
-	SlotID   string  `json:"slot_id"`
-	SlotDate string  `json:"slot_date"`
-	DayNumber int    `json:"day_number"`
-	WodName  *string `json:"wod_name"`
+	SlotID    string  `json:"slot_id"`
+	SlotDate  string  `json:"slot_date"`
+	DayNumber int     `json:"day_number"`
+	WodName   *string `json:"wod_name"`
 }
 
 // SlotView — слот календаря (Экран 2).
 type SlotView struct {
-	ID         string  `json:"id"`
-	GroupID    string  `json:"group_id"`
-	GroupName  string  `json:"group_name"`
-	SlotDate   string  `json:"slot_date"`
-	DayNumber  int     `json:"day_number"`
-	Status     string  `json:"status"`
-	Kind       string  `json:"kind"`
-	WodID      *string `json:"wod_id"`
-	TemplateID *string `json:"template_id"`
-	WodName    *string `json:"wod_name"`
-	WodFormat  *string `json:"wod_format"`
-	Intensity  *string `json:"intensity"`
-	Theme      *string `json:"theme"`
-	Notes      *string `json:"notes"`
+	ID         string        `json:"id"`
+	GroupID    string        `json:"group_id"`
+	GroupName  string        `json:"group_name"`
+	SlotDate   string        `json:"slot_date"`
+	DayNumber  int           `json:"day_number"`
+	Status     string        `json:"status"`
+	Kind       string        `json:"kind"`
+	WodID      *string       `json:"wod_id"`
+	TemplateID *string       `json:"template_id"`
+	WodName    *string       `json:"wod_name"`
+	WodFormat  *string       `json:"wod_format"`
+	Intensity  *string       `json:"intensity"`
+	Theme      *string       `json:"theme"`
+	Notes      *string       `json:"notes"`
+	Wods       []SlotWodItem `json:"wods"`
+}
+
+// Константы длительности тренировочного дня (Экран 5): 60 минут всего,
+// разминка в начале 10, заминка в конце 5 → на тренировки не более 45.
+const (
+	SlotDayMin      = 60
+	SlotWarmupMin   = 10
+	SlotCooldownMin = 5
+	SlotWodCapMin   = SlotDayMin - SlotWarmupMin - SlotCooldownMin
+)
+
+// SlotWodItem — одна тренировка дня (без движений, для календаря и списков).
+type SlotWodItem struct {
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Format      string `json:"format"`
+	DurationMin int    `json:"duration_min"`
+	Intensity   string `json:"intensity"`
+	Theme       string `json:"theme"`
+}
+
+// slotWodsList — тренировки дня в порядке добавления.
+func slotWodsList(d *sql.DB, slotID string) ([]SlotWodItem, error) {
+	rows, err := d.Query(`
+		SELECT w.id, w.name, w.format, w.duration_min, w.intensity, w.theme
+		FROM slot_wods sw JOIN wods w ON w.id = sw.wod_id
+		WHERE sw.slot_id = ?
+		ORDER BY sw.position, w.created_at`, slotID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []SlotWodItem
+	for rows.Next() {
+		var it SlotWodItem
+		if err := rows.Scan(&it.ID, &it.Name, &it.Format, &it.DurationMin, &it.Intensity, &it.Theme); err == nil {
+			out = append(out, it)
+		}
+	}
+	return out, nil
 }
 
 // CycleDetail — полный цикл с группами и слотами.
@@ -430,6 +472,13 @@ func GetCycle(d *sql.DB, cycleID string) *CycleDetail {
 		slots = append(slots, s)
 	}
 	_ = srows.Close()
+
+	// Тренировки каждого дня (может быть несколько — слот на 60 минут).
+	for i := range slots {
+		if list, err := slotWodsList(d, slots[i].ID); err == nil && len(list) > 0 {
+			slots[i].Wods = list
+		}
+	}
 	c.Slots = slots
 
 	c.GroupsCount = len(groups)
@@ -638,6 +687,9 @@ func ReplanThirdDayOff(d *sql.DB, groupID, mode string) (map[string]int, error) 
 	dropped := 0
 	if mode == "rollback" {
 		for _, s := range planned {
+			if _, err := d.Exec(`DELETE FROM slot_wods WHERE slot_id = ?`, s.id); err != nil {
+				return nil, err
+			}
 			if _, err := d.Exec(`
 				UPDATE cycle_slots SET status = 'empty', wod_id = NULL, template_id = NULL, notes = NULL
 				WHERE id = ?`, s.id); err != nil {
@@ -659,6 +711,9 @@ func ReplanThirdDayOff(d *sql.DB, groupID, mode string) (map[string]int, error) 
 	// Автоперепланирование: снять всё, затем назначить последовательность
 	// только на регулярные слоты (первые два дня недельного цикла).
 	for _, s := range planned {
+		if _, err := d.Exec(`DELETE FROM slot_wods WHERE slot_id = ?`, s.id); err != nil {
+			return nil, err
+		}
 		if _, err := d.Exec(`
 			UPDATE cycle_slots SET status = 'empty', wod_id = NULL, template_id = NULL, notes = NULL
 			WHERE id = ?`, s.id); err != nil {
@@ -697,6 +752,14 @@ func ReplanThirdDayOff(d *sql.DB, groupID, mode string) (map[string]int, error) 
 				return nil, err
 			}
 			continue
+		}
+		if _, err := d.Exec(`DELETE FROM slot_wods WHERE wod_id = ?`, s.wodID); err != nil {
+			return nil, err
+		}
+		if _, err := d.Exec(`
+			INSERT INTO slot_wods (slot_id, wod_id, position) VALUES (?, ?, 0)`, targets[i], s.wodID,
+		); err != nil {
+			return nil, err
 		}
 		if _, err := d.Exec(`
 			UPDATE cycle_slots SET status = 'planned', wod_id = ? WHERE id = ?`, s.wodID, targets[i],
@@ -919,19 +982,91 @@ func AssignTemplate(d *sql.DB, slotID, templateID, groupLevel string) (string, [
 		return "", nil, fmt.Errorf("нельзя изменить уже идущую или завершённую тренировку")
 	}
 
+	// Проверка длительности: разминка 10 + сумма тренировок + заминка 5 ≤ 60.
+	var newDur int
+	if err := d.QueryRow(`SELECT duration_min FROM wod_templates WHERE id = ?`, templateID).Scan(&newDur); err != nil {
+		return "", nil, fmt.Errorf("Template %s not found", templateID)
+	}
+	existing, err := slotWodsList(d, slotID)
+	if err != nil {
+		return "", nil, err
+	}
+	sum := 0
+	for _, w := range existing {
+		sum += w.DurationMin
+	}
+	if sum+newDur > SlotWodCapMin {
+		left := SlotWodCapMin - sum
+		return "", nil, fmt.Errorf(
+			"Не помещается в день: тренировки займут %d из %d доступных минут (60 мин − разминка 10 − заминка 5), осталось %d",
+			sum+newDur, SlotWodCapMin, left)
+	}
+
 	wodID, err := CreateWodForSlot(d, templateID, groupLevel)
 	if err != nil {
 		return "", nil, err
 	}
 
 	if _, err := d.Exec(`
-		UPDATE cycle_slots SET status = 'planned', wod_id = ?, template_id = ?
-		WHERE id = ?`, wodID, templateID, slotID); err != nil {
+		INSERT INTO slot_wods (slot_id, wod_id, position) VALUES (?, ?, ?)`,
+		slotID, wodID, len(existing)); err != nil {
+		return "", nil, err
+	}
+	// wod_id слота всегда указывает на первую тренировку дня (для монитора и сессий).
+	if _, err := d.Exec(`
+		UPDATE cycle_slots SET status = 'planned', template_id = ?, wod_id = COALESCE(wod_id, ?)
+		WHERE id = ?`, templateID, wodID, slotID); err != nil {
 		return "", nil, err
 	}
 
 	warnings := assignWarnings(d, groupID, slotID, slotDate, templateID)
 	return wodID, warnings, nil
+}
+
+// SlotWods — экспортированный список тренировок дня (для хендлеров).
+func SlotWods(d *sql.DB, slotID string) ([]SlotWodItem, error) {
+	return slotWodsList(d, slotID)
+}
+
+// UnassignSlotWod снимает одну тренировку дня. Если снимали первую —
+// первой становится следующая по порядку; когда день опустел, слот сбрасывается.
+func UnassignSlotWod(d *sql.DB, slotID, wodID string) error {
+	var status string
+	var slotWodID sql.NullString
+	err := d.QueryRow(`SELECT status, wod_id FROM cycle_slots WHERE id = ?`, slotID).Scan(&status, &slotWodID)
+	if err == sql.ErrNoRows {
+		return fmt.Errorf("слот не найден")
+	}
+	if err != nil {
+		return err
+	}
+	if status == "in_progress" || status == "completed" {
+		return fmt.Errorf("нельзя снять тренировку с идущего или завершённого дня")
+	}
+
+	res, err := d.Exec(`DELETE FROM slot_wods WHERE slot_id = ? AND wod_id = ?`, slotID, wodID)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return fmt.Errorf("тренировка не найдена в этом дне")
+	}
+	if _, err := d.Exec(`DELETE FROM wods WHERE id = ?`, wodID); err != nil {
+		return err
+	}
+
+	remaining, err := slotWodsList(d, slotID)
+	if err != nil {
+		return err
+	}
+	if len(remaining) == 0 {
+		_, err = d.Exec(`UPDATE cycle_slots SET status = 'empty', wod_id = NULL, template_id = NULL WHERE id = ?`, slotID)
+		return err
+	}
+	if slotWodID.Valid && slotWodID.String == wodID {
+		_, err = d.Exec(`UPDATE cycle_slots SET wod_id = ? WHERE id = ?`, remaining[0].ID, slotID)
+	}
+	return err
 }
 
 // assignWarnings — проверки 48 часов и повтора нагрузки (Экран 5).
@@ -1021,9 +1156,22 @@ func UnassignSlot(d *sql.DB, slotID string) error {
 	if status == "in_progress" || status == "completed" {
 		return fmt.Errorf("нельзя снять назначение с идущей или завершённой тренировки")
 	}
+	dayWods, err := slotWodsList(d, slotID)
+	if err != nil {
+		return err
+	}
+	if _, err := d.Exec(`DELETE FROM slot_wods WHERE slot_id = ?`, slotID); err != nil {
+		return err
+	}
 	if _, err := d.Exec(`UPDATE cycle_slots SET status = 'empty', wod_id = NULL, template_id = NULL WHERE id = ?`, slotID); err != nil {
 		return err
 	}
+	for _, w := range dayWods {
+		if _, err := d.Exec(`DELETE FROM wods WHERE id = ?`, w.ID); err != nil {
+			return err
+		}
+	}
+	// Легаси: wod_id мог не попасть в slot_wods (до миграции) — подчистим.
 	if wodID.Valid {
 		if _, err := d.Exec(`DELETE FROM wods WHERE id = ?`, wodID.String); err != nil {
 			return err

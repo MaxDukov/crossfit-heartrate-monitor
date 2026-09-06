@@ -154,6 +154,8 @@ export const api = {
         body: JSON.stringify({ template_id: templateId, group_level: groupLevel }),
       }),
     unassign: (id: string) => request<void>(`/slots/${id}/assign`, { method: "DELETE" }),
+    unassignWod: (id: string, wodId: string) =>
+      request<void>(`/slots/${id}/assign/${wodId}`, { method: "DELETE" }),
     updateMovements: (id: string, movements: { movement_key: string; reps: number | null; weight_male: number | null; weight_female: number | null }[]) =>
       request<Wod>(`/slots/${id}/movements`, {
         method: "PUT",

@@ -151,6 +151,16 @@ func (a *App) GetSlot(w http.ResponseWriter, r *http.Request) {
 		out["wod"] = nil
 	}
 
+	// Все тренировки дня (может быть несколько в пределах 60 минут).
+	if list, err := services.SlotWods(a.DB, id); err == nil {
+		out["wods"] = list
+		total := 0
+		for _, it := range list {
+			total += it.DurationMin
+		}
+		out["wods_total_min"] = total
+	}
+
 	// Участники live-сессии (Экран 6).
 	if sessionID.Valid {
 		var ids []string
@@ -223,6 +233,18 @@ func (a *App) AssignSlot(w http.ResponseWriter, r *http.Request) {
 func (a *App) UnassignSlot(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "slot_id")
 	if err := services.UnassignSlot(a.DB, id); err != nil {
+		httpError(w, 400, err.Error())
+		return
+	}
+	w.WriteHeader(204)
+}
+
+// UnassignSlotWod: DELETE /api/slots/{slot_id}/assign/{wod_id} — снять
+// одну тренировку из дня (204).
+func (a *App) UnassignSlotWod(w http.ResponseWriter, r *http.Request) {
+	slotID := chi.URLParam(r, "slot_id")
+	wodID := chi.URLParam(r, "wod_id")
+	if err := services.UnassignSlotWod(a.DB, slotID, wodID); err != nil {
 		httpError(w, 400, err.Error())
 		return
 	}

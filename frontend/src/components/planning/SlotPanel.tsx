@@ -1,7 +1,10 @@
 import { useEffect, useState, useCallback } from "react";
 import { api } from "../../lib/api";
 import type { SlotDetail, Recommendation, WodTemplateItem, Athlete, WorkoutResult } from "../../types";
-import { FORMAT_LABELS, LEVEL_LABELS } from "../../types";
+import {
+  FORMAT_LABELS, LEVEL_LABELS,
+  SLOT_WARMUP_MIN, SLOT_COOLDOWN_MIN, SLOT_WOD_CAP, SLOT_DENSE_TOTAL, SLOT_FREE_MIN,
+} from "../../types";
 
 // Панель слота: рекомендации → назначение → проведение → результаты
 // (Экраны 3, 5, 6 draft1.MD).
@@ -23,6 +26,7 @@ export default function SlotPanel({
   const [warnings, setWarnings] = useState<string[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [prBanner, setPrBanner] = useState<string | null>(null);
+  const [pendingAssign, setPendingAssign] = useState<WodTemplateItem | Recommendation | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -35,6 +39,14 @@ export default function SlotPanel({
 
   useEffect(() => { load(); }, [load]);
 
+  const dayTotal = slot?.wods?.reduce((s, w) => s + w.duration_min, 0) ?? 0;
+  const dayLeft = SLOT_WOD_CAP - dayTotal;
+  // В день можно добавлять, пока есть свободные минуты (пустой или planned).
+  const canAdd = slot != null
+    && (slot.status === "empty" || slot.status === "planned")
+    && dayLeft > 0;
+  const showFill = canAdd && dayLeft > SLOT_FREE_MIN;
+
   const loadRecs = useCallback(async () => {
     try {
       setRecs(await api.slots.recommendations(slotId, level));
@@ -44,8 +56,12 @@ export default function SlotPanel({
   }, [slotId, level]);
 
   useEffect(() => {
-    if (slot?.status === "empty") loadRecs();
-  }, [slot?.status, loadRecs]);
+    if (!slot) return;
+    const total = (slot.wods ?? []).reduce((s, w) => s + w.duration_min, 0);
+    const canFill = (slot.status === "empty" || slot.status === "planned")
+      && SLOT_WOD_CAP - total > SLOT_FREE_MIN;
+    if (canFill) loadRecs();
+  }, [slot, loadRecs]);
 
   useEffect(() => {
     if (!libraryMode) return;
@@ -55,12 +71,41 @@ export default function SlotPanel({
     return () => clearTimeout(t);
   }, [libraryMode, librarySearch]);
 
-  const assign = async (templateId: string) => {
+  const doAssign = async (templateId: string) => {
     setError(null);
     try {
       const res = await api.slots.assign(slotId, templateId, level);
       setWarnings(res.warnings);
       setLibraryMode(false);
+      await load();
+      onChanged();
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  };
+
+  // Плотное расписание: сумма тренировок + разминка/заминка > 55 мин —
+  // сохраняем только после подтверждения.
+  const assign = (t: WodTemplateItem | Recommendation) => {
+    if (dayTotal + t.duration_min + SLOT_WARMUP_MIN + SLOT_COOLDOWN_MIN > SLOT_DENSE_TOTAL) {
+      setPendingAssign(t);
+      return;
+    }
+    doAssign(t.template_id);
+  };
+
+  const confirmAssign = async () => {
+    if (!pendingAssign) return;
+    const id = pendingAssign.template_id;
+    setPendingAssign(null);
+    await doAssign(id);
+  };
+
+  const removeWod = async (wodId: string) => {
+    setError(null);
+    try {
+      await api.slots.unassignWod(slotId, wodId);
+      setWarnings(null);
       await load();
       onChanged();
     } catch (e) {
@@ -134,6 +179,41 @@ export default function SlotPanel({
         </div>
       )}
 
+      {/* Тренировки дня: 60 мин = разминка 10 + WOD + заминка 5 */}
+      {slot.wods && slot.wods.length > 0 && (
+        <div className="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg p-3 mb-4">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+              Тренировки дня
+            </h3>
+            <span className={`text-xs ${dayLeft > SLOT_FREE_MIN ? "text-slate-400" : "text-amber-600 dark:text-amber-400"}`}>
+              {dayTotal}/{SLOT_WOD_CAP} мин · осталось {dayLeft}
+            </span>
+          </div>
+          <div className="text-[10px] text-slate-400 mb-2">
+            разминка {SLOT_WARMUP_MIN}м · заминка {SLOT_COOLDOWN_MIN}м · день {60}м
+          </div>
+          <div className="space-y-1">
+            {slot.wods.map((w, i) => (
+              <div key={w.id} className="flex items-center gap-2 text-sm">
+                <span className="text-[10px] text-slate-400 w-4">{i + 1}.</span>
+                <span className="flex-1 text-slate-800 dark:text-slate-200 truncate">{w.name}</span>
+                <span className="text-xs text-slate-400">{w.duration_min} мин</span>
+                {slot.status === "planned" && (
+                  <button
+                    className="text-slate-300 hover:text-red-500 px-1"
+                    title="Снять тренировку"
+                    onClick={() => removeWod(w.id)}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Уровень группы */}
       {slot.status === "empty" && (
         <div className="flex items-center gap-2 mb-4 text-sm">
@@ -174,11 +254,11 @@ export default function SlotPanel({
           </button>
         </div>
       )}
-      {slot.status === "empty" && !libraryMode && slot.kind !== "off_cycle" && (
+      {showFill && !libraryMode && (slot.status === "planned" || (slot.status === "empty" && slot.kind !== "off_cycle")) && (
         <div>
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold text-slate-600 dark:text-slate-300">
-              Рекомендации системы
+              {slot.status === "empty" ? "Рекомендации системы" : "Добавить ещё тренировку"}
             </h3>
             <div className="flex gap-2">
               <button
@@ -202,7 +282,7 @@ export default function SlotPanel({
             {recs.map((r) => (
               <button
                 key={r.template_id}
-                onClick={() => assign(r.template_id)}
+                onClick={() => assign(r)}
                 className="w-full text-left bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg p-3 hover:border-emerald-400 dark:hover:border-emerald-500/50"
               >
                 <div className="flex items-center justify-between mb-1">
@@ -230,8 +310,8 @@ export default function SlotPanel({
         </div>
       )}
 
-      {/* ── empty + libraryMode: библиотека ── */}
-      {slot.status === "empty" && libraryMode && (
+      {/* ── библиотека ── */}
+      {showFill && libraryMode && (
         <div>
           <div className="flex items-center gap-2 mb-3">
             <input
@@ -249,7 +329,7 @@ export default function SlotPanel({
             {library.map((t) => (
               <button
                 key={t.template_id}
-                onClick={() => assign(t.template_id)}
+                onClick={() => assign(t)}
                 className="w-full text-left bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg p-3 hover:border-emerald-400"
               >
                 <span className="font-medium text-slate-900 dark:text-white">
@@ -302,6 +382,42 @@ export default function SlotPanel({
       {/* ── completed: результаты ── */}
       {slot.status === "completed" && (
         <ResultsList results={slot.results} />
+      )}
+
+      {/* ── подтверждение плотного расписания ── */}
+      {pendingAssign && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-60 p-4" onClick={() => setPendingAssign(null)}>
+          <div
+            className="bg-white dark:bg-slate-900 rounded-xl max-w-sm w-full p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">
+              Плотное расписание, уверены?
+            </h3>
+            <p className="text-sm text-slate-600 dark:text-slate-300 mb-1">
+              С тренировкой «{pendingAssign.name}» ({pendingAssign.duration_min} мин) день займёт{" "}
+              <span className="font-semibold">
+                {dayTotal + pendingAssign.duration_min + SLOT_WARMUP_MIN + SLOT_COOLDOWN_MIN} мин
+              </span>{" "}
+              из 60: разминка {SLOT_WARMUP_MIN} + тренировки {dayTotal + pendingAssign.duration_min} + заминка {SLOT_COOLDOWN_MIN}.
+            </p>
+            <p className="text-xs text-slate-400 mb-5">Добавить эту тренировку в день?</p>
+            <div className="flex gap-2">
+              <button
+                className="flex-1 bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded text-sm font-medium"
+                onClick={confirmAssign}
+              >
+                Добавить
+              </button>
+              <button
+                className="px-4 py-2 rounded text-sm text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                onClick={() => setPendingAssign(null)}
+              >
+                Отмена
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </Drawer>
   );

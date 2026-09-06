@@ -91,6 +91,7 @@ func NewRouter(a *App, frontendDir string) chi.Router {
 		r.Get("/{slot_id}/recommendations", a.SlotRecommendations)
 		r.Post("/{slot_id}/assign", a.AssignSlot)
 		r.Delete("/{slot_id}/assign", a.UnassignSlot)
+		r.Delete("/{slot_id}/assign/{wod_id}", a.UnassignSlotWod)
 		r.Put("/{slot_id}/movements", a.UpdateSlotMovements)
 		r.Post("/{slot_id}/start", a.StartSlot)
 		r.Post("/{slot_id}/complete", a.CompleteSlot)

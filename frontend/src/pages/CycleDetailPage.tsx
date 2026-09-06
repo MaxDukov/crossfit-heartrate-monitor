@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 import type { CycleDetail, SlotView, CycleAnalytics } from "../types";
-import { STATUS_LABELS, MODALITY_LABELS } from "../types";
+import { STATUS_LABELS, MODALITY_LABELS, SLOT_DAY_MIN, SLOT_WARMUP_MIN, SLOT_COOLDOWN_MIN, SLOT_WOD_CAP, SLOT_FREE_MIN, SLOT_DENSE_TOTAL } from "../types";
 import SlotPanel from "../components/planning/SlotPanel";
 import CycleAnalyticsView from "../components/planning/CycleAnalyticsView";
 
@@ -94,6 +94,15 @@ export default function CycleDetailPage() {
     }
   };
 
+  const removeWod = async (slotId: string, wodId: string) => {
+    try {
+      await api.slots.unassignWod(slotId, wodId);
+      load();
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  };
+
   return (
     <div className="h-full flex flex-col overflow-hidden">
       {/* Шапка */}
@@ -174,6 +183,7 @@ export default function CycleDetailPage() {
                 group={g}
                 slots={cycle.slots.filter((s) => s.group_id === g.id)}
                 onSelect={setSelectedSlot}
+                onRemoveWod={removeWod}
                 onToggleThirdDay={(gid, enabled) => toggleThirdDay(gid, g.name, enabled)}
                 toggleBusy={toggleBusy}
               />
@@ -237,12 +247,14 @@ function GroupCalendar({
   group,
   slots,
   onSelect,
+  onRemoveWod,
   onToggleThirdDay,
   toggleBusy,
 }: {
   group: CycleDetail["groups"][number];
   slots: SlotView[];
   onSelect: (id: string) => void;
+  onRemoveWod: (slotId: string, wodId: string) => void;
   onToggleThirdDay: (groupId: string, enabled: boolean) => void;
   toggleBusy: boolean;
 }) {
@@ -280,54 +292,151 @@ function GroupCalendar({
             </span>
             <div className="flex gap-2 flex-wrap">
               {week.map((s) => (
-                <button
-                  key={s.id}
-                  onClick={() => onSelect(s.id)}
-                  className={`w-44 text-left border rounded-lg p-3 transition-all hover:shadow-md ${
-                    s.kind === "off_cycle" ? OFF_CYCLE_STYLE : (STATUS_STYLES[s.status] || STATUS_STYLES.empty)
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs text-slate-400">
-                      День {s.day_number} · {fmtDate(s.slot_date)}
-                    </span>
-                    <span
-                      className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
-                        s.kind === "off_cycle"
-                          ? "bg-amber-500/15 text-amber-600 dark:text-amber-400"
-                          : ""
-                      }`}
-                      title={s.kind === "off_cycle" ? "День вне цикла" : undefined}
-                    >
-                      {s.kind === "off_cycle" ? "ВЦ" : ""}
-                    </span>
-                    <span
-                      className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
-                        s.status === "empty"
-                          ? "text-slate-400"
-                          : s.status === "completed"
-                            ? "text-emerald-600 dark:text-emerald-400"
-                            : s.status === "in_progress"
-                              ? "text-emerald-600 dark:text-emerald-400"
-                              : "text-blue-600 dark:text-blue-400"
-                      }`}
-                    >
-                      {STATUS_LABELS[s.status]}
-                    </span>
-                  </div>
-                  {s.wod_name ? (
-                    <div className="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">
-                      {s.wod_name}
-                    </div>
-                  ) : (
-                    <div className="text-sm text-slate-400">+ подобрать тренировку</div>
-                  )}
-                </button>
+                <DayCard key={s.id} s={s} onSelect={onSelect} onRemoveWod={onRemoveWod} />
               ))}
             </div>
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+const pctOf = (min: number) => `${(min / SLOT_DAY_MIN) * 100}%`;
+
+const SEG_MUTED =
+  "bg-black/[0.04] dark:bg-white/[0.06] border border-dashed border-slate-300/70 dark:border-slate-600/60 " +
+  "text-slate-400 dark:text-slate-500 text-[9px] leading-none flex items-center justify-center overflow-hidden whitespace-nowrap";
+
+// Карточка дня: 60 минут = разминка 10 + тренировки (по длительности) + заминка 5.
+// Свободное время >10 мин — слот «Подобрать тренировку».
+function DayCard({
+  s,
+  onSelect,
+  onRemoveWod,
+}: {
+  s: SlotView;
+  onSelect: (id: string) => void;
+  onRemoveWod: (slotId: string, wodId: string) => void;
+}) {
+  const wods = s.wods ?? [];
+  const total = wods.reduce((x, w) => x + w.duration_min, 0);
+  const left = SLOT_WOD_CAP - total;
+
+  if (wods.length === 0) {
+    return (
+      <button
+        onClick={() => onSelect(s.id)}
+        className={`w-44 min-h-[6.5rem] text-left border rounded-lg p-3 transition-all hover:shadow-md ${
+          s.kind === "off_cycle" ? OFF_CYCLE_STYLE : (STATUS_STYLES[s.status] || STATUS_STYLES.empty)
+        }`}
+      >
+        <div className="flex items-center justify-between mb-1">
+          <span className="text-xs text-slate-400">
+            День {s.day_number} · {fmtDate(s.slot_date)}
+          </span>
+          <span
+            className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
+              s.kind === "off_cycle" ? "bg-amber-500/15 text-amber-600 dark:text-amber-400" : ""
+            }`}
+            title={s.kind === "off_cycle" ? "День вне цикла" : undefined}
+          >
+            {s.kind === "off_cycle" ? "ВЦ" : ""}
+          </span>
+        </div>
+        <div className="text-sm text-slate-400">+ подобрать тренировку</div>
+      </button>
+    );
+  }
+
+  const dense = total + SLOT_WARMUP_MIN + SLOT_COOLDOWN_MIN > SLOT_DENSE_TOTAL;
+
+  return (
+    <div
+      onClick={() => onSelect(s.id)}
+      className={`w-44 h-40 flex flex-col text-left border rounded-lg overflow-hidden cursor-pointer transition-all hover:shadow-md ${
+        s.kind === "off_cycle" ? OFF_CYCLE_STYLE : (STATUS_STYLES[s.status] || STATUS_STYLES.empty)
+      }`}
+    >
+      <div className="flex items-center justify-between gap-1 px-2 pt-1.5 pb-1 shrink-0">
+        <span className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+          День {s.day_number} · {fmtDate(s.slot_date)}
+        </span>
+        <span className="flex items-center gap-1 shrink-0">
+          {s.kind === "off_cycle" && (
+            <span
+              className="text-[9px] font-semibold px-1 py-0.5 rounded bg-amber-500/15 text-amber-600 dark:text-amber-400"
+              title="День вне цикла"
+            >
+              ВЦ
+            </span>
+          )}
+          <span
+            className={`text-[9px] font-semibold ${
+              s.status === "completed" || s.status === "in_progress"
+                ? "text-emerald-600 dark:text-emerald-400"
+                : "text-blue-600 dark:text-blue-400"
+            }`}
+          >
+            {STATUS_LABELS[s.status]}
+          </span>
+        </span>
+      </div>
+
+      <div className="flex-1 flex flex-col gap-px px-1 pb-1 min-h-0">
+        <div style={{ flexBasis: pctOf(SLOT_WARMUP_MIN), minHeight: 13 }} className={SEG_MUTED}>
+          Разминка · {SLOT_WARMUP_MIN}м
+        </div>
+        {wods.map((w) => (
+          <div
+            key={w.id}
+            style={{ flexBasis: pctOf(w.duration_min) }}
+            className="min-h-[18px] bg-white/70 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded flex items-center gap-1 px-1.5 overflow-hidden"
+            title={`${w.name} · ${w.duration_min} мин`}
+          >
+            <span className="text-[11px] font-medium text-slate-800 dark:text-slate-200 truncate flex-1">
+              {w.name}
+            </span>
+            <span className="text-[9px] text-slate-400 shrink-0">{w.duration_min}м</span>
+            {s.status === "planned" && (
+              <button
+                className="text-slate-400 hover:text-red-500 text-[10px] shrink-0 leading-none"
+                title="Снять тренировку"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRemoveWod(s.id, w.id);
+                }}
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        ))}
+        {left > SLOT_FREE_MIN && (
+          <button
+            style={{ flexBasis: pctOf(left) }}
+            className="min-h-[18px] border border-dashed border-emerald-500/50 text-emerald-600 dark:text-emerald-400 text-[10px] leading-none rounded flex items-center justify-center overflow-hidden whitespace-nowrap hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelect(s.id);
+            }}
+          >
+            Подобрать тренировку
+          </button>
+        )}
+        <div style={{ flexBasis: pctOf(SLOT_COOLDOWN_MIN), minHeight: 12 }} className={SEG_MUTED}>
+          Заминка · {SLOT_COOLDOWN_MIN}м
+        </div>
+      </div>
+
+      {dense && (
+        <div
+          className="text-[9px] text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 shrink-0"
+          title="Сумма длительностей с разминкой и заминкой превышает 55 минут"
+        >
+          ⚠ плотный день · {total + SLOT_WARMUP_MIN + SLOT_COOLDOWN_MIN}м
+        </div>
+      )}
     </div>
   );
 }

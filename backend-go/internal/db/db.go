@@ -217,6 +217,18 @@ func Migrate(d *sql.DB) error {
 			FOREIGN KEY(session_id) REFERENCES sessions (id) ON DELETE SET NULL
 		)`,
 		`CREATE INDEX IF NOT EXISTS ix_cs_cycle_date ON cycle_slots (cycle_id, slot_date)`,
+		// Несколько тренировок в одном дне (60 мин: разминка 10 + WOD ≤45 + заминка 5).
+		`CREATE TABLE IF NOT EXISTS slot_wods (
+			slot_id VARCHAR(36) NOT NULL,
+			wod_id VARCHAR(36) NOT NULL,
+			position INTEGER NOT NULL DEFAULT 0,
+			PRIMARY KEY (slot_id, wod_id),
+			FOREIGN KEY(slot_id) REFERENCES cycle_slots (id) ON DELETE CASCADE,
+			FOREIGN KEY(wod_id) REFERENCES wods (id) ON DELETE CASCADE
+		)`,
+		// Бэкфилл: существующие дни с одной тренировкой (идемпотентно).
+		`INSERT OR IGNORE INTO slot_wods (slot_id, wod_id, position)
+			SELECT id, wod_id, 0 FROM cycle_slots WHERE wod_id IS NOT NULL`,
 		`CREATE TABLE IF NOT EXISTS workout_results (
 			id VARCHAR(36) NOT NULL PRIMARY KEY,
 			slot_id VARCHAR(36),

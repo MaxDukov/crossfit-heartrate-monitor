@@ -192,6 +192,26 @@ export interface CycleGroup {
 
 export type SlotStatus = "empty" | "planned" | "in_progress" | "completed" | "skipped";
 
+// Одна тренировка дня (в дне может быть несколько — слот 60 минут).
+export interface SlotWodItem {
+  id: string;
+  name: string;
+  format: string;
+  duration_min: number;
+  intensity: string;
+  theme: string;
+}
+
+// Длительность тренировочного дня: 60 мин = разминка 10 + тренировки ≤45 + заминка 5.
+export const SLOT_DAY_MIN = 60;
+export const SLOT_WARMUP_MIN = 10;
+export const SLOT_COOLDOWN_MIN = 5;
+export const SLOT_WOD_CAP = SLOT_DAY_MIN - SLOT_WARMUP_MIN - SLOT_COOLDOWN_MIN;
+// Сумма (тренировки + разминка/заминка) больше 55 мин → «Плотное расписание».
+export const SLOT_DENSE_TOTAL = 55;
+// Если свободного времени больше 10 мин — показываем слот «Подобрать тренировку».
+export const SLOT_FREE_MIN = 10;
+
 export interface SlotView {
   id: string;
   group_id: string;
@@ -207,6 +227,7 @@ export interface SlotView {
   intensity: string | null;
   theme: string | null;
   notes: string | null;
+  wods?: SlotWodItem[];
 }
 
 export interface CycleDetail extends CycleSummary {
@@ -233,6 +254,8 @@ export interface SlotDetail {
   notes: string | null;
   session_id: string | null;
   wod: Wod | null;
+  wods?: SlotWodItem[];
+  wods_total_min?: number;
   participants: { id: string; name: string; max_hr: number }[];
   results: WorkoutResult[];
 }
