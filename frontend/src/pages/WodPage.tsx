@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../lib/api";
 import type { CycleSummary } from "../types";
 import CycleForm from "../components/planning/CycleForm";
@@ -21,7 +21,14 @@ const TABS: { id: WodTab; label: string }[] = [
 ];
 
 export default function WodPage() {
-  const [tab, setTab] = useState<WodTab>("cycles");
+  const [params] = useSearchParams();
+  const tabParam = params.get("tab") as WodTab | null;
+  const requested: WodTab | null = TABS.some((t) => t.id === tabParam) ? tabParam! : null;
+  const [tabChoice, setTabChoice] = useState<WodTab | null>(null);
+  const tab = requested ?? tabChoice ?? "cycles";
+
+  // Внешние ссылки (/wod?tab=library&search=...) — открыть вкладку с поиском.
+  const urlSearch = requested === "library" ? params.get("search") || "" : null;
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
@@ -31,7 +38,7 @@ export default function WodPage() {
           {TABS.map((t) => (
             <button
               key={t.id}
-              onClick={() => setTab(t.id)}
+              onClick={() => setTabChoice(t.id)}
               className={`px-4 py-2 rounded-t-lg text-sm font-medium transition-colors ${
                 tab === t.id
                   ? "bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white"
@@ -47,7 +54,7 @@ export default function WodPage() {
         {tab === "cycles" && <CyclesList />}
         {tab === "quick" && <QuickPick />}
         {tab === "constructor" && <Constructor />}
-        {tab === "library" && <TemplatesLibrary />}
+        {tab === "library" && <TemplatesLibrary key={urlSearch ?? ""} initialSearch={urlSearch ?? ""} />}
         {tab === "movements" && <MovementsCatalog />}
         {tab === "equipment" && <EquipmentPage />}
       </div>

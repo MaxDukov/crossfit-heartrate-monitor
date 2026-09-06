@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { Link } from "react-router-dom";
 import { api, type MovementPayload } from "../../lib/api";
 import type { Movement, Equipment } from "../../types";
 import {
@@ -147,6 +148,7 @@ function MovementEditor({
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [usedIn, setUsedIn] = useState<{ template_id: string; name: string }[]>([]);
 
   const toggle = (list: string[], setList: (v: string[]) => void, v: string) =>
     setList(list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
@@ -187,11 +189,14 @@ function MovementEditor({
     if (!movement) return;
     setBusy(true);
     setError(null);
+    setUsedIn([]);
     try {
       await api.movements.delete(movement.key);
       onSaved("");
     } catch (e) {
-      setError((e as Error).message);
+      const err = e as Error & { body?: { templates?: { template_id: string; name: string }[] } };
+      setError(err.message);
+      setUsedIn(err.body?.templates ?? []);
       setConfirmDelete(false);
     } finally {
       setBusy(false);
@@ -307,6 +312,26 @@ function MovementEditor({
         {error && (
           <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-500/30 rounded-lg p-2 mb-3 text-sm text-red-600 dark:text-red-300">
             {error}
+          </div>
+        )}
+
+        {usedIn.length > 0 && (
+          <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-lg p-2 mb-3">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">
+              Используется в шаблонах:
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {usedIn.map((t) => (
+                <Link
+                  key={t.template_id}
+                  className="text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-blue-600 dark:text-blue-400 hover:border-blue-400"
+                  to={`/wod?tab=library&search=${encodeURIComponent(t.name)}`}
+                  onClick={onClose}
+                >
+                  {t.name} →
+                </Link>
+              ))}
+            </div>
           </div>
         )}
 

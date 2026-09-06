@@ -5,9 +5,9 @@ import type { WodTemplateItem } from "../../types";
 import { THEME_LABELS, FORMAT_LABELS } from "../../types";
 
 // Библиотека тренировок — все шаблоны (включая созданные конструктором).
-export default function TemplatesLibrary() {
+export default function TemplatesLibrary({ initialSearch = "" }: { initialSearch?: string }) {
   const [theme, setTheme] = useState("");
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(initialSearch);
   const [items, setItems] = useState<WodTemplateItem[]>([]);
 
   useEffect(() => {

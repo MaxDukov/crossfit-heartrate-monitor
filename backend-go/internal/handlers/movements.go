@@ -157,19 +157,35 @@ func (a *App) CreateMovement(w http.ResponseWriter, r *http.Request) {
 }
 
 // DeleteMovement: DELETE /api/movements/{key} — убрать дубли и лишнее.
-// Движение, входящее в шаблоны тренировок, удалить нельзя (сломает веса).
+// Движение, входящее в шаблоны тренировок, удалить нельзя (сломает веса);
+// в ответе 409 возвращается список шаблонов для перехода.
 func (a *App) DeleteMovement(w http.ResponseWriter, r *http.Request) {
 	key := chi.URLParam(r, "key")
-	var n int
-	if err := a.DB.QueryRow(
-		`SELECT COUNT(DISTINCT template_id) FROM wod_template_movements WHERE movement_key = ?`, key,
-	).Scan(&n); err != nil {
+	rows, err := a.DB.Query(`
+		SELECT t.id, t.name FROM wod_template_movements wm
+		JOIN wod_templates t ON t.id = wm.template_id
+		WHERE wm.movement_key = ? GROUP BY t.id, t.name ORDER BY t.name`, key)
+	if err != nil {
 		httpError(w, 500, err.Error())
 		return
 	}
-	if n > 0 {
-		httpError(w, 409, fmt.Sprintf(
-			"движение входит в %d шаблон(ов) тренировок — сначала уберите его из шаблонов", n))
+	type tplRef struct {
+		ID   string `json:"template_id"`
+		Name string `json:"name"`
+	}
+	used := []tplRef{}
+	for rows.Next() {
+		var t tplRef
+		if rows.Scan(&t.ID, &t.Name) == nil {
+			used = append(used, t)
+		}
+	}
+	_ = rows.Close()
+	if len(used) > 0 {
+		writeJSON(w, 409, map[string]any{
+			"detail":    fmt.Sprintf("движение входит в %d шаблон(ов) тренировок", len(used)),
+			"templates": used,
+		})
 		return
 	}
 	res, err := a.DB.Exec(`DELETE FROM movements WHERE "key" = ?`, key)

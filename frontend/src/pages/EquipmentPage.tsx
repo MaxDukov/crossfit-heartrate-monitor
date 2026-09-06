@@ -54,7 +54,7 @@ export default function EquipmentPage() {
   const categoryLabels: Record<string, string> = {
     barbells: "Штанги",
     freeweights: "Свободные веса",
-    rig: "Риг / Турники",
+    rig: "Турники",
     cardio: "Кардио",
     misc: "Прочее",
   };
