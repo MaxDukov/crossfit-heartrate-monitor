@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { api } from "../../lib/api";
 import type { SlotDetail, Recommendation, WodTemplateItem, Athlete, WorkoutResult } from "../../types";
 import {
-  FORMAT_LABELS, LEVEL_LABELS,
+  FORMAT_LABELS, LEVEL_LABELS, wodSummary,
   SLOT_WARMUP_MIN, SLOT_COOLDOWN_MIN, SLOT_WOD_CAP, SLOT_DENSE_TOTAL, SLOT_FREE_MIN,
 } from "../../types";
 
@@ -27,6 +27,7 @@ export default function SlotPanel({
   const [error, setError] = useState<string | null>(null);
   const [prBanner, setPrBanner] = useState<string | null>(null);
   const [pendingAssign, setPendingAssign] = useState<WodTemplateItem | Recommendation | null>(null);
+  const [expandedWod, setExpandedWod] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -194,22 +195,55 @@ export default function SlotPanel({
             разминка {SLOT_WARMUP_MIN}м · заминка {SLOT_COOLDOWN_MIN}м · день {60}м
           </div>
           <div className="space-y-1">
-            {slot.wods.map((w, i) => (
-              <div key={w.id} className="flex items-center gap-2 text-sm">
-                <span className="text-[10px] text-slate-400 w-4">{i + 1}.</span>
-                <span className="flex-1 text-slate-800 dark:text-slate-200 truncate">{w.name}</span>
-                <span className="text-xs text-slate-400">{w.duration_min} мин</span>
-                {slot.status === "planned" && (
+            {slot.wods.map((w, i) => {
+              const open = expandedWod === w.id;
+              return (
+                <div key={w.id} className="border border-slate-200 dark:border-slate-700 rounded">
                   <button
-                    className="text-slate-300 hover:text-red-500 px-1"
-                    title="Снять тренировку"
-                    onClick={() => removeWod(w.id)}
+                    className="w-full flex items-center gap-2 text-sm px-2 py-1.5 hover:bg-slate-50 dark:hover:bg-slate-800/60"
+                    title={wodSummary(w)}
+                    onClick={() => setExpandedWod(open ? null : w.id)}
                   >
-                    ✕
+                    <span className="text-[10px] text-slate-400 w-4 shrink-0">{open ? "▾" : "▸"}</span>
+                    <span className="text-[10px] text-slate-400 shrink-0">{i + 1}.</span>
+                    <span className="flex-1 text-slate-800 dark:text-slate-200 truncate text-left">{w.name}</span>
+                    <span className="text-xs text-slate-400 shrink-0">{w.duration_min} мин</span>
+                    {slot.status === "planned" && (
+                      <span
+                        role="button"
+                        className="text-slate-300 hover:text-red-500 px-1 shrink-0"
+                        title="Снять тренировку"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeWod(w.id);
+                        }}
+                      >
+                        ✕
+                      </span>
+                    )}
                   </button>
-                )}
-              </div>
-            ))}
+                  {open && (
+                    <div className="px-3 pb-2 pt-0.5 space-y-0.5">
+                      {(w.movements ?? []).length === 0 && (
+                        <p className="text-xs text-slate-400">Состав не задан</p>
+                      )}
+                      {(w.movements ?? []).map((m, mi) => (
+                        <div key={mi} className="flex items-center gap-2 text-xs">
+                          <span className="flex-1 text-slate-600 dark:text-slate-300">
+                            {m.rounds_note && <span className="text-slate-400">{m.rounds_note} </span>}
+                            {m.reps ? `${m.reps} × ` : ""}{m.movement_name}
+                          </span>
+                          <span className="text-slate-400">
+                            {m.weight_male != null && `М ${m.weight_male}`}
+                            {m.weight_female != null && ` Ж ${m.weight_female}`}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

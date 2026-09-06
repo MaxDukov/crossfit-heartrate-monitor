@@ -200,6 +200,13 @@ export interface SlotWodItem {
   duration_min: number;
   intensity: string;
   theme: string;
+  movements?: {
+    movement_name: string;
+    reps: number | null;
+    weight_male: number | null;
+    weight_female: number | null;
+    rounds_note: string | null;
+  }[];
 }
 
 // Длительность тренировочного дня: 60 мин = разминка 10 + тренировки ≤45 + заминка 5.
@@ -211,6 +218,27 @@ export const SLOT_WOD_CAP = SLOT_DAY_MIN - SLOT_WARMUP_MIN - SLOT_COOLDOWN_MIN;
 export const SLOT_DENSE_TOTAL = 55;
 // Если свободного времени больше 10 мин — показываем слот «Подобрать тренировку».
 export const SLOT_FREE_MIN = 10;
+
+// Состав тренировки одной строкой (для tooltip в календаре).
+export function wodSummary(
+  w: { format: string; duration_min: number; movements?: SlotWodItem["movements"] },
+  name?: string,
+): string {
+  const lines: string[] = [];
+  if (name) lines.push(name);
+  lines.push(`${FORMAT_LABELS[w.format] || w.format} · ${w.duration_min} мин`);
+  for (const m of w.movements ?? []) {
+    let s = "• ";
+    if (m.rounds_note) s += `${m.rounds_note} `;
+    s += m.reps ? `${m.reps} × ${m.movement_name}` : m.movement_name;
+    const wts: string[] = [];
+    if (m.weight_male != null) wts.push(`М ${m.weight_male}`);
+    if (m.weight_female != null) wts.push(`Ж ${m.weight_female}`);
+    if (wts.length) s += ` (${wts.join(" / ")})`;
+    lines.push(s);
+  }
+  return lines.join("\n");
+}
 
 export interface SlotView {
   id: string;

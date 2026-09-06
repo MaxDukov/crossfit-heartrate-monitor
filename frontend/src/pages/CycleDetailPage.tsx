@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 import type { CycleDetail, SlotView, CycleAnalytics } from "../types";
-import { STATUS_LABELS, MODALITY_LABELS, SLOT_DAY_MIN, SLOT_WARMUP_MIN, SLOT_COOLDOWN_MIN, SLOT_WOD_CAP, SLOT_FREE_MIN, SLOT_DENSE_TOTAL } from "../types";
+import { STATUS_LABELS, MODALITY_LABELS, SLOT_DAY_MIN, SLOT_WARMUP_MIN, SLOT_COOLDOWN_MIN, SLOT_WOD_CAP, SLOT_FREE_MIN, SLOT_DENSE_TOTAL, wodSummary } from "../types";
 import SlotPanel from "../components/planning/SlotPanel";
 import CycleAnalyticsView from "../components/planning/CycleAnalyticsView";
 
@@ -392,7 +392,7 @@ function DayCard({
             key={w.id}
             style={{ flexBasis: pctOf(w.duration_min) }}
             className="min-h-[18px] bg-white/70 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded flex items-center gap-1 px-1.5 overflow-hidden"
-            title={`${w.name} · ${w.duration_min} мин`}
+            title={wodSummary(w, w.name)}
           >
             <span className="text-[11px] font-medium text-slate-800 dark:text-slate-200 truncate flex-1">
               {w.name}

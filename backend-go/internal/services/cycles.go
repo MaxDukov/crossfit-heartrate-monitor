@@ -366,15 +366,82 @@ const (
 
 // SlotWodItem — одна тренировка дня (без движений, для календаря и списков).
 type SlotWodItem struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Format      string `json:"format"`
-	DurationMin int    `json:"duration_min"`
-	Intensity   string `json:"intensity"`
-	Theme       string `json:"theme"`
+	ID          string             `json:"id"`
+	Name        string             `json:"name"`
+	Format      string             `json:"format"`
+	DurationMin int                `json:"duration_min"`
+	Intensity   string             `json:"intensity"`
+	Theme       string             `json:"theme"`
+	Movements   []SlotWodMovement  `json:"movements"`
 }
 
-// slotWodsList — тренировки дня в порядке добавления.
+// SlotWodMovement — строка состава тренировки (для подсказок и панели).
+type SlotWodMovement struct {
+	MovementName string  `json:"movement_name"`
+	Reps         *int    `json:"reps"`
+	WeightMale   *int    `json:"weight_male"`
+	WeightFemale *int    `json:"weight_female"`
+	RoundsNote   *string `json:"rounds_note"`
+}
+
+// attachSlotWodMovements дополняет тренировки дня их составом одним запросом.
+func attachSlotWodMovements(d *sql.DB, items []SlotWodItem) {
+	if len(items) == 0 {
+		return
+	}
+	ids := make([]string, 0, len(items))
+	idx := map[string]int{}
+	for i, it := range items {
+		ids = append(ids, it.ID)
+		idx[it.ID] = i
+		items[i].Movements = []SlotWodMovement{}
+	}
+	ph := make([]string, len(ids))
+	args := make([]any, 0, len(ids))
+	for i, id := range ids {
+		ph[i] = "?"
+		args = append(args, id)
+	}
+	q := `
+		SELECT wod_id, movement_name, reps, weight_male, weight_female, rounds_note
+		FROM wod_movements WHERE wod_id IN (` + strings.Join(ph, ",") + `)
+		ORDER BY sort_order`
+	rows, err := d.Query(q, args...)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var wodID string
+		var m SlotWodMovement
+		var reps, wm, wf sql.NullInt64
+		var rn sql.NullString
+		if err := rows.Scan(&wodID, &m.MovementName, &reps, &wm, &wf, &rn); err != nil {
+			continue
+		}
+		if reps.Valid {
+			v := int(reps.Int64)
+			m.Reps = &v
+		}
+		if wm.Valid {
+			v := int(wm.Int64)
+			m.WeightMale = &v
+		}
+		if wf.Valid {
+			v := int(wf.Int64)
+			m.WeightFemale = &v
+		}
+		if rn.Valid {
+			v := rn.String
+			m.RoundsNote = &v
+		}
+		if i, ok := idx[wodID]; ok {
+			items[i].Movements = append(items[i].Movements, m)
+		}
+	}
+}
+
+// slotWodsList — тренировки дня в порядке добавления (с составом).
 func slotWodsList(d *sql.DB, slotID string) ([]SlotWodItem, error) {
 	rows, err := d.Query(`
 		SELECT w.id, w.name, w.format, w.duration_min, w.intensity, w.theme
@@ -392,6 +459,7 @@ func slotWodsList(d *sql.DB, slotID string) ([]SlotWodItem, error) {
 			out = append(out, it)
 		}
 	}
+	attachSlotWodMovements(d, out)
 	return out, nil
 }
 
