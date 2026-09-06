@@ -196,6 +196,7 @@ func Migrate(d *sql.DB) error {
 			cycle_id VARCHAR(36) NOT NULL,
 			name VARCHAR(100) NOT NULL,
 			weekdays TEXT NOT NULL,
+			third_day_off BOOLEAN DEFAULT 0,
 			FOREIGN KEY(cycle_id) REFERENCES training_cycles (id) ON DELETE CASCADE
 		)`,
 		`CREATE TABLE IF NOT EXISTS cycle_slots (
@@ -278,6 +279,7 @@ func Migrate(d *sql.DB) error {
 		{"athletes", "age", "ALTER TABLE athletes ADD COLUMN age INTEGER"},
 		{"wods", "template_id", "ALTER TABLE wods ADD COLUMN template_id VARCHAR(36)"},
 		{"cycle_slots", "kind", "ALTER TABLE cycle_slots ADD COLUMN kind VARCHAR(20) NOT NULL DEFAULT 'regular'"},
+		{"cycle_groups", "third_day_off", "ALTER TABLE cycle_groups ADD COLUMN third_day_off BOOLEAN DEFAULT 0"},
 	}
 	for _, a := range alters {
 		exists, err := columnExists(d, a.table, a.column)

@@ -253,6 +253,48 @@ func (a *App) UpdateSlotMovements(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(204)
 }
 
+// SetGroupThirdDayOff: PUT /api/cycles/{cycle_id}/groups/{group_id}/third-day-off.
+// При включении с конфликтами (назначенные третьи дни) — 409 и список конфликтов.
+func (a *App) SetGroupThirdDayOff(w http.ResponseWriter, r *http.Request) {
+	groupID := chi.URLParam(r, "group_id")
+	var req struct {
+		Enabled bool `json:"enabled"`
+	}
+	if !decodeJSON(w, r, &req) {
+		return
+	}
+	applied, conflicts, err := services.SetThirdDayOff(a.DB, groupID, req.Enabled)
+	if err != nil {
+		httpError(w, 400, err.Error())
+		return
+	}
+	if !applied {
+		writeJSON(w, 409, map[string]any{
+			"detail":    "Третий день был включён в тренировочный цикл. Начать перепланирование?",
+			"conflicts": conflicts,
+		})
+		return
+	}
+	writeJSON(w, 200, map[string]any{"applied": true})
+}
+
+// ReplanGroupThirdDayOff: POST /api/cycles/{cycle_id}/groups/{group_id}/third-day-off/replan.
+func (a *App) ReplanGroupThirdDayOff(w http.ResponseWriter, r *http.Request) {
+	groupID := chi.URLParam(r, "group_id")
+	var req struct {
+		Mode string `json:"mode"`
+	}
+	if !decodeJSON(w, r, &req) {
+		return
+	}
+	res, err := services.ReplanThirdDayOff(a.DB, groupID, req.Mode)
+	if err != nil {
+		httpError(w, 400, err.Error())
+		return
+	}
+	writeJSON(w, 200, res)
+}
+
 // StartSlot: POST /api/slots/{slot_id}/start — начать тренировку (Экран 6).
 func (a *App) StartSlot(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "slot_id")

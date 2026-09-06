@@ -83,6 +83,8 @@ func NewRouter(a *App, frontendDir string) chi.Router {
 		r.Put("/{cycle_id}/status", a.UpdateCycleStatus)
 		r.Delete("/{cycle_id}", a.DeleteCycle)
 		r.Get("/{cycle_id}/analytics", a.GetCycleAnalytics)
+		r.Put("/{cycle_id}/groups/{group_id}/third-day-off", a.SetGroupThirdDayOff)
+		r.Post("/{cycle_id}/groups/{group_id}/third-day-off/replan", a.ReplanGroupThirdDayOff)
 	})
 	r.Route("/api/slots", func(r chi.Router) {
 		r.Get("/{slot_id}", a.GetSlot)

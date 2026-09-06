@@ -9,7 +9,13 @@ async function request<T>(url: string, opts?: RequestInit): Promise<T> {
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || res.statusText);
+    const e = new Error(err.detail || res.statusText) as Error & {
+      status?: number;
+      body?: Record<string, unknown>;
+    };
+    e.status = res.status;
+    e.body = err;
+    throw e;
   }
   if (res.status === 204) return undefined as T;
   return res.json();
@@ -127,6 +133,16 @@ export const api = {
       }),
     delete: (id: string) => request<void>(`/cycles/${id}`, { method: "DELETE" }),
     analytics: (id: string) => request<CycleAnalytics>(`/cycles/${id}/analytics`),
+    setThirdDayOff: (cycleId: string, groupId: string, enabled: boolean) =>
+      request<{ applied: boolean }>(`/cycles/${cycleId}/groups/${groupId}/third-day-off`, {
+        method: "PUT",
+        body: JSON.stringify({ enabled }),
+      }),
+    replanThirdDayOff: (cycleId: string, groupId: string, mode: "rollback" | "auto") =>
+      request<{ cleared?: number; reassigned?: number; dropped?: number }>(
+        `/cycles/${cycleId}/groups/${groupId}/third-day-off/replan`,
+        { method: "POST", body: JSON.stringify({ mode }) }
+      ),
   },
   slots: {
     get: (id: string) => request<SlotDetail>(`/slots/${id}`),

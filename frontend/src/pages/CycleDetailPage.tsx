@@ -20,6 +20,8 @@ export default function CycleDetailPage() {
   const [analytics, setAnalytics] = useState<CycleAnalytics | null>(null);
   const [tab, setTab] = useState<"calendar" | "analytics">("calendar");
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
+  const [replan, setReplan] = useState<{ groupId: string; groupName: string } | null>(null);
+  const [toggleBusy, setToggleBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
@@ -54,6 +56,39 @@ export default function CycleDetailPage() {
   const setStatus = async (status: string) => {
     await api.cycles.setStatus(cycle.id, status);
     load();
+  };
+
+  const toggleThirdDay = async (groupId: string, groupName: string, enabled: boolean) => {
+    setToggleBusy(true);
+    setError(null);
+    try {
+      await api.cycles.setThirdDayOff(cycle.id, groupId, enabled);
+      load();
+    } catch (e) {
+      const err = e as Error & { status?: number };
+      if (err.status === 409) {
+        // Конфликт: на третьи дни уже назначены тренировки — спросить про перепланирование.
+        setReplan({ groupId, groupName });
+      } else {
+        setError(err.message);
+      }
+    } finally {
+      setToggleBusy(false);
+    }
+  };
+
+  const doReplan = async (mode: "rollback" | "auto") => {
+    if (!replan) return;
+    setToggleBusy(true);
+    try {
+      await api.cycles.replanThirdDayOff(cycle.id, replan.groupId, mode);
+      setReplan(null);
+      load();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setToggleBusy(false);
+    }
   };
 
   return (
@@ -136,6 +171,8 @@ export default function CycleDetailPage() {
                 group={g}
                 slots={cycle.slots.filter((s) => s.group_id === g.id)}
                 onSelect={setSelectedSlot}
+                onToggleThirdDay={(gid, enabled) => toggleThirdDay(gid, g.name, enabled)}
+                toggleBusy={toggleBusy}
               />
             ))}
           </div>
@@ -153,6 +190,42 @@ export default function CycleDetailPage() {
           }}
         />
       )}
+
+      {replan && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-xl max-w-md w-full p-6">
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">
+              Перепланирование · {replan.groupName}
+            </h3>
+            <p className="text-sm text-slate-600 dark:text-slate-300 mb-5">
+              Третий день был включён в тренировочный цикл. Начать перепланирование?
+            </p>
+            <div className="flex flex-col gap-2">
+              <button
+                disabled={toggleBusy}
+                className="px-4 py-2 rounded text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white disabled:opacity-50"
+                onClick={() => doReplan("auto")}
+              >
+                Автоперепланирование — перенести тренировки на первые два дня недели
+              </button>
+              <button
+                disabled={toggleBusy}
+                className="px-4 py-2 rounded text-sm font-medium bg-red-600/90 hover:bg-red-500 text-white disabled:opacity-50"
+                onClick={() => doReplan("rollback")}
+              >
+                Полный откат — снять все будущие запланированные тренировки
+              </button>
+              <button
+                disabled={toggleBusy}
+                className="px-4 py-2 rounded text-sm text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50"
+                onClick={() => setReplan(null)}
+              >
+                Отмена — оставить всё как было
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -161,10 +234,14 @@ function GroupCalendar({
   group,
   slots,
   onSelect,
+  onToggleThirdDay,
+  toggleBusy,
 }: {
   group: CycleDetail["groups"][number];
   slots: SlotView[];
   onSelect: (id: string) => void;
+  onToggleThirdDay: (groupId: string, enabled: boolean) => void;
+  toggleBusy: boolean;
 }) {
   // Группировка слотов по 7-дневным неделям от первого слота.
   const weeks: SlotView[][] = [];
@@ -181,6 +258,18 @@ function GroupCalendar({
       <div className="flex items-center gap-2 mb-3">
         <h2 className="text-lg font-bold text-slate-800 dark:text-slate-200">{group.name}</h2>
         <span className="text-sm text-slate-400">{group.weekdays_names.join(" · ")}</span>
+        <button
+          disabled={toggleBusy}
+          onClick={() => onToggleThirdDay(group.id, !group.third_day_off)}
+          title="Каждый 3-й тренировочный день планируется отдельно (техника, тесты 1ПМ)"
+          className={`ml-2 text-xs font-semibold px-2.5 py-1 rounded-full transition-colors ${
+            group.third_day_off
+              ? "bg-amber-500 text-white"
+              : "bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400"
+          } disabled:opacity-50`}
+        >
+          3-й день вне цикла {group.third_day_off ? " вкл." : " выкл."}
+        </button>
       </div>
       <div className="space-y-2">
         {weeks.map((week, wi) => (

@@ -167,8 +167,8 @@ func CreateCycle(d *sql.DB, in CreateCycleInput) (string, []string, error) {
 			wdSet[wd] = true
 		}
 		if _, err := tx.Exec(`
-			INSERT INTO cycle_groups (id, cycle_id, name, weekdays) VALUES (?, ?, ?, ?)`,
-			groupID, cycleID, g.Name, joinInts(g.Weekdays),
+			INSERT INTO cycle_groups (id, cycle_id, name, weekdays, third_day_off) VALUES (?, ?, ?, ?, ?)`,
+			groupID, cycleID, g.Name, joinInts(g.Weekdays), g.ThirdDayOffCycle,
 		); err != nil {
 			return "", nil, err
 		}
@@ -324,6 +324,15 @@ type CycleGroup struct {
 	Name          string   `json:"name"`
 	Weekdays      []int    `json:"weekdays"`
 	WeekdaysNames []string `json:"weekdays_names"`
+	ThirdDayOff   bool     `json:"third_day_off"`
+}
+
+// SlotConflict — запланированный слот третьего дня при включении режима.
+type SlotConflict struct {
+	SlotID   string  `json:"slot_id"`
+	SlotDate string  `json:"slot_date"`
+	DayNumber int    `json:"day_number"`
+	WodName  *string `json:"wod_name"`
 }
 
 // SlotView — слот календаря (Экран 2).
@@ -368,7 +377,7 @@ func GetCycle(d *sql.DB, cycleID string) *CycleDetail {
 	c.CreatedAt = isoDatePtr(created)
 
 	// Группы.
-	grows, err := d.Query(`SELECT id, name, weekdays FROM cycle_groups WHERE cycle_id = ? ORDER BY name`, cycleID)
+	grows, err := d.Query(`SELECT id, name, weekdays, COALESCE(third_day_off, 0) FROM cycle_groups WHERE cycle_id = ? ORDER BY name`, cycleID)
 	if err != nil {
 		return nil
 	}
@@ -376,9 +385,11 @@ func GetCycle(d *sql.DB, cycleID string) *CycleDetail {
 	for grows.Next() {
 		var g CycleGroup
 		var wd string
-		if err := grows.Scan(&g.ID, &g.Name, &wd); err != nil {
+		var thirdOff bool
+		if err := grows.Scan(&g.ID, &g.Name, &wd, &thirdOff); err != nil {
 			continue
 		}
+		g.ThirdDayOff = thirdOff
 		g.Weekdays = parseInts(wd)
 		for _, w := range g.Weekdays {
 			g.WeekdaysNames = append(g.WeekdaysNames, weekdayName(w))
@@ -483,6 +494,220 @@ func parseInts(csv string) []int {
 }
 
 // UpdateCycleStatus — смена статуса (planned/active/completed).
+// thirdDayOffNote возвращает чередующуюся подсказку для 3/6/9… дня.
+func thirdDayOffNote(dayNumber int) string {
+	if (dayNumber/3)%2 == 0 {
+		return noteOffCycleTechnique
+	}
+	return noteOffCycleTesting
+}
+
+// markThirdDaySlots проставляет kind='off_cycle' свободным слотам 3/6/9… дня группы.
+func markThirdDaySlots(d *sql.DB, groupID string) error {
+	rows, err := d.Query(`
+		SELECT id, day_number FROM cycle_slots
+		WHERE group_id = ? AND day_number % 3 = 0 AND wod_id IS NULL`, groupID)
+	if err != nil {
+		return err
+	}
+	type idn struct {
+		id    string
+		dayNo int
+	}
+	var targets []idn
+	for rows.Next() {
+		var t idn
+		if err := rows.Scan(&t.id, &t.dayNo); err == nil {
+			targets = append(targets, t)
+		}
+	}
+	_ = rows.Close()
+	for _, t := range targets {
+		if _, err := d.Exec(`
+			UPDATE cycle_slots SET kind = 'off_cycle', notes = ? WHERE id = ?`,
+			thirdDayOffNote(t.dayNo), t.id,
+		); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// SetThirdDayOff включает/выключает режим «третий день вне цикла» у группы.
+// При включении, если на третьи дни уже назначены тренировки (будущие planned),
+// изменения НЕ применяются — возвращается список конфликтов для диалога.
+func SetThirdDayOff(d *sql.DB, groupID string, enabled bool) (applied bool, conflicts []SlotConflict, err error) {
+	var cycleID string
+	var current bool
+	err = d.QueryRow(`
+		SELECT cycle_id, COALESCE(third_day_off, 0) FROM cycle_groups WHERE id = ?`, groupID,
+	).Scan(&cycleID, &current)
+	if err == sql.ErrNoRows {
+		return false, nil, fmt.Errorf("группа не найдена")
+	}
+	if err != nil {
+		return false, nil, err
+	}
+	if enabled == current {
+		return true, nil, nil
+	}
+
+	if !enabled {
+		// Выключение: свободные третьи дни возвращаем в цикл, назначенные не трогаем.
+		if _, err := d.Exec(`UPDATE cycle_groups SET third_day_off = 0 WHERE id = ?`, groupID); err != nil {
+			return false, nil, err
+		}
+		if _, err := d.Exec(`
+			UPDATE cycle_slots SET kind = 'regular', notes = NULL
+			WHERE group_id = ? AND day_number % 3 = 0 AND kind = 'off_cycle' AND wod_id IS NULL`, groupID,
+		); err != nil {
+			return false, nil, err
+		}
+		return true, nil, nil
+	}
+
+	// Включение: ищем конфликты — назначенные тренировки на будущих третьих днях.
+	today := time.Now().Format(slotDateLayout)
+	rows, err := d.Query(`
+		SELECT s.id, s.slot_date, s.day_number, w.name
+		FROM cycle_slots s LEFT JOIN wods w ON w.id = s.wod_id
+		WHERE s.group_id = ? AND s.day_number % 3 = 0
+		  AND s.wod_id IS NOT NULL AND s.status = 'planned' AND s.slot_date >= ?`,
+		groupID, today)
+	if err != nil {
+		return false, nil, err
+	}
+	defer func() { _ = rows.Close() }()
+	conflicts = []SlotConflict{}
+	for rows.Next() {
+		var c SlotConflict
+		var date, wodName sql.NullString
+		if err := rows.Scan(&c.SlotID, &date, &c.DayNumber, &wodName); err == nil {
+			c.SlotDate = normDate(date.String)
+			c.WodName = nullStrToPtr(wodName)
+			conflicts = append(conflicts, c)
+		}
+	}
+	if len(conflicts) > 0 {
+		return false, conflicts, nil
+	}
+	if err := markThirdDaySlots(d, groupID); err != nil {
+		return false, nil, err
+	}
+	if _, err := d.Exec(`UPDATE cycle_groups SET third_day_off = 1 WHERE id = ?`, groupID); err != nil {
+		return false, nil, err
+	}
+	return true, nil, nil
+}
+
+// ReplanThirdDayOff перепланирует группу после включения режима:
+//   - rollback: снять все запланированные тренировки в будущем (полный откат);
+//   - auto: сохранить последовательность тренировок, распределив их только
+//     по регулярным (первые два дня недели) слотам; лишние («хвост») удалить.
+func ReplanThirdDayOff(d *sql.DB, groupID, mode string) (map[string]int, error) {
+	if mode != "rollback" && mode != "auto" {
+		return nil, fmt.Errorf("mode должен быть rollback или auto")
+	}
+	today := time.Now().Format(slotDateLayout)
+
+	// Будущие запланированные слоты группы (по порядку).
+	type slotRef struct {
+		id    string
+		wodID string
+		kind  string
+		dayNo int
+	}
+	rows, err := d.Query(`
+		SELECT s.id, COALESCE(s.wod_id, ''), COALESCE(s.kind, 'regular'), s.day_number
+		FROM cycle_slots s
+		WHERE s.group_id = ? AND s.status = 'planned' AND s.slot_date >= ? AND s.wod_id IS NOT NULL
+		ORDER BY s.slot_date, s.day_number`, groupID, today)
+	if err != nil {
+		return nil, err
+	}
+	var planned []slotRef
+	for rows.Next() {
+		var s slotRef
+		if err := rows.Scan(&s.id, &s.wodID, &s.kind, &s.dayNo); err == nil {
+			planned = append(planned, s)
+		}
+	}
+	_ = rows.Close()
+
+	// Полный откат: снять всё будущее запланированное.
+	dropped := 0
+	if mode == "rollback" {
+		for _, s := range planned {
+			if _, err := d.Exec(`
+				UPDATE cycle_slots SET status = 'empty', wod_id = NULL, template_id = NULL, notes = NULL
+				WHERE id = ?`, s.id); err != nil {
+				return nil, err
+			}
+			if _, err := d.Exec(`DELETE FROM wods WHERE id = ?`, s.wodID); err != nil {
+				return nil, err
+			}
+		}
+		if err := markThirdDaySlots(d, groupID); err != nil {
+			return nil, err
+		}
+		if _, err := d.Exec(`UPDATE cycle_groups SET third_day_off = 1 WHERE id = ?`, groupID); err != nil {
+			return nil, err
+		}
+		return map[string]int{"cleared": len(planned)}, nil
+	}
+
+	// Автоперепланирование: снять всё, затем назначить последовательность
+	// только на регулярные слоты (первые два дня недельного цикла).
+	for _, s := range planned {
+		if _, err := d.Exec(`
+			UPDATE cycle_slots SET status = 'empty', wod_id = NULL, template_id = NULL, notes = NULL
+			WHERE id = ?`, s.id); err != nil {
+			return nil, err
+		}
+	}
+	if err := markThirdDaySlots(d, groupID); err != nil {
+		return nil, err
+	}
+	if _, err := d.Exec(`UPDATE cycle_groups SET third_day_off = 1 WHERE id = ?`, groupID); err != nil {
+		return nil, err
+	}
+
+	// Цели: будущие регулярные свободные слоты по порядку.
+	trows, err := d.Query(`
+		SELECT id FROM cycle_slots
+		WHERE group_id = ? AND slot_date >= ? AND COALESCE(kind, 'regular') = 'regular' AND status = 'empty'
+		ORDER BY slot_date, day_number`, groupID, today)
+	if err != nil {
+		return nil, err
+	}
+	var targets []string
+	for trows.Next() {
+		var id string
+		if err := trows.Scan(&id); err == nil {
+			targets = append(targets, id)
+		}
+	}
+	_ = trows.Close()
+
+	reassigned := 0
+	for i, s := range planned {
+		if i >= len(targets) {
+			dropped++ // «хвост» — тренировок больше, чем регулярных слотов
+			if _, err := d.Exec(`DELETE FROM wods WHERE id = ?`, s.wodID); err != nil {
+				return nil, err
+			}
+			continue
+		}
+		if _, err := d.Exec(`
+			UPDATE cycle_slots SET status = 'planned', wod_id = ? WHERE id = ?`, s.wodID, targets[i],
+		); err != nil {
+			return nil, err
+		}
+		reassigned++
+	}
+	return map[string]int{"reassigned": reassigned, "dropped": dropped}, nil
+}
+
 func UpdateCycleStatus(d *sql.DB, cycleID, status string) error {
 	switch status {
 	case "planned", "active", "completed":

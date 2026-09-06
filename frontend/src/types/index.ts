@@ -187,6 +187,7 @@ export interface CycleGroup {
   name: string;
   weekdays: number[];
   weekdays_names: string[];
+  third_day_off: boolean;
 }
 
 export type SlotStatus = "empty" | "planned" | "in_progress" | "completed" | "skipped";
