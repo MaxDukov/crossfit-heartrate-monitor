@@ -355,13 +355,15 @@ type SlotView struct {
 	Wods       []SlotWodItem `json:"wods"`
 }
 
-// Константы длительности тренировочного дня (Экран 5): 60 минут всего,
-// разминка в начале 10, заминка в конце 5 → на тренировки не более 45.
+// Константы длительности тренировочного дня (Экран 5): план 60 минут
+// (разминка 10 + заминка 5), плотный день — до 65 (подтверждение тренера),
+// жёсткий потолок для тренировок: 65 − 15 = 50 минут.
 const (
 	SlotDayMin      = 60
+	SlotDayMaxMin   = 65
 	SlotWarmupMin   = 10
 	SlotCooldownMin = 5
-	SlotWodCapMin   = SlotDayMin - SlotWarmupMin - SlotCooldownMin
+	SlotWodCapMin   = SlotDayMaxMin - SlotWarmupMin - SlotCooldownMin
 )
 
 // SlotWodItem — одна тренировка дня (без движений, для календаря и списков).
@@ -1064,10 +1066,9 @@ func AssignTemplate(d *sql.DB, slotID, templateID, groupLevel string) (string, [
 		sum += w.DurationMin
 	}
 	if sum+newDur > SlotWodCapMin {
-		left := SlotWodCapMin - sum
 		return "", nil, fmt.Errorf(
-			"Не помещается в день: тренировки займут %d из %d доступных минут (60 мин − разминка 10 − заминка 5), осталось %d",
-			sum+newDur, SlotWodCapMin, left)
+			"Выходит за временной лимит: тренировки займут %d из %d доступных минут — день с разминкой и заминкой превысит %d",
+			sum+newDur, SlotWodCapMin, SlotDayMaxMin)
 	}
 
 	wodID, err := CreateWodForSlot(d, templateID, groupLevel)

@@ -209,11 +209,13 @@ export interface SlotWodItem {
   }[];
 }
 
-// Длительность тренировочного дня: 60 мин = разминка 10 + тренировки ≤45 + заминка 5.
+// Длительность тренировочного дня: план 60 мин (разминка 10 + тренировки + заминка 5),
+// плотный день — до 65 (с подтверждением), потолок тренировок: 65 − 15 = 50 мин.
 export const SLOT_DAY_MIN = 60;
+export const SLOT_DAY_MAX_MIN = 65;
 export const SLOT_WARMUP_MIN = 10;
 export const SLOT_COOLDOWN_MIN = 5;
-export const SLOT_WOD_CAP = SLOT_DAY_MIN - SLOT_WARMUP_MIN - SLOT_COOLDOWN_MIN;
+export const SLOT_WOD_CAP = SLOT_DAY_MAX_MIN - SLOT_WARMUP_MIN - SLOT_COOLDOWN_MIN;
 // Сумма (тренировки + разминка/заминка) больше 55 мин → «Плотное расписание».
 export const SLOT_DENSE_TOTAL = 55;
 // Если свободного времени больше 10 мин — показываем слот «Подобрать тренировку».

@@ -3,7 +3,7 @@ import { api } from "../../lib/api";
 import type { SlotDetail, Recommendation, WodTemplateItem, Athlete, WorkoutResult } from "../../types";
 import {
   FORMAT_LABELS, LEVEL_LABELS, wodSummary,
-  SLOT_WARMUP_MIN, SLOT_COOLDOWN_MIN, SLOT_WOD_CAP, SLOT_DENSE_TOTAL, SLOT_FREE_MIN,
+  SLOT_WARMUP_MIN, SLOT_COOLDOWN_MIN, SLOT_WOD_CAP, SLOT_DENSE_TOTAL, SLOT_FREE_MIN, SLOT_DAY_MAX_MIN,
 } from "../../types";
 
 // Панель слота: рекомендации → назначение → проведение → результаты
@@ -94,6 +94,12 @@ export default function SlotPanel({
     }
     doAssign(t.template_id);
   };
+
+  // Тренировка выводит день за 65 минут — в группу «Выходит за временной лимит».
+  const overLimit = (t: WodTemplateItem | Recommendation) =>
+    dayTotal + t.duration_min + SLOT_WARMUP_MIN + SLOT_COOLDOWN_MIN > SLOT_DAY_MAX_MIN;
+  const overBy = (t: WodTemplateItem | Recommendation) =>
+    dayTotal + t.duration_min + SLOT_WARMUP_MIN + SLOT_COOLDOWN_MIN - SLOT_DAY_MAX_MIN;
 
   const confirmAssign = async () => {
     if (!pendingAssign) return;
@@ -192,7 +198,7 @@ export default function SlotPanel({
             </span>
           </div>
           <div className="text-[10px] text-slate-400 mb-2">
-            разминка {SLOT_WARMUP_MIN}м · заминка {SLOT_COOLDOWN_MIN}м · день {60}м
+            разминка {SLOT_WARMUP_MIN}м · заминка {SLOT_COOLDOWN_MIN}м · день 60м · лимит {SLOT_DAY_MAX_MIN}м
           </div>
           <div className="space-y-1">
             {slot.wods.map((w, i) => {
@@ -310,10 +316,10 @@ export default function SlotPanel({
             </div>
           </div>
           <div className="space-y-2 mb-4">
-            {recs.length === 0 && (
+            {recs.filter((r) => !overLimit(r)).length === 0 && (
               <p className="text-sm text-slate-400">Рекомендаций нет — посмотрите библиотеку.</p>
             )}
-            {recs.map((r) => (
+            {recs.filter((r) => !overLimit(r)).map((r) => (
               <button
                 key={r.template_id}
                 onClick={() => assign(r)}
@@ -336,6 +342,10 @@ export default function SlotPanel({
                 </p>
               </button>
             ))}
+            <OverLimitList
+              items={recs.filter(overLimit)}
+              overBy={overBy}
+            />
           </div>
           <p className="text-xs text-slate-400">
             Нужна уникальная тренировка? Создайте её в разделе WoD → Конструктор, она появится
@@ -360,7 +370,7 @@ export default function SlotPanel({
             </button>
           </div>
           <div className="space-y-2">
-            {library.map((t) => (
+            {library.filter((t) => !overLimit(t)).map((t) => (
               <button
                 key={t.template_id}
                 onClick={() => assign(t)}
@@ -375,6 +385,7 @@ export default function SlotPanel({
                 </span>
               </button>
             ))}
+            <OverLimitList items={library.filter(overLimit)} overBy={overBy} />
           </div>
         </div>
       )}
@@ -729,6 +740,39 @@ function ResultsList({ results }: { results: WorkoutResult[] }) {
               {r.scaled_version && r.scaled_version !== "rx" && ` (${r.scaled_version})`}
               {r.rpe != null && ` · RPE ${r.rpe}`}
             </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Тренировки, выводящие день за 65 минут: отдельная группа, выбор недоступен.
+function OverLimitList({
+  items,
+  overBy,
+}: {
+  items: (WodTemplateItem | Recommendation)[];
+  overBy: (t: WodTemplateItem | Recommendation) => number;
+}) {
+  if (items.length === 0) return null;
+  return (
+    <div className="pt-2">
+      <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1.5">
+        Выходит за временной лимит
+      </h4>
+      <div className="space-y-1">
+        {items.map((t) => (
+          <div
+            key={t.template_id}
+            className="flex items-center gap-2 text-sm px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 opacity-70"
+            title={`День займёт ${SLOT_DAY_MAX_MIN + overBy(t)} из ${SLOT_DAY_MAX_MIN} мин`}
+          >
+            <span className="flex-1 truncate text-slate-500 dark:text-slate-400">
+              {t.name}
+            </span>
+            <span className="text-xs text-slate-400 shrink-0">{t.duration_min} мин</span>
+            <span className="text-[10px] text-red-400 shrink-0">+{overBy(t)} мин перебор</span>
           </div>
         ))}
       </div>
