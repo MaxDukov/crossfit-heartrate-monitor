@@ -332,7 +332,7 @@ func (a *App) CreateCustomWod(w http.ResponseWriter, r *http.Request) {
 // ListMovements: GET /api/movements?search= — каталог для конструктора.
 func (a *App) ListMovements(w http.ResponseWriter, r *http.Request) {
 	search := normalizeYo(strings.ToLower(r.URL.Query().Get("search")))
-	q := `SELECT "key", name, modality, muscle_group, themes, equipment_keys, difficulty, scaling_beginner, scaling_intermediate
+	q := `SELECT "key", name, modality, muscle_group, themes, equipment_keys, difficulty, scaling_beginner, scaling_intermediate, COALESCE(is_custom, 0)
 	      FROM movements ORDER BY name LIMIT 200`
 
 	rows, err := a.DB.Query(q)
@@ -346,7 +346,8 @@ func (a *App) ListMovements(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var key, name, modality, muscle, themes, eq, difficulty string
 		var sb, si sql.NullString
-		if rows.Scan(&key, &name, &modality, &muscle, &themes, &eq, &difficulty, &sb, &si) == nil {
+		var isCustom int
+		if rows.Scan(&key, &name, &modality, &muscle, &themes, &eq, &difficulty, &sb, &si, &isCustom) == nil {
 			// Поиск без учёта «ё» и регистра: «берпи» находит «Бёрпи».
 			if search != "" &&
 				!strings.Contains(normalizeYo(strings.ToLower(name)), search) &&
@@ -363,6 +364,7 @@ func (a *App) ListMovements(w http.ResponseWriter, r *http.Request) {
 				"difficulty":           difficulty,
 				"scaling_beginner":     nullStr(sb),
 				"scaling_intermediate": nullStr(si),
+				"is_custom":            isCustom == 1,
 			})
 		}
 	}

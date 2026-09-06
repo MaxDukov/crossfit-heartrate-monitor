@@ -368,13 +368,13 @@ const (
 
 // SlotWodItem — одна тренировка дня (без движений, для календаря и списков).
 type SlotWodItem struct {
-	ID          string             `json:"id"`
-	Name        string             `json:"name"`
-	Format      string             `json:"format"`
-	DurationMin int                `json:"duration_min"`
-	Intensity   string             `json:"intensity"`
-	Theme       string             `json:"theme"`
-	Movements   []SlotWodMovement  `json:"movements"`
+	ID          string            `json:"id"`
+	Name        string            `json:"name"`
+	Format      string            `json:"format"`
+	DurationMin int               `json:"duration_min"`
+	Intensity   string            `json:"intensity"`
+	Theme       string            `json:"theme"`
+	Movements   []SlotWodMovement `json:"movements"`
 }
 
 // SlotWodMovement — строка состава тренировки (для подсказок и панели).

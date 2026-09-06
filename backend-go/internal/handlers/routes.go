@@ -99,6 +99,8 @@ func NewRouter(a *App, frontendDir string) chi.Router {
 		r.Get("/{slot_id}/results", a.ListSlotResults)
 	})
 	r.Get("/api/movements", a.ListMovements)
+	r.Post("/api/movements", a.CreateMovement)
+	r.Put("/api/movements/{key}", a.UpdateMovement)
 	r.Route("/api/system", func(r chi.Router) {
 		r.Get("/mode", a.GetMode)
 		r.Post("/mode", a.SetMode)

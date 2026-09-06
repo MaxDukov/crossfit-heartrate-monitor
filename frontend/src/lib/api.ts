@@ -1,5 +1,18 @@
 import type { Athlete, Sensor, Session, SessionStats, AthleteStats, Equipment, GymInventoryItem, Wod, WodVariant, CycleSummary, CycleDetail, Recommendation, SlotDetail, SaveResultResponse, Movement, WodTemplateItem, CycleAnalytics } from "../types";
 
+// Пayload редактора движений.
+export interface MovementPayload {
+  key?: string;
+  name: string;
+  modality: string;
+  muscle_group: string;
+  themes: string[];
+  equipment_keys: string[];
+  difficulty: string;
+  scaling_beginner?: string;
+  scaling_intermediate?: string;
+}
+
 const BASE = "/api";
 
 async function request<T>(url: string, opts?: RequestInit): Promise<T> {
@@ -178,6 +191,10 @@ export const api = {
   movements: {
     list: (search?: string) =>
       request<Movement[]>(`/movements${search ? `?search=${encodeURIComponent(search)}` : ""}`),
+    create: (m: MovementPayload) =>
+      request<{ key: string }>("/movements", { method: "POST", body: JSON.stringify(m) }),
+    update: (key: string, m: MovementPayload) =>
+      request<{ key: string }>(`/movements/${key}`, { method: "PUT", body: JSON.stringify(m) }),
   },
   system: {
     getMode: () => request<{ mode: string }>("/system/mode"),

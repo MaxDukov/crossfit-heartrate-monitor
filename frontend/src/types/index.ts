@@ -328,7 +328,30 @@ export interface Movement {
   difficulty: string;
   scaling_beginner: string | null;
   scaling_intermediate: string | null;
+  is_custom?: boolean;
 }
+
+// Признаки движений (каталог, draft1.MD).
+export const MOVEMENT_MODALITY_LABELS: Record<string, string> = {
+  gymnastics: "Гимнастика",
+  weightlifting: "Тяжёлая атлетика",
+  monostructural: "Моноструктурное",
+};
+
+export const MOVEMENT_MUSCLE_LABELS: Record<string, string> = {
+  legs: "Ноги",
+  upper_pull: "Верх · тяга",
+  upper_push: "Верх · жим",
+  chest: "Грудь",
+  core: "Кор",
+  full_body: "Всё тело",
+};
+
+export const MOVEMENT_DIFFICULTY_LABELS: Record<string, string> = {
+  beginner: "Новичок",
+  intermediate: "Средний",
+  advanced: "Продвинутый",
+};
 
 export interface WodTemplateItem {
   template_id: string;

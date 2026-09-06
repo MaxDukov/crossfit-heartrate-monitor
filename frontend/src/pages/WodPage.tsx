@@ -6,14 +6,16 @@ import CycleForm from "../components/planning/CycleForm";
 import QuickPick from "../components/planning/QuickPick";
 import Constructor from "../components/planning/Constructor";
 import TemplatesLibrary from "../components/planning/TemplatesLibrary";
+import MovementsCatalog from "../components/planning/MovementsCatalog";
 
-type WodTab = "cycles" | "quick" | "constructor" | "library";
+type WodTab = "cycles" | "quick" | "constructor" | "library" | "movements";
 
 const TABS: { id: WodTab; label: string }[] = [
   { id: "cycles", label: "Планирование" },
   { id: "quick", label: "Быстрый выбор" },
   { id: "constructor", label: "Конструктор" },
   { id: "library", label: "Библиотека" },
+  { id: "movements", label: "Движения" },
 ];
 
 export default function WodPage() {
@@ -44,6 +46,7 @@ export default function WodPage() {
         {tab === "quick" && <QuickPick />}
         {tab === "constructor" && <Constructor />}
         {tab === "library" && <TemplatesLibrary />}
+        {tab === "movements" && <MovementsCatalog />}
       </div>
     </div>
   );

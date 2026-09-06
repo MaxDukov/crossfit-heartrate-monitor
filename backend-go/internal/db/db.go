@@ -129,7 +129,8 @@ func Migrate(d *sql.DB) error {
 			equipment_keys TEXT NOT NULL,
 			difficulty VARCHAR(20) NOT NULL,
 			scaling_beginner TEXT,
-			scaling_intermediate TEXT
+			scaling_intermediate TEXT,
+			is_custom INTEGER NOT NULL DEFAULT 0
 		)`,
 		`CREATE TABLE IF NOT EXISTS wod_templates (
 			id VARCHAR(36) NOT NULL PRIMARY KEY,
@@ -292,6 +293,8 @@ func Migrate(d *sql.DB) error {
 		{"wods", "template_id", "ALTER TABLE wods ADD COLUMN template_id VARCHAR(36)"},
 		{"cycle_slots", "kind", "ALTER TABLE cycle_slots ADD COLUMN kind VARCHAR(20) NOT NULL DEFAULT 'regular'"},
 		{"cycle_groups", "third_day_off", "ALTER TABLE cycle_groups ADD COLUMN third_day_off BOOLEAN DEFAULT 0"},
+		// Правки тренера не перетираются seed-refresh'ем.
+		{"movements", "is_custom", "ALTER TABLE movements ADD COLUMN is_custom INTEGER NOT NULL DEFAULT 0"},
 	}
 	for _, a := range alters {
 		exists, err := columnExists(d, a.table, a.column)
@@ -376,13 +379,16 @@ func Seed(d *sql.DB) error {
 		slog.Info("seeded movements", "count", len(data.MovementsSeed))
 	} else {
 		for _, mv := range data.MovementsSeed {
+			// Refresh только штатного каталога: отредактированные тренером
+			// движения (is_custom = 1) не перетираются.
 			if _, err := d.Exec(
-				`INSERT INTO movements ("key", name, modality, muscle_group, themes, equipment_keys, difficulty, scaling_beginner, scaling_intermediate)
-				 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+				`INSERT INTO movements ("key", name, modality, muscle_group, themes, equipment_keys, difficulty, scaling_beginner, scaling_intermediate, is_custom)
+				 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
 				 ON CONFLICT("key") DO UPDATE SET name = excluded.name, modality = excluded.modality,
 				   muscle_group = excluded.muscle_group, themes = excluded.themes,
 				   equipment_keys = excluded.equipment_keys, difficulty = excluded.difficulty,
-				   scaling_beginner = excluded.scaling_beginner, scaling_intermediate = excluded.scaling_intermediate`,
+				   scaling_beginner = excluded.scaling_beginner, scaling_intermediate = excluded.scaling_intermediate
+				 WHERE movements.is_custom = 0`,
 				mv.Key, mv.Name, mv.Modality, mv.MuscleGroup,
 				joinCSV(mv.Themes), joinCSV(mv.EquipmentKeys),
 				mv.Difficulty, nullStr(mv.ScalingBeginner), nullStr(mv.ScalingIntermediate),
