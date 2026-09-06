@@ -267,7 +267,7 @@ function GroupCalendar({
           <span className="w-14 shrink-0" />
           {weeks[0].map((s, idx) => (
             <div key={s.id} className="w-44 shrink-0">
-              {idx === 2 && <ThirdDayRadio group={group} onToggle={onToggleThirdDay} disabled={toggleBusy} />}
+              {idx === 2 && <ThirdDaySwitch group={group} onToggle={onToggleThirdDay} disabled={toggleBusy} />}
             </div>
           ))}
         </div>
@@ -332,7 +332,7 @@ function GroupCalendar({
   );
 }
 
-function ThirdDayRadio({
+function ThirdDaySwitch({
   group,
   onToggle,
   disabled,
@@ -341,36 +341,37 @@ function ThirdDayRadio({
   onToggle: (groupId: string, enabled: boolean) => void;
   disabled: boolean;
 }) {
+  const on = group.third_day_off;
   return (
     <div
       className="border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 p-2"
       title="Каждый 3-й тренировочный день планируется отдельно (техника, тесты 1ПМ)"
     >
-      <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 mb-1">
+      <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 mb-1.5">
         3-й день
       </div>
-      <label className={`flex items-center gap-1.5 text-xs text-slate-700 dark:text-slate-300 ${disabled ? "opacity-50" : "cursor-pointer"}`}>
-        <input
-          type="radio"
-          name={`third-day-${group.id}`}
-          checked={!group.third_day_off}
-          disabled={disabled}
-          onChange={() => onToggle(group.id, false)}
-          className="accent-blue-600"
-        />
-        в цикле
-      </label>
-      <label className={`flex items-center gap-1.5 text-xs text-slate-700 dark:text-slate-300 ${disabled ? "opacity-50" : "cursor-pointer"}`}>
-        <input
-          type="radio"
-          name={`third-day-${group.id}`}
-          checked={group.third_day_off}
-          disabled={disabled}
-          onChange={() => onToggle(group.id, true)}
-          className="accent-blue-600"
-        />
-        вне цикла
-      </label>
+      <button
+        role="switch"
+        aria-checked={on}
+        disabled={disabled}
+        onClick={() => onToggle(group.id, !on)}
+        className={`flex items-center gap-2 ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+      >
+        <span
+          className={`relative inline-block w-9 h-5 rounded-full transition-colors shrink-0 ${
+            on ? "bg-amber-500" : "bg-slate-300 dark:bg-slate-600"
+          }`}
+        >
+          <span
+            className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${
+              on ? "translate-x-4" : ""
+            }`}
+          />
+        </span>
+        <span className={`text-xs ${on ? "text-amber-600 dark:text-amber-400 font-medium" : "text-slate-500 dark:text-slate-400"}`}>
+          {on ? "вне цикла" : "в цикле"}
+        </span>
+      </button>
     </div>
   );
 }
