@@ -14,6 +14,9 @@ const STATUS_STYLES: Record<string, string> = {
   skipped: "bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-500/20 opacity-60",
 };
 
+// Третьи дни (вне цикла) выделяются тёмно-серым фоном.
+const OFF_CYCLE_STYLE = "bg-slate-300 dark:bg-slate-800/60 border-slate-400 dark:border-slate-600";
+
 export default function CycleDetailPage() {
   const { cycleId } = useParams<{ cycleId: string }>();
   const [cycle, setCycle] = useState<CycleDetail | null>(null);
@@ -258,19 +261,17 @@ function GroupCalendar({
       <div className="flex items-center gap-2 mb-3">
         <h2 className="text-lg font-bold text-slate-800 dark:text-slate-200">{group.name}</h2>
         <span className="text-sm text-slate-400">{group.weekdays_names.join(" · ")}</span>
-        <button
-          disabled={toggleBusy}
-          onClick={() => onToggleThirdDay(group.id, !group.third_day_off)}
-          title="Каждый 3-й тренировочный день планируется отдельно (техника, тесты 1ПМ)"
-          className={`ml-2 text-xs font-semibold px-2.5 py-1 rounded-full transition-colors ${
-            group.third_day_off
-              ? "bg-amber-500 text-white"
-              : "bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400"
-          } disabled:opacity-50`}
-        >
-          3-й день вне цикла {group.third_day_off ? " вкл." : " выкл."}
-        </button>
       </div>
+      {weeks.length > 0 && (
+        <div className="flex gap-2 mb-2">
+          <span className="w-14 shrink-0" />
+          {weeks[0].map((s, idx) => (
+            <div key={s.id} className="w-44 shrink-0">
+              {idx === 2 && <ThirdDayRadio group={group} onToggle={onToggleThirdDay} disabled={toggleBusy} />}
+            </div>
+          ))}
+        </div>
+      )}
       <div className="space-y-2">
         {weeks.map((week, wi) => (
           <div key={wi} className="flex gap-2">
@@ -282,7 +283,9 @@ function GroupCalendar({
                 <button
                   key={s.id}
                   onClick={() => onSelect(s.id)}
-                  className={`w-44 text-left border rounded-lg p-3 transition-all hover:shadow-md ${STATUS_STYLES[s.status] || STATUS_STYLES.empty}`}
+                  className={`w-44 text-left border rounded-lg p-3 transition-all hover:shadow-md ${
+                    s.kind === "off_cycle" ? OFF_CYCLE_STYLE : (STATUS_STYLES[s.status] || STATUS_STYLES.empty)
+                  }`}
                 >
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs text-slate-400">
@@ -325,6 +328,49 @@ function GroupCalendar({
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+function ThirdDayRadio({
+  group,
+  onToggle,
+  disabled,
+}: {
+  group: CycleDetail["groups"][number];
+  onToggle: (groupId: string, enabled: boolean) => void;
+  disabled: boolean;
+}) {
+  return (
+    <div
+      className="border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 p-2"
+      title="Каждый 3-й тренировочный день планируется отдельно (техника, тесты 1ПМ)"
+    >
+      <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 mb-1">
+        3-й день
+      </div>
+      <label className={`flex items-center gap-1.5 text-xs text-slate-700 dark:text-slate-300 ${disabled ? "opacity-50" : "cursor-pointer"}`}>
+        <input
+          type="radio"
+          name={`third-day-${group.id}`}
+          checked={!group.third_day_off}
+          disabled={disabled}
+          onChange={() => onToggle(group.id, false)}
+          className="accent-blue-600"
+        />
+        в цикле
+      </label>
+      <label className={`flex items-center gap-1.5 text-xs text-slate-700 dark:text-slate-300 ${disabled ? "opacity-50" : "cursor-pointer"}`}>
+        <input
+          type="radio"
+          name={`third-day-${group.id}`}
+          checked={group.third_day_off}
+          disabled={disabled}
+          onChange={() => onToggle(group.id, true)}
+          className="accent-blue-600"
+        />
+        вне цикла
+      </label>
     </div>
   );
 }
