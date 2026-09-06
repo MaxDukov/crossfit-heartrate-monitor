@@ -102,7 +102,6 @@ export default function EquipmentPage() {
                         }`}
                         onClick={() => toggle(e.key)}
                       >
-                        <span className="text-2xl">{e.icon}</span>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-slate-700 dark:text-slate-200 truncate">
                             {e.name}

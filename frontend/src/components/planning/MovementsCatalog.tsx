@@ -284,7 +284,7 @@ function MovementEditor({
                 className={chip(equipmentKeys.includes(e.key))}
                 onClick={() => toggle(equipmentKeys, setEquipmentKeys, e.key)}
               >
-                {e.icon} {e.name}
+                {e.name}
               </button>
             ))}
           </div>
