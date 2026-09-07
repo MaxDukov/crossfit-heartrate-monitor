@@ -5,6 +5,8 @@ import type { Equipment, GymInventoryItem } from "../types";
 export default function EquipmentPage() {
   const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [inventory, setInventory] = useState<Record<string, number>>({});
+  // Черновик ввода количества: позволяет стереть значение и ввести с клавиатуры.
+  const [qtyDraft, setQtyDraft] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -110,10 +112,21 @@ export default function EquipmentPage() {
                             <input
                               type="number"
                               min={1}
-                              value={inventory[e.key]}
+                              value={qtyDraft[e.key] ?? String(inventory[e.key])}
                               onClick={(ev) => ev.stopPropagation()}
-                              onChange={(ev) =>
-                                setQty(e.key, parseInt(ev.target.value) || 1)
+                              onFocus={(ev) => ev.currentTarget.select()}
+                              onChange={(ev) => {
+                                const v = ev.target.value;
+                                setQtyDraft((prev) => ({ ...prev, [e.key]: v }));
+                                const n = parseInt(v);
+                                if (v !== "" && !Number.isNaN(n)) setQty(e.key, n);
+                              }}
+                              onBlur={() =>
+                                setQtyDraft((prev) => {
+                                  const next = { ...prev };
+                                  delete next[e.key];
+                                  return next;
+                                })
                               }
                               className="mt-1 w-16 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-200 text-xs px-2 py-0.5 rounded border border-slate-300 dark:border-slate-600"
                             />

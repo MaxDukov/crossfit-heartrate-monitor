@@ -353,6 +353,16 @@ export const MOVEMENT_DIFFICULTY_LABELS: Record<string, string> = {
   advanced: "Продвинутый",
 };
 
+export interface WodTemplateMovement {
+  movement_key: string;
+  movement_name: string;
+  reps: number | null;
+  weight_male: number | null;
+  weight_female: number | null;
+  sort_order: number;
+  rounds_note: string;
+}
+
 export interface WodTemplateItem {
   template_id: string;
   name: string;
@@ -362,6 +372,33 @@ export interface WodTemplateItem {
   theme: string;
   is_benchmark: boolean;
   movements_count: number;
+  archived?: boolean;
+  description?: string | null;
+  movements?: WodTemplateMovement[];
+}
+
+export interface TemplateForEdit {
+  template_id: string;
+  name: string;
+  format: string;
+  duration_min: number;
+  intensity: string;
+  theme: string;
+  description: string | null;
+  is_benchmark: boolean;
+  archived: boolean;
+  movements: {
+    movement_key: string;
+    reps: number | null;
+    weight_male: number | null;
+    weight_female: number | null;
+    rounds_note: string;
+  }[];
+}
+
+export interface TemplateDeleteConflict {
+  detail: string;
+  cycles: { cycle_id: string; cycle_name: string; slot_id: string; slot_date: string }[];
 }
 
 export interface GroupCycleStats {

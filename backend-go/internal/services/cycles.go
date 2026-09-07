@@ -932,7 +932,7 @@ func SlotRecommendations(d *sql.DB, slotID, groupLevel string) ([]Recommendation
 	for _, theme := range themes {
 		rows, err := d.Query(`
 			SELECT id, name, format, duration_min, intensity, theme, COALESCE(is_benchmark, 0), description
-			FROM wod_templates WHERE theme = ?`, theme)
+			FROM wod_templates WHERE theme = ? AND COALESCE(archived, 0) = 0`, theme)
 		if err != nil {
 			continue
 		}
@@ -1053,9 +1053,12 @@ func AssignTemplate(d *sql.DB, slotID, templateID, groupLevel string) (string, [
 	}
 
 	// Проверка длительности: разминка 10 + сумма тренировок + заминка 5 ≤ 60.
-	var newDur int
-	if err := d.QueryRow(`SELECT duration_min FROM wod_templates WHERE id = ?`, templateID).Scan(&newDur); err != nil {
+	var newDur, archived int
+	if err := d.QueryRow(`SELECT duration_min, COALESCE(archived, 0) FROM wod_templates WHERE id = ?`, templateID).Scan(&newDur, &archived); err != nil {
 		return "", nil, fmt.Errorf("Template %s not found", templateID)
+	}
+	if archived == 1 {
+		return "", nil, fmt.Errorf("тренировка в архиве — верните её в активные в Библиотеке")
 	}
 	existing, err := slotWodsList(d, slotID)
 	if err != nil {

@@ -277,7 +277,7 @@ func GenerateWods(d *sql.DB, theme, groupLevel string) []WodVariant {
 
 	tplRows, err := d.Query(`
 		SELECT id, name, format, duration_min, intensity, theme, COALESCE(is_benchmark, 0), description
-		FROM wod_templates WHERE theme = ?`, theme)
+		FROM wod_templates WHERE theme = ? AND COALESCE(archived, 0) = 0`, theme)
 	if err != nil {
 		slog.Error("generate wods: templates query", "err", err)
 		return nil

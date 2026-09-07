@@ -1,4 +1,4 @@
-import type { Athlete, Sensor, Session, SessionStats, AthleteStats, Equipment, GymInventoryItem, Wod, WodVariant, CycleSummary, CycleDetail, Recommendation, SlotDetail, SaveResultResponse, Movement, WodTemplateItem, CycleAnalytics } from "../types";
+import type { Athlete, Sensor, Session, SessionStats, AthleteStats, Equipment, GymInventoryItem, Wod, WodVariant, CycleSummary, CycleDetail, Recommendation, SlotDetail, SaveResultResponse, Movement, WodTemplateItem, TemplateForEdit, CycleAnalytics } from "../types";
 
 // Пayload редактора движений.
 export interface MovementPayload {
@@ -101,15 +101,40 @@ export const api = {
       request<Wod | null>(`/wods/active${date ? `?date=${date}` : ""}`),
     endActive: () => request<void>("/wods/active/end", { method: "POST" }),
     history: (limit = 20) => request<Wod[]>(`/wods/history?limit=${limit}`),
-    templates: (params?: { theme?: string; search?: string; limit?: number }) => {
+    templates: (params?: { theme?: string; search?: string; limit?: number; include_archived?: boolean }) => {
       const q = new URLSearchParams();
       if (params?.theme) q.set("theme", params.theme);
       if (params?.search) q.set("search", params.search);
+      if (params?.include_archived) q.set("include_archived", "1");
       q.set("limit", String(params?.limit ?? 100));
       return request<WodTemplateItem[]>(`/wods/templates?${q}`);
     },
     template: (id: string, groupLevel = "intermediate") =>
       request<WodVariant>(`/wods/templates/${id}?group_level=${groupLevel}`),
+    templateRaw: (id: string) =>
+      request<TemplateForEdit>(`/wods/templates/${id}?raw=1`),
+    updateTemplate: (
+      id: string,
+      data: {
+        name?: string;
+        format: string;
+        duration_min: number;
+        intensity: string;
+        theme: string;
+        description?: string;
+        movements: { movement_key: string; reps?: number | null; weight_male?: number | null; weight_female?: number | null; rounds_note?: string }[];
+      }
+    ) =>
+      request<{ template_id: string; warnings: string[] | null }>(`/wods/templates/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+      }),
+    deleteTemplate: (id: string) =>
+      request<{ deleted?: boolean; archived?: boolean }>(`/wods/templates/${id}`, {
+        method: "DELETE",
+      }),
+    restoreTemplate: (id: string) =>
+      request<{ restored: boolean }>(`/wods/templates/${id}/restore`, { method: "POST" }),
     custom: (data: {
       name?: string;
       format: string;

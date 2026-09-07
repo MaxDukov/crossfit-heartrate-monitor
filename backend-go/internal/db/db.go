@@ -234,6 +234,10 @@ func Migrate(d *sql.DB) error {
 		`CREATE TABLE IF NOT EXISTS movements_deleted (
 			"key" VARCHAR(80) NOT NULL PRIMARY KEY
 		)`,
+		// Надгробия удалённых шаблонов тренировок (аналогично).
+		`CREATE TABLE IF NOT EXISTS wod_templates_deleted (
+			name VARCHAR(200) NOT NULL PRIMARY KEY
+		)`,
 		`CREATE TABLE IF NOT EXISTS workout_results (
 			id VARCHAR(36) NOT NULL PRIMARY KEY,
 			slot_id VARCHAR(36),
@@ -299,6 +303,8 @@ func Migrate(d *sql.DB) error {
 		{"cycle_groups", "third_day_off", "ALTER TABLE cycle_groups ADD COLUMN third_day_off BOOLEAN DEFAULT 0"},
 		// Правки тренера не перетираются seed-refresh'ем.
 		{"movements", "is_custom", "ALTER TABLE movements ADD COLUMN is_custom INTEGER NOT NULL DEFAULT 0"},
+		{"wod_templates", "archived", "ALTER TABLE wod_templates ADD COLUMN archived INTEGER NOT NULL DEFAULT 0"},
+		{"wod_templates", "is_custom", "ALTER TABLE wod_templates ADD COLUMN is_custom INTEGER NOT NULL DEFAULT 0"},
 	}
 	for _, a := range alters {
 		exists, err := columnExists(d, a.table, a.column)
@@ -445,9 +451,24 @@ func Seed(d *sql.DB) error {
 // и остаются нетронутыми. Возвращает число обновлённых шаблонов.
 func refreshSeedTemplates(d *sql.DB) (int, error) {
 	updated := 0
+	// Шаблоны, удалённые тренером — не воскрешаем.
+	tomb := map[string]bool{}
+	if trows, err := d.Query(`SELECT name FROM wod_templates_deleted`); err == nil {
+		for trows.Next() {
+			var nm string
+			if trows.Scan(&nm) == nil {
+				tomb[nm] = true
+			}
+		}
+		_ = trows.Close()
+	}
 	for _, tpl := range data.WodTemplatesSeed {
+		if tomb[tpl.Name] {
+			continue
+		}
 		var id string
-		err := d.QueryRow(`SELECT id FROM wod_templates WHERE name = ?`, tpl.Name).Scan(&id)
+		var isCustom int
+		err := d.QueryRow(`SELECT id, COALESCE(is_custom, 0) FROM wod_templates WHERE name = ?`, tpl.Name).Scan(&id, &isCustom)
 		if err == sql.ErrNoRows {
 			if err := insertWodTemplate(d, tpl); err != nil {
 				return updated, err
@@ -457,6 +478,10 @@ func refreshSeedTemplates(d *sql.DB) (int, error) {
 		}
 		if err != nil {
 			return updated, err
+		}
+		// Отредактированные тренером шаблоны (is_custom = 1) не перетираются.
+		if isCustom == 1 {
+			continue
 		}
 		desc := any(nil)
 		if tpl.Description != "" {

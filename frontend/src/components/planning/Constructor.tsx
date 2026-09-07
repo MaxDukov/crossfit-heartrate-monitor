@@ -13,8 +13,15 @@ interface Row {
 
 const EMPTY_ROW: Row = { movement_key: "", movement_name: "", reps: "", weight_male: "", weight_female: "" };
 
-// Конструктор тренировки с нуля — Экран 4 draft1.MD.
-export default function Constructor() {
+// Конструктор тренировки — Экран 4 draft1.MD.
+// editTemplateId: режим правки существующего шаблона из библиотеки.
+export default function Constructor({
+  editTemplateId = null,
+  onDone,
+}: {
+  editTemplateId?: string | null;
+  onDone?: () => void;
+}) {
   const [name, setName] = useState("");
   const [format, setFormat] = useState("amrap");
   const [duration, setDuration] = useState(15);
@@ -32,6 +39,32 @@ export default function Constructor() {
   useEffect(() => {
     api.movements.list().then(setMovements).catch(() => setMovements([]));
   }, []);
+
+  // Предзаполнение из шаблона (режим правки).
+  useEffect(() => {
+    if (!editTemplateId) return;
+    Promise.all([api.wods.templateRaw(editTemplateId), api.movements.list()])
+      .then(([tpl, movs]) => {
+        setMovements(movs);
+        setName(tpl.name);
+        setFormat(tpl.format);
+        setDuration(tpl.duration_min);
+        setIntensity(tpl.intensity);
+        setTheme(tpl.theme);
+        setDescription(tpl.description || "");
+        const byKey = new Map(movs.map((m) => [m.key, m.name]));
+        setRows(
+          tpl.movements.map((m) => ({
+            movement_key: m.movement_key,
+            movement_name: byKey.get(m.movement_key) || m.movement_key,
+            reps: m.reps != null ? String(m.reps) : "",
+            weight_male: m.weight_male != null ? String(m.weight_male) : "",
+            weight_female: m.weight_female != null ? String(m.weight_female) : "",
+          }))
+        );
+      })
+      .catch((e) => setError((e as Error).message));
+  }, [editTemplateId]);
 
   const setRow = (i: number, patch: Partial<Row>) =>
     setRows((rs) => rs.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
@@ -66,12 +99,18 @@ export default function Constructor() {
             weight_female: r.weight_female ? Number(r.weight_female) : null,
           })),
       };
-      const res = await api.wods.custom(payload);
-      setWarnings(res.warnings);
-      setSaved(res.template_id);
-      setRows([{ ...EMPTY_ROW }]);
-      setName("");
-      setDescription("");
+      if (editTemplateId) {
+        const res = await api.wods.updateTemplate(editTemplateId, payload);
+        setWarnings(res.warnings);
+        setSaved(res.template_id);
+      } else {
+        const res = await api.wods.custom(payload);
+        setWarnings(res.warnings);
+        setSaved(res.template_id);
+        setRows([{ ...EMPTY_ROW }]);
+        setName("");
+        setDescription("");
+      }
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -85,8 +124,9 @@ export default function Constructor() {
   return (
     <div className="max-w-4xl mx-auto p-6">
       <p className="text-slate-500 dark:text-slate-400 mb-4">
-        Соберите тренировку по протоколу: система проверит инвентарь, баланс паттернов и стимул.
-        Сохранённая тренировка попадает в библиотеку и доступна для назначения на слоты.
+        {editTemplateId
+          ? "Редактирование тренировки из библиотеки. Изменения применятся и к запланированным, и к будущим запускам."
+          : "Соберите тренировку по протоколу: система проверит инвентарь, баланс паттернов и стимул. Сохранённая тренировка попадает в библиотеку и доступна для назначения на слоты."}
       </p>
 
       <div className="grid grid-cols-4 gap-3 mb-4">
@@ -252,17 +292,25 @@ export default function Constructor() {
       )}
       {saved && (
         <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-500/30 rounded-lg p-3 mb-4 text-sm text-emerald-700 dark:text-emerald-300 flex items-center justify-between">
-          <span>✓ Тренировка сохранена в библиотеку</span>
+          <span>{editTemplateId ? "✓ Изменения сохранены" : "✓ Тренировка сохранена в библиотеку"}</span>
           <div className="flex gap-2">
-            <button
-              className="text-emerald-600 dark:text-emerald-400 font-medium"
-              onClick={async () => {
-                await api.wods.select(saved, level);
-                window.location.href = "/";
-              }}
-            >
-              Запустить сейчас
-            </button>
+            {editTemplateId ? (
+              onDone && (
+                <button className="text-emerald-600 dark:text-emerald-400 font-medium" onClick={onDone}>
+                  К библиотеке
+                </button>
+              )
+            ) : (
+              <button
+                className="text-emerald-600 dark:text-emerald-400 font-medium"
+                onClick={async () => {
+                  await api.wods.select(saved, level);
+                  window.location.href = "/";
+                }}
+              >
+                Запустить сейчас
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -273,8 +321,16 @@ export default function Constructor() {
           disabled={!canSubmit}
           onClick={submit}
         >
-          {busy ? "Сохранение…" : "Сохранить в библиотеку"}
+          {busy ? "Сохранение…" : editTemplateId ? "Сохранить изменения" : "Сохранить в библиотеку"}
         </button>
+        {editTemplateId && onDone && (
+          <button
+            className="px-5 py-2 rounded text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
+            onClick={onDone}
+          >
+            Отмена
+          </button>
+        )}
         <span className="text-xs text-slate-400">
           Уровень для запуска:{" "}
           <select

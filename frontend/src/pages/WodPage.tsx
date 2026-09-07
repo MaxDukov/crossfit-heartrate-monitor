@@ -12,8 +12,8 @@ import EquipmentPage from "./EquipmentPage";
 type WodTab = "cycles" | "quick" | "constructor" | "library" | "movements" | "equipment";
 
 const TABS: { id: WodTab; label: string }[] = [
-  { id: "cycles", label: "Планирование" },
   { id: "quick", label: "Быстрый выбор" },
+  { id: "cycles", label: "Планирование" },
   { id: "constructor", label: "Конструктор" },
   { id: "library", label: "Библиотека" },
   { id: "movements", label: "Движения" },
@@ -26,6 +26,17 @@ export default function WodPage() {
   const requested: WodTab | null = TABS.some((t) => t.id === tabParam) ? tabParam! : null;
   const [tabChoice, setTabChoice] = useState<WodTab | null>(null);
   const tab = requested ?? tabChoice ?? "cycles";
+
+  // Редактирование шаблона из библиотеки — конструктор в режиме правки.
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const openEditor = (templateId: string) => {
+    setEditingId(templateId);
+    setTabChoice("constructor");
+  };
+  const closeEditor = () => {
+    setEditingId(null);
+    setTabChoice("library");
+  };
 
   // Внешние ссылки (/wod?tab=library&search=...) — открыть вкладку с поиском.
   const urlSearch = requested === "library" ? params.get("search") || "" : null;
@@ -53,8 +64,9 @@ export default function WodPage() {
       <div className="flex-1 min-h-0 overflow-y-auto">
         {tab === "cycles" && <CyclesList />}
         {tab === "quick" && <QuickPick />}
-        {tab === "constructor" && <Constructor />}
-        {tab === "library" && <TemplatesLibrary key={urlSearch ?? ""} initialSearch={urlSearch ?? ""} />}
+        {tab === "constructor" &&
+          <Constructor key={editingId ?? "new"} editTemplateId={editingId} onDone={closeEditor} />}
+        {tab === "library" && <TemplatesLibrary key={urlSearch ?? ""} initialSearch={urlSearch ?? ""} onEdit={openEditor} />}
         {tab === "movements" && <MovementsCatalog />}
         {tab === "equipment" && <EquipmentPage />}
       </div>

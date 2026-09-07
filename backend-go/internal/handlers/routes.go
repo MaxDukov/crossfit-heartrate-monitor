@@ -75,6 +75,9 @@ func NewRouter(a *App, frontendDir string) chi.Router {
 		r.Get("/templates", a.ListWodTemplates)
 		r.Post("/custom", a.CreateCustomWod)
 		r.Get("/templates/{template_id}", a.GetWodTemplate)
+		r.Put("/templates/{template_id}", a.UpdateWodTemplate)
+		r.Delete("/templates/{template_id}", a.DeleteWodTemplate)
+		r.Post("/templates/{template_id}/restore", a.RestoreWodTemplate)
 	})
 	r.Route("/api/cycles", func(r chi.Router) {
 		r.Get("/", a.ListCycles)
