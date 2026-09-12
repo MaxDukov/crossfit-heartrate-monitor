@@ -478,7 +478,20 @@ func (fs *fakeSticks) opener(info openant.StickInfo) (*easy.Node, error) {
 	if sim == nil {
 		return nil, fmt.Errorf("unknown stick %q", info.Serial)
 	}
-	return easy.NewWithDriver(sim)
+	node, err := easy.NewWithDriver(sim)
+	if err != nil {
+		// anttest-драйвер после Node.Stop() закрыт необратно
+		// ("mock: driver permanently closed") — пересоздаём.
+		fs.mu.Lock()
+		sim = anttest.NewSimDriver()
+		fs.sims[info.Serial] = sim
+		fs.mu.Unlock()
+		node, err = easy.NewWithDriver(sim)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return node, nil
 }
 
 // setList заменяет список стиков (hot plug / удаление).
