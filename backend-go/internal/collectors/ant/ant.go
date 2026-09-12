@@ -214,10 +214,14 @@ func (c *Collector) stickSession(ctx context.Context, info openant.StickInfo) er
 
 	select {
 	case <-ctx.Done():
-		return nil
 	case <-runDone:
-		return nil
 	}
+	// Дренируем диспетчер событий: node.Run может ещё доставлять
+	// буферизованные данные в колбэки; Stop не должен возвращаться,
+	// пока последний колбэк не отработал (контракт Run v0.1.2 —
+	// гарантированный выход по ctx.Done, ожидание не зависает).
+	<-runDone
+	return nil
 }
 
 // setupChannels назначает maxSensors wildcard-каналов HR на Node.
