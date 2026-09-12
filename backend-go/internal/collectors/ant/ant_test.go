@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -80,6 +81,42 @@ func newEnv(t *testing.T) *testEnv {
 		},
 		50*time.Millisecond)
 	return env
+}
+
+// TestStickSessionRetriedAfterFailure — стик, который не открывается,
+// должен ретраиться supervisor'ом на каждом тике, а не оставаться мёртвым.
+func TestStickSessionRetriedAfterFailure(t *testing.T) {
+	d, err := db.Open(":memory:")
+	if err != nil {
+		t.Fatalf("open sqlite: %v", err)
+	}
+	t.Cleanup(func() { _ = d.Close() })
+	if err := db.Migrate(d); err != nil {
+		t.Fatalf("migrate: %v", err)
+	}
+
+	var opens atomic.Int32
+	col := newCollector(d, 8, collectors.Callbacks{},
+		func() []openant.StickInfo {
+			return []openant.StickInfo{{Serial: "bad", Product: "usb2"}}
+		},
+		func(info openant.StickInfo) (*easy.Node, error) {
+			opens.Add(1)
+			return nil, fmt.Errorf("open failed for %q", info.Serial)
+		},
+		50*time.Millisecond)
+
+	col.Start()
+	defer col.Stop()
+
+	// Первый open — на стартовом reconcile; повторные — на тиках (50ms).
+	deadline := time.Now().Add(5 * time.Second)
+	for time.Now().Before(deadline) && opens.Load() < 2 {
+		time.Sleep(20 * time.Millisecond)
+	}
+	if got := opens.Load(); got < 2 {
+		t.Fatalf("opener вызван %d раз(а), ожидалось >= 2: сессия не пересоздаётся на тике", got)
+	}
 }
 
 func collectorsCallbacks(env *testEnv) collectors.Callbacks {

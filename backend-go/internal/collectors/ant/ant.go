@@ -139,6 +139,15 @@ func (c *Collector) reconcileSticks() {
 			sess.cancel()
 		}
 	}
+	// Мёртвые сессии (стик не открылся, ошибка каналов, Node.Run вернулся)
+	// вычищаются — add-проход ниже пересоздаст сессию на этом же тике.
+	for key, sess := range c.sessions {
+		select {
+		case <-sess.done:
+			delete(c.sessions, key)
+		default:
+		}
+	}
 	for key, info := range want {
 		if _, ok := c.sessions[key]; ok {
 			continue
@@ -156,8 +165,9 @@ func (c *Collector) startStickLocked(key string, info openant.StickInfo) *stickS
 		defer close(sess.done)
 		if err := c.stickSession(ctx, info); err != nil {
 			// Восстановление внутри Node.Run (auto-reconnect); если сессия
-			// всё же завершилась ошибкой — supervisor пересоздаст её на
-			// следующем тике (сессии в c.sessions уже нет).
+			// всё же завершилась (ошибка открытия, каналов или Run вернулся) —
+			// следующий тик reconcileSticks вычистит мёртвую запись
+			// (sess.done закрыт) и пересоздаст сессию.
 			slog.Error("ANT stick session failed", "stick", key, "err", err)
 		}
 	}()
