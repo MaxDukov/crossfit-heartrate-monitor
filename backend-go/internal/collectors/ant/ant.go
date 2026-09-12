@@ -1,8 +1,10 @@
 // Package ant — ANT+-коллектор на базе openant-go.
 //
-// Порт services/ant_collector.py из Python-версии: 8 wildcard-каналов
-// (device_id=0), дедупликация одинакового пульса (<2 с), upsert датчиков
-// в БД, авто-рестарт через 5 с при ошибке стика.
+// Поддерживает несколько USB-стиков: supervisor опрашивает список стиков
+// (ant.Sticks) и управляет per-stick сессиями — по 8 wildcard-каналов
+// на стик. Восстановление после сбоя стика выполняет auto-reconnect
+// внутри easy.Node.Run; подключение нового стика подхватывается
+// supervisor'ом без перезапуска коллектора.
 package ant
 
 import (
@@ -12,26 +14,31 @@ import (
 	"sync"
 	"time"
 
+	openant "github.com/maxdukov/openant-go/ant"
 	"github.com/maxdukov/openant-go/devices"
 	"github.com/maxdukov/openant-go/easy"
 
 	"github.com/maxdukov/cf/backend-go/internal/collectors"
 )
 
-// Collector — фоновый ANT+-коллектор (USB-стик).
+// Collector — фоновый ANT+-коллектор (один или несколько USB-стиков).
 type Collector struct {
 	db         *sql.DB
 	callbacks  collectors.Callbacks
 	maxSensors int
 
-	// nodeFactory создаёт Node (по умолчанию — реальный USB-стик);
-	// заменяется в тестах на anttest-симулятор.
-	nodeFactory func() (*easy.Node, error)
+	// stickLister возвращает список подключённых стиков (прод — openant.Sticks,
+	// тесты — фейк). stickOpener строит Node для конкретного стика
+	// (прод — easy.NewStick, тесты — фейк).
+	stickLister func() []openant.StickInfo
+	stickOpener func(openant.StickInfo) (*easy.Node, error)
+	tick        time.Duration // интервал опроса списка стиков
 
+	// mu защищает knownIDs, dedups и sessions.
 	mu       sync.Mutex
 	knownIDs map[int]bool
-	// mu защищает knownIDs и dedups (общие для всех каналов коллектора).
-	dedups map[int]*dedupEntry
+	dedups   map[int]*dedupEntry
+	sessions map[string]*stickSession
 
 	stopOnce sync.Once
 	stopCh   chan struct{}
@@ -43,85 +50,139 @@ type dedupEntry struct {
 	dedup *collectors.Dedup
 }
 
-// New создаёт ANT+-коллектор на maxSensors wildcard-каналов.
-func New(d *sql.DB, maxSensors int, cb collectors.Callbacks) *Collector {
-	return newCollector(d, maxSensors, cb, func() (*easy.Node, error) { return easy.New() })
+// stickSession — жизненный цикл одного стика.
+type stickSession struct {
+	key    string // StickInfo.String()
+	cancel context.CancelFunc
+	done   chan struct{}
 }
 
-func newCollector(d *sql.DB, maxSensors int, cb collectors.Callbacks, factory func() (*easy.Node, error)) *Collector {
+// New создаёт ANT+-коллектор с авто-детектом всех стиков
+// (до maxSensors wildcard-каналов на каждом).
+func New(d *sql.DB, maxSensors int, cb collectors.Callbacks) *Collector {
+	return newCollector(d, maxSensors, cb,
+		openant.Sticks,
+		func(info openant.StickInfo) (*easy.Node, error) { return easy.NewStick(info) },
+		10*time.Second)
+}
+
+func newCollector(d *sql.DB, maxSensors int, cb collectors.Callbacks,
+	stickLister func() []openant.StickInfo,
+	stickOpener func(openant.StickInfo) (*easy.Node, error),
+	tick time.Duration) *Collector {
 	if maxSensors <= 0 {
 		maxSensors = 8
+	}
+	if tick <= 0 {
+		tick = 10 * time.Second
 	}
 	return &Collector{
 		db:          d,
 		callbacks:   cb,
 		maxSensors:  maxSensors,
-		nodeFactory: factory,
+		stickLister: stickLister,
+		stickOpener: stickOpener,
+		tick:        tick,
 		knownIDs:    make(map[int]bool),
 		dedups:      make(map[int]*dedupEntry),
+		sessions:    make(map[string]*stickSession),
 		stopCh:      make(chan struct{}),
 		done:        make(chan struct{}),
 	}
 }
 
-// Start запускает коллектор в фоновой горутине.
+// Start запускает supervisor в фоновой горутине.
 func (c *Collector) Start() {
 	go c.run()
-	slog.Info("ANT+ collector started", "max_sensors", c.maxSensors)
+	slog.Info("ANT+ collector started", "max_sensors_per_stick", c.maxSensors)
 }
 
-// Stop останавливает коллектор (idempotent).
+// Stop останавливает supervisor и все сессии (idempotent).
 func (c *Collector) Stop() {
 	c.stopOnce.Do(func() { close(c.stopCh) })
 	<-c.done
 	slog.Info("ANT+ collector stopped")
 }
 
-func (c *Collector) stopped() bool {
-	select {
-	case <-c.stopCh:
-		return true
-	default:
-		return false
-	}
-}
-
-// run — основной цикл с авто-рестартом через 5 с при ошибке.
+// run — supervisor: сверяет список стиков с активными сессиями.
 func (c *Collector) run() {
 	defer close(c.done)
+	ticker := time.NewTicker(c.tick)
+	defer ticker.Stop()
+
+	c.reconcileSticks()
 	for {
-		if c.stopped() {
+		select {
+		case <-c.stopCh:
+			c.stopAllSessions()
 			return
-		}
-		if err := c.session(); err != nil {
-			if c.stopped() {
-				return
-			}
-			slog.Error("ANT+ collector error", "err", err)
-			slog.Info("restarting ANT+ collector in 5s")
-			select {
-			case <-time.After(5 * time.Second):
-			case <-c.stopCh:
-				return
-			}
+		case <-ticker.C:
+			c.reconcileSticks()
 		}
 	}
 }
 
-// session — один жизненный цикл Node: подключение, каналы, диспетчер.
-func (c *Collector) session() error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+// reconcileSticks синхронизирует активные сессии со списком стиков.
+func (c *Collector) reconcileSticks() {
+	sticks := c.stickLister()
+	want := make(map[string]openant.StickInfo, len(sticks))
+	for _, s := range sticks {
+		want[s.String()] = s
+	}
 
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	for key, sess := range c.sessions {
+		if _, ok := want[key]; !ok {
+			slog.Info("stick removed", "stick", key)
+			delete(c.sessions, key)
+			sess.cancel()
+		}
+	}
+	for key, info := range want {
+		if _, ok := c.sessions[key]; ok {
+			continue
+		}
+		c.sessions[key] = c.startStickLocked(key, info)
+	}
+}
+
+// startStickLocked запускает сессию стика. Вызывающий держит c.mu.
+func (c *Collector) startStickLocked(key string, info openant.StickInfo) *stickSession {
+	ctx, cancel := context.WithCancel(context.Background())
+	sess := &stickSession{key: key, cancel: cancel, done: make(chan struct{})}
+	slog.Info("stick added", "stick", key)
 	go func() {
-		select {
-		case <-c.stopCh:
-			cancel()
-		case <-ctx.Done():
+		defer close(sess.done)
+		if err := c.stickSession(ctx, info); err != nil {
+			// Восстановление внутри Node.Run (auto-reconnect); если сессия
+			// всё же завершилась ошибкой — supervisor пересоздаст её на
+			// следующем тике (сессии в c.sessions уже нет).
+			slog.Error("ANT stick session failed", "stick", key, "err", err)
 		}
 	}()
+	return sess
+}
 
-	node, err := c.nodeFactory()
+func (c *Collector) stopAllSessions() {
+	c.mu.Lock()
+	dones := make([]chan struct{}, 0, len(c.sessions))
+	for key, sess := range c.sessions {
+		sess.cancel()
+		dones = append(dones, sess.done)
+		delete(c.sessions, key)
+	}
+	c.mu.Unlock()
+	for _, done := range dones {
+		<-done // Stop() возвращает управление только после полной остановки
+	}
+}
+
+// stickSession — один жизненный цикл Node: подключение, каналы, диспетчер.
+// node.Run блокируется до отмены ctx; сбои стика восстанавливает
+// auto-reconnect внутри Node (openant-go v0.1.2).
+func (c *Collector) stickSession(ctx context.Context, info openant.StickInfo) error {
+	node, err := c.stickOpener(info)
 	if err != nil {
 		return err
 	}
@@ -131,6 +192,26 @@ func (c *Collector) session() error {
 		return err
 	}
 
+	if err := c.setupChannels(node); err != nil {
+		return err
+	}
+
+	runDone := make(chan struct{})
+	go func() {
+		defer close(runDone)
+		node.Run(ctx)
+	}()
+
+	select {
+	case <-ctx.Done():
+		return nil
+	case <-runDone:
+		return nil
+	}
+}
+
+// setupChannels назначает maxSensors wildcard-каналов HR на Node.
+func (c *Collector) setupChannels(node *easy.Node) error {
 	for i := 0; i < c.maxSensors; i++ {
 		hr, err := devices.NewHeartRate(node, 0 /* wildcard */, 0)
 		if err != nil {
@@ -147,7 +228,7 @@ func (c *Collector) session() error {
 			c.knownIDs[deviceID] = true
 			c.mu.Unlock()
 
-			slog.Info("sensor found", "channel", i+1, "device_id", deviceID)
+			slog.Info("sensor found", "device_id", deviceID)
 
 			collectors.UpsertSensor(c.db, deviceID)
 
@@ -187,7 +268,5 @@ func (c *Collector) session() error {
 			}
 		}
 	}
-
-	node.Run(ctx) // блокирующий диспетчер до cancel/Stop
 	return nil
 }

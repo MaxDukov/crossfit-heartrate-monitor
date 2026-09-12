@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	openant "github.com/maxdukov/openant-go/ant"
 	"github.com/maxdukov/openant-go/anttest"
 	"github.com/maxdukov/openant-go/easy"
 
@@ -69,9 +70,15 @@ func newEnv(t *testing.T) *testEnv {
 
 	env := &testEnv{d: d}
 	env.sim = anttest.NewSimDriver()
-	env.collector = newCollector(d, 8, collectorsCallbacks(env), func() (*easy.Node, error) {
-		return easy.NewWithDriver(env.sim)
-	})
+	env.collector = newCollector(d, 8, collectorsCallbacks(env),
+		func() []openant.StickInfo { return []openant.StickInfo{{Serial: "sim", Product: "usb2"}} },
+		func(info openant.StickInfo) (*easy.Node, error) {
+			if info.Serial != "sim" {
+				return nil, fmt.Errorf("unknown stick %q", info.Serial)
+			}
+			return easy.NewWithDriver(env.sim)
+		},
+		50*time.Millisecond)
 	return env
 }
 
