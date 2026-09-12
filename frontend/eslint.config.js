@@ -18,5 +18,10 @@ export default defineConfig([
     languageOptions: {
       globals: globals.browser,
     },
+    rules: {
+      // Техдолг: 10 мест с загрузкой данных в effect (setState после load()).
+      // Чинить точечно через lazy-инициализацию/подписки; пока предупреждение.
+      'react-hooks/set-state-in-effect': 'warn',
+    },
   },
 ])

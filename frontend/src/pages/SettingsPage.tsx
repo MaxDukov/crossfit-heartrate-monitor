@@ -166,7 +166,7 @@ function StylePreview({
 
   if (id === "basic") {
     return (
-      <div style={previewStyle as any} className="h-full">
+      <div style={previewStyle} className="h-full">
         {[0, 1, 2, 3].map((i) => (
           <div
             key={i}
@@ -180,7 +180,7 @@ function StylePreview({
 
   if (id === "tri-column") {
     return (
-      <div style={previewStyle as any} className="h-full">
+      <div style={previewStyle} className="h-full">
         <div className="flex flex-col gap-1">
           {[0, 1].map((i) => (
             <div key={i} className="flex-1 rounded" style={{ background: cardBg }} />
@@ -199,7 +199,7 @@ function StylePreview({
   }
 
   return (
-    <div style={previewStyle as any} className="h-full">
+    <div style={previewStyle} className="h-full">
       <div className="rounded flex items-center justify-center" style={{ background: centerBg, gridColumn: "1", gridRow: "1" }}>
         <span className="text-[8px] text-slate-400">WOD</span>
       </div>

@@ -5,6 +5,8 @@ import OnScreenKeyboard from "../components/OnScreenKeyboard";
 
 type ActiveField = "name" | "maxHr" | "weight" | "age" | "editName" | "editMaxHr" | "editWeight" | "editAge" | null;
 
+const errText = (e: unknown) => (e instanceof Error ? e.message : String(e));
+
 export default function AthletesPage() {
   const [athletes, setAthletes] = useState<Athlete[]>([]);
   const [name, setName] = useState("");
@@ -23,8 +25,8 @@ export default function AthletesPage() {
     try {
       const list = await api.athletes.list();
       setAthletes(list);
-    } catch (e: any) {
-      setStatus("Ошибка загрузки: " + (e.message || e));
+    } catch (e) {
+      setStatus("Ошибка загрузки: " + errText(e));
     }
   };
 
@@ -49,8 +51,8 @@ export default function AthletesPage() {
       setStatus(null);
       setKbField(null);
       await load();
-    } catch (e: any) {
-      setStatus("Ошибка: " + (e.message || e));
+    } catch (e) {
+      setStatus("Ошибка: " + errText(e));
     }
   };
 
@@ -65,8 +67,8 @@ export default function AthletesPage() {
       setEditing(null);
       setKbField(null);
       load();
-    } catch (e: any) {
-      setStatus("Ошибка обновления: " + (e.message || e));
+    } catch (e) {
+      setStatus("Ошибка обновления: " + errText(e));
     }
   };
 
@@ -75,8 +77,8 @@ export default function AthletesPage() {
     try {
       await api.athletes.delete(id);
       load();
-    } catch (e: any) {
-      setStatus("Ошибка удаления: " + (e.message || e));
+    } catch (e) {
+      setStatus("Ошибка удаления: " + errText(e));
     }
   };
 

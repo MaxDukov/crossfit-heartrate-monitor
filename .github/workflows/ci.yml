@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  backend:
+    name: Go — vet, test, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend-go/go.mod
+          cache-dependency-path: backend-go/go.sum
+      - name: Install libusb (ANT+ collector, CGo)
+        run: sudo apt-get update && sudo apt-get install -y libusb-1.0-0-dev
+      - name: Vet
+        working-directory: backend-go
+        run: go vet ./...
+      - name: Test
+        working-directory: backend-go
+        run: go test ./...
+      - name: Build
+        working-directory: backend-go
+        run: go build ./...
+
+  frontend:
+    name: Frontend — tsc, eslint, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+      - name: Typecheck
+        working-directory: frontend
+        run: npx tsc -b --noEmit
+      - name: Lint
+        working-directory: frontend
+        run: npm run lint
+      - name: Build
+        working-directory: frontend
+        run: npm run build

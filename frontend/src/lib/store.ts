@@ -96,7 +96,9 @@ export const useHrStore = create<HrState>((set, get) => ({
     try {
       const { mode } = await api.system.getMode();
       set({ demoMode: mode === "mock" });
-    } catch {}
+    } catch {
+      // нет связи с сервером — остаётся режим по умолчанию
+    }
   },
 
   toggleDemo: async () => {
