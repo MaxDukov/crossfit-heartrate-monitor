@@ -2,7 +2,7 @@
 
 - Дата: 2026-09-12
 - Ветка: `multi-ant-stick`
-- Статус: одобрена пользователем (подход A, авто-детект, патч openant-go, приёмка на 2 стиках)
+- Статус: одобрена пользователем (подход A, авто-детект, openant-go v0.1.2, приёмка на 2 стиках)
 
 ## Проблема
 
@@ -16,19 +16,25 @@
 | Компонент | Состояние |
 |---|---|
 | `easy.NewWithDriver(driver)` | ✅ Node на произвольном драйвере |
-| `ant.FindDriverForSerial(serial)` | ✅ выбор стика по серийнику (openant #116) |
-| `DriverFactory.Serials()` | ❌ возвращает серийник только первого устройства |
-| `gousb.Context.OpenDevices(opener)` | ✅ перечисляет все USB-устройства (usb.go:176), в `DeviceDesc` есть `SerialNumber`, `Bus`, `Address` |
-| `anttest.MockDriver` | ✅ тестовые Node без железа |
+| `ant.Sticks() []StickInfo` (Serial, Product, Bus, Address) | ✅ перечисление ВСЕХ стиков — **уже в v0.1.2** (коммит `9a63892`, openant #67/#91) |
+| `ant.NewDriverForStick` / `FindDriverForStick` | ✅ драйвер, привязанный к конкретному стику (v0.1.2) |
+| `easy.NewStick(info)` | ✅ Node на конкретном стике, reconnect-фабрика привязана к нему же (v0.1.2) |
+| Automatic reconnect в `easy.Node` | ✅ при сбое стика Node сам переоткрывает драйвер и восстанавливает network keys и каналы (v0.1.2, openant #51/#122) |
+| Стики с битым серийником (CYCPLUS-клоны) | ✅ адресуются по bus:addr (v0.1.2) |
+| `anttest.MockDriver` / `SimDriver` | ✅ тестовые Node без железа, API совместим |
 
-Вывод: библиотека готова на ~80%, не хватает перечисления всех стиков.
+Вывод: патч библиотеки НЕ нужен — multi-dongle и auto-reconnect уже реализованы
+в v0.1.2. Наш план «ListSticks/OpenStickBySerial» повторял часть этого API.
 
 ## Решения (согласованы)
 
 1. **Масштабирование**: авто-детект всех подключённых стиков; работает и 1, и N.
-2. **Где расширение**: патч форки `maxdukov/openant-go`, релиз v0.2.0.
+2. **Библиотека**: используем готовую multi-dongle поддержку **openant-go v0.1.2**
+   (первоначально планировался собственный патч v0.2.0 — upstream опередил).
 3. **Приёмка**: полная, на проде с двумя физическими стиками.
-4. **Архитектура**: подход A — динамический StickManager, per-stick сессии.
+4. **Архитектура**: подход A — динамический StickManager, per-stick сессии;
+   reconnect стика делегирован `easy.Node` (v0.1.2), коллектор управляет
+   только жизненным циклом сессий.
 
 ## Не-цели
 
@@ -39,40 +45,45 @@
 
 ## Дизайн
 
-### 1. Патч openant-go → v0.2.0
+### 1. Библиотека: openant-go v0.1.2 (без патчей)
+
+Готовые API из v0.1.2:
 
 ```go
 // package ant
 type StickInfo struct {
-    Serial string // серийник устройства; при пустом — "bus:addr"
+    Serial       string // пуст при битом USB-дескрипторе серийника
+    Product      string // "usb2" | "usb3" | "serial"
+    Bus, Address int
 }
-func ListSticks() []StickInfo                 // все подключённые 0fcf:1008/1009
-func OpenStickBySerial(serial string) (Driver, error) // открыть конкретный
+func Sticks() []StickInfo // все подключённые стики, сортировка bus/addr
 
 // package easy
-func NewForSerial(serial string) (*Node, error) // NewWithDriver(OpenStickBySerial(serial))
+func NewStick(info ant.StickInfo, opts ...NodeOption) (*Node, error)
 ```
 
-Реализация: `ListSticks` — `ctx.OpenDevices()` с фильтром VID `0fcf`, PID
-1008/1009; чтение `desc.SerialNumber`; устройства не удерживаются (закрываются
-после осмотра). `OpenStickBySerial` — `OpenDevices` с матчингом серийника,
-возвращает открытый драйвер. Пустой серийник → ключ `bus:addr`.
+`NewStick` строит Node на конкретном стике, причём automatic reconnect внутри
+`Run(ctx)` переоткрывает ТОТ ЖЕ стик и восстанавливает network keys и каналы
+(стик A никогда не перепроиграет стик B, даже при одинаковых/битых серийниках).
 
-Существующие `New()` / `FindDriver()` не меняются — обратная совместимость.
-
-Тесты библиотеки: unit на `fakelibusb` (мок libusb в самом gousb);
-интеграционные на реальных стиках — под build-тегом `integration` (по образцу
-существующих).
+Переход: `go get github.com/maxdukov/openant-go@v0.1.2` — Task 1 плана.
+Патч собственной реализации `ListSticks`/`OpenStickBySerial` отменён —
+upstream реализовал то же самое (`ant.Sticks`/`NewDriverForStick`, коммит
+`9a63892`) с тестами на реальном железе.
 
 ### 2. Коллектор (`internal/collectors/ant`)
 
 - `Collector` вместо `nodeFactory` получает `stickLister func() []StickInfo`
-  (прод — `ant.ListSticks`, тесты — фейк).
+  (прод — `ant.Sticks`, тесты — фейк) и `stickOpener func(StickInfo) (*easy.Node, error)`
+  (прод — `easy.NewStick`, тесты — фейк).
 - **Supervisor** (`run()`): тик 10 с (интервал — параметр `Collector`; в тестах
   десятки миллисекунд) — сверка списка стиков с активными
-  `stickSession`; новых → старт, исчезнувших → graceful stop. Упавшие → рестарт
-  с backoff 5 с (per-stick).
-- **`stickSession`**: свой ctx/cancel, свой `easy.NewForSerial`, 8 каналов.
+  `stickSession`; новых → старт, исчезнувших → graceful stop.
+- **Переподключение стика** делегировано `easy.Node` (auto-reconnect v0.1.2):
+  `Run(ctx)` сам восстанавливает сессию после сбоя/переподключения USB.
+  Если `stickOpener` не смог открыть стик (занят и т.п.) — warn-лог, сессия
+  не создаётся, supervisor повторит попытку на следующем тике.
+- **`stickSession`**: свой ctx/cancel, свой Node, 8 каналов.
   Логика каналов (существующие `OnFound`/`OnDeviceData`) выносится в общую
   функцию `setupChannels(node)` — переиспользуется как есть.
 - **Общее состояние** (уже потокобезопасно): `knownIDs`, `dedups` под mutex;
@@ -85,26 +96,27 @@ func NewForSerial(serial string) (*Node, error) // NewWithDriver(OpenStickBySeri
 
 | Ситуация | Поведение |
 |---|---|
-| Стик исчез физически | ошибки read → закрытие сессии; supervisor видит отсутствие → не рестартит |
-| Стик занят другим процессом | `OpenStickBySerial` ошибка → retry 5 с, warn-лог, остальные стики работают |
+| Стик исчез физически | Node.Run → reconnect не может переоткрыть → supervisor по списку видит отсутствие → сессия останавливается |
+| Сбой стика (USB-ошибка, переподключение) | auto-reconnect внутри `easy.Node.Run` восстанавливает network keys + каналы; остальные стики не затронуты |
+| Стик занят другим процессом | `easy.NewStick` ошибка → warn-лог, supervisor повторит на следующем тике, остальные стики работают |
 | Стиков нет | supervisor тикает и ждёт |
-| USB-дребезг | сглаживается тиком 10 с + backoff 5 с |
-| Серийники совпали | ключ `bus:addr` (маловероятно: у ANTUSB2 серийники уникальны) |
-| Упал один стик | рестартит только он, второй продолжает работать |
+| USB-дребезг | сглаживается тиком supervisor 10 с + reconnect внутри Node |
+| Одинаковые/битые серийники | v0.1.2 адресует по bus:addr, reconnect привязан к тому же стику |
+| Упал один стик | восстанавливается только он, второй продолжает работать |
 
 ## Тестирование (backend-go, `go test -race`)
 
-Фейковый `stickLister` + два `anttest` Node:
+Фейковые `stickLister` + `stickOpener` + два `anttest` Node:
 
 1. Два стика → датчики с обоих в БД, HR от обоих в Callbacks
-2. Ошибка одного стика → рестарт только его, второй шлёт HR без перерыва
-3. Динамика: lister 1 стик → через тик 2 → вторая сессия стартует без `Stop()`; исчез → graceful stop
+2. Ошибка открытия одного стика → opener ретраится на тиках, второй шлёт HR без перерыва
+3. Динамика: lister 1 стик → через тик 2 → вторая сессия стартует без `Stop()`; исчез → graceful stop; вернуть → новая сессия
 4. `Stop()` при живых сессиях — idempotent, без гонок
 5. Регресс: один стик — поведение как раньше (существующие тесты зелёные)
 
 ## Приёмка на проде (2 стика)
 
-1. openant-go: патч → тег v0.2.0 → push; backend-go: `go get` новой версии
+1. backend-go: `go get openant-go@v0.1.2`
 2. Кросс-компиляция aarch64-linux-musl (как в текущем деплое)
 3. Замена бинарника на 192.168.0.73, два стика в USB
 4. Сценарий:
@@ -119,7 +131,7 @@ func NewForSerial(serial string) (*Node, error) // NewWithDriver(OpenStickBySeri
 
 - Датчик может быть найден обоими стиками (wildcard на каждом) — смягчено общим
   dedup/knownIDs и идемпотентным upsert
-- gousb `OpenDevices` возвращает открытые устройства — патч обязан закрыть все,
-  кроме выбранного
+- Поведение auto-reconnect в v0.1.2 на реальном железе не проверялось нами —
+  приёмочный сценарий «выдернуть/воткнуть стик» покрывает
 - Два стика на одном USB-хабе могут не тянуться по питанию — приёмка проверяет
   реальные условия зала
