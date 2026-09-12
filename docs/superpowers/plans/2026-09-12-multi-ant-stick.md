@@ -759,8 +759,8 @@ cd backend-go && CGO_ENABLED=1 \
 
 ```bash
 scp /tmp/opencode/cf-server-linux-arm64 ma.dukov@192.168.0.73:/tmp/
-ssh ma.dukov@192.168.0.73 'docker cp /tmp/cf-server-linux-arm64 cf-backend-1:/app/cf-server-new && \
-  docker exec cf-backend-1 sh -c "mv /app/cf-server-new /app/cf-server && chmod +x /app/cf-server" && \
+ssh ma.dukov@192.168.0.73 'docker cp /tmp/cf-server-linux-arm64 cf-backend-1:/usr/local/bin/cf-server-new && \
+  docker exec cf-backend-1 sh -c "mv /usr/local/bin/cf-server-new /usr/local/bin/cf-server && chmod +x /usr/local/bin/cf-server" && \
   docker restart cf-backend-1 && sleep 6 && curl -s http://localhost:8000/api/health'
 ```
 
