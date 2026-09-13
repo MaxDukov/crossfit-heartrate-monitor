@@ -2,7 +2,16 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../../lib/api";
 import type { WodTemplateItem, TemplateDeleteConflict } from "../../types";
-import { THEME_LABELS, FORMAT_LABELS } from "../../types";
+import { THEME_LABELS, FORMAT_LABELS, MOVEMENT_MODALITY_LABELS } from "../../types";
+
+const INTENSITY_LABELS: Record<string, string> = { low: "Низкая", medium: "Средняя", high: "Высокая" };
+
+const chip = (active: boolean) =>
+  `px-2.5 py-1 rounded text-xs transition-colors ${
+    active
+      ? "bg-emerald-600 text-white font-medium"
+      : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+  }`;
 
 // Библиотека тренировок — карточки как в быстром выборе; клик открывает
 // редактирование, корзина удаляет (с архивацией, если тренировка выполнялась).
@@ -14,6 +23,9 @@ export default function TemplatesLibrary({
   onEdit: (templateId: string) => void;
 }) {
   const [theme, setTheme] = useState("");
+  const [format, setFormat] = useState("");
+  const [modality, setModality] = useState("");
+  const [intensity, setIntensity] = useState("");
   const [search, setSearch] = useState(initialSearch);
   const [items, setItems] = useState<WodTemplateItem[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
@@ -22,10 +34,18 @@ export default function TemplatesLibrary({
 
   const load = useCallback(() => {
     api.wods
-      .templates({ theme: theme || undefined, search: search || undefined, limit: 200, include_archived: true })
+      .templates({
+        theme: theme || undefined,
+        search: search || undefined,
+        format: format || undefined,
+        modality: modality || undefined,
+        intensity: intensity || undefined,
+        limit: 200,
+        include_archived: true,
+      })
       .then(setItems)
       .catch(() => setItems([]));
-  }, [theme, search]);
+  }, [theme, search, format, modality, intensity]);
 
   useEffect(() => {
     const t = setTimeout(load, 250);
@@ -66,22 +86,32 @@ export default function TemplatesLibrary({
   return (
     <div className="max-w-4xl mx-auto p-6">
       <div className="flex gap-3 mb-4">
-        <input
-          className="flex-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded px-3 py-2 text-sm text-slate-900 dark:text-white"
-          placeholder="Поиск по названию…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-        <select
-          className="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded px-3 py-2 text-sm text-slate-900 dark:text-white"
-          value={theme}
-          onChange={(e) => setTheme(e.target.value)}
-        >
-          <option value="">Все темы</option>
-          {Object.entries(THEME_LABELS).map(([id, label]) => (
-            <option key={id} value={id}>{label}</option>
-          ))}
-        </select>
+      <input
+        className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded px-3 py-2 text-sm text-slate-900 dark:text-white mb-3"
+        placeholder="Поиск по названию…"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+      />
+
+      {(
+        [
+          ["Тема", Object.entries(THEME_LABELS), theme, setTheme] as const,
+          ["Тип тренировки", Object.entries(FORMAT_LABELS), format, setFormat] as const,
+          ["Модальность движений", Object.entries(MOVEMENT_MODALITY_LABELS), modality, setModality] as const,
+          ["Интенсивность", Object.entries(INTENSITY_LABELS), intensity, setIntensity] as const,
+        ]
+      ).map(([label, entries, current, set]) => (
+        <div key={label} className="mb-2">
+          <span className="text-xs text-slate-500 dark:text-slate-400">{label}</span>
+          <div className="flex gap-1.5 mt-1 flex-wrap">
+            {entries.map(([id, name]) => (
+              <button key={id} className={chip(current === id)} onClick={() => set(current === id ? "" : id)}>
+                {name}
+              </button>
+            ))}
+          </div>
+        </div>
+      ))}
       </div>
 
       <p className="text-xs text-slate-400 dark:text-slate-500 mb-4">

@@ -231,11 +231,15 @@ func (a *App) wodToJSON(w http.ResponseWriter, wodID string) map[string]any {
 
 // ── Библиотека шаблонов (Экраны 3–5 draft1.MD) ────────────────
 
-// ListWodTemplates: GET /api/wods/templates?theme=&search=&limit=50&include_archived=1.
+// ListWodTemplates: GET /api/wods/templates?theme=&search=&format=&intensity=&modality=&limit=50&include_archived=1.
+// modality — фильтр по модальности хотя бы одного движения шаблона.
 // По умолчанию архивные шаблоны скрыты.
 func (a *App) ListWodTemplates(w http.ResponseWriter, r *http.Request) {
 	theme := r.URL.Query().Get("theme")
 	search := r.URL.Query().Get("search")
+	format := r.URL.Query().Get("format")
+	intensity := r.URL.Query().Get("intensity")
+	modality := r.URL.Query().Get("modality")
 	limit := intQueryParam(r, "limit", 50)
 	if limit <= 0 || limit > 500 {
 		limit = 50
@@ -250,6 +254,19 @@ func (a *App) ListWodTemplates(w http.ResponseWriter, r *http.Request) {
 	if search != "" {
 		where += " AND name LIKE ?"
 		args = append(args, "%"+search+"%")
+	}
+	if format != "" {
+		where += " AND format = ?"
+		args = append(args, format)
+	}
+	if intensity != "" {
+		where += " AND intensity = ?"
+		args = append(args, intensity)
+	}
+	if modality != "" {
+		where += " AND EXISTS (SELECT 1 FROM wod_template_movements wm JOIN movements m ON m.key = wm.movement_key" +
+			" WHERE wm.template_id = t.id AND m.modality = ?)"
+		args = append(args, modality)
 	}
 	if r.URL.Query().Get("include_archived") != "1" {
 		where += " AND COALESCE(t.archived, 0) = 0"

@@ -149,3 +149,61 @@ func TestTemplateDeleteArchiveRestore(t *testing.T) {
 		t.Fatalf("назначение архивного прошло без ошибки: %v", out)
 	}
 }
+
+func TestTemplateListFilters(t *testing.T) {
+	ts := newTestServer(t)
+	defer ts.close()
+
+	// A: amrap/high/gymnastics, движение burpee (gymnastics).
+	createTemplate(t, ts, "Тест Фильтр AMRAP")
+	// B: for_time/low/legs, движение back_squat (weightlifting).
+	ts.post(t, "/api/wods/custom", `{"name":"Тест Фильтр Сила","format":"for_time","duration_min":20,
+		"intensity":"low","theme":"legs","movements":[{"movement_key":"back_squat","reps":10}]}`, http.StatusCreated)
+
+	t.Run("format", func(t *testing.T) {
+		names := templateNames(t, ts, "&format=for_time")
+		_, ok := names["Тест Фильтр Сила"]
+		if len(names) != 1 || !ok {
+			t.Fatalf("format=for_time: хочу только «Тест Фильтр Сила», получено %v", names)
+		}
+	})
+
+	t.Run("intensity", func(t *testing.T) {
+		names := templateNames(t, ts, "&intensity=low")
+		_, ok := names["Тест Фильтр Сила"]
+		if len(names) != 1 || !ok {
+			t.Fatalf("intensity=low: хочу только «Тест Фильтр Сила», получено %v", names)
+		}
+	})
+
+	t.Run("modality weightlifting", func(t *testing.T) {
+		names := templateNames(t, ts, "&modality=weightlifting")
+		_, ok := names["Тест Фильтр Сила"]
+		if len(names) != 1 || !ok {
+			t.Fatalf("modality=weightlifting: хочу только «Тест Фильтр Сила», получено %v", names)
+		}
+	})
+
+	t.Run("modality gymnastics", func(t *testing.T) {
+		names := templateNames(t, ts, "&modality=gymnastics")
+		_, ok := names["Тест Фильтр AMRAP"]
+		if len(names) != 1 || !ok {
+			t.Fatalf("modality=gymnastics: хочу только «Тест Фильтр AMRAP», получено %v", names)
+		}
+	})
+
+	t.Run("combo theme+format", func(t *testing.T) {
+		names := templateNames(t, ts, "&theme=legs&format=for_time")
+		_, ok := names["Тест Фильтр Сила"]
+		if len(names) != 1 || !ok {
+			t.Fatalf("theme=legs&format=for_time: хочу только «Тест Фильтр Сила», получено %v", names)
+		}
+	})
+
+	t.Run("no match", func(t *testing.T) {
+		names := templateNames(t, ts, "&modality=monostructural")
+		if len(names) != 0 {
+			t.Fatalf("modality=monostructural: хочу пусто, получено %v", names)
+		}
+	})
+}

@@ -101,10 +101,13 @@ export const api = {
       request<Wod | null>(`/wods/active${date ? `?date=${date}` : ""}`),
     endActive: () => request<void>("/wods/active/end", { method: "POST" }),
     history: (limit = 20) => request<Wod[]>(`/wods/history?limit=${limit}`),
-    templates: (params?: { theme?: string; search?: string; limit?: number; include_archived?: boolean }) => {
+    templates: (params?: { theme?: string; search?: string; format?: string; intensity?: string; modality?: string; limit?: number; include_archived?: boolean }) => {
       const q = new URLSearchParams();
       if (params?.theme) q.set("theme", params.theme);
       if (params?.search) q.set("search", params.search);
+      if (params?.format) q.set("format", params.format);
+      if (params?.intensity) q.set("intensity", params.intensity);
+      if (params?.modality) q.set("modality", params.modality);
       if (params?.include_archived) q.set("include_archived", "1");
       q.set("limit", String(params?.limit ?? 100));
       return request<WodTemplateItem[]>(`/wods/templates?${q}`);

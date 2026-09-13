@@ -14,6 +14,15 @@ interface Row {
 
 const EMPTY_ROW: Row = { movement_key: "", movement_name: "", reps: "", weight_male: "", weight_female: "" };
 
+const INTENSITY_LABELS: Record<string, string> = { low: "Низкая", medium: "Средняя", high: "Высокая" };
+
+const chip = (active: boolean) =>
+  `px-2.5 py-1 rounded text-xs transition-colors ${
+    active
+      ? "bg-emerald-600 text-white font-medium"
+      : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+  }`;
+
 // Конструктор тренировки — Экран 4 draft1.MD.
 // editTemplateId: режим правки существующего шаблона из библиотеки.
 export default function Constructor({
@@ -131,19 +140,28 @@ export default function Constructor({
           : "Соберите тренировку по протоколу: система проверит инвентарь, баланс паттернов и стимул. Сохранённая тренировка попадает в библиотеку и доступна для назначения на слоты."}
       </p>
 
-      <div className="grid grid-cols-4 gap-3 mb-4">
-        <label className="block">
-          <span className="text-xs text-slate-500 dark:text-slate-400">Протокол</span>
-          <select
-            className="mt-1 w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded px-2 py-2 text-sm text-slate-900 dark:text-white"
-            value={format}
-            onChange={(e) => setFormat(e.target.value)}
-          >
-            {Object.entries(FORMAT_LABELS).map(([id, label]) => (
-              <option key={id} value={id}>{label}</option>
+      <div className="mb-4">
+        <span className="text-xs text-slate-500 dark:text-slate-400">Протокол</span>
+        <div className="flex gap-1.5 mt-1 flex-wrap">
+          {Object.entries(FORMAT_LABELS).map(([id, label]) => (
+            <button key={id} className={chip(format === id)} onClick={() => setFormat(id)}>
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 mb-4">
+        <div>
+          <span className="text-xs text-slate-500 dark:text-slate-400">Интенсивность</span>
+          <div className="flex gap-1.5 mt-1">
+            {Object.entries(INTENSITY_LABELS).map(([id, label]) => (
+              <button key={id} className={chip(intensity === id)} onClick={() => setIntensity(id)}>
+                {label}
+              </button>
             ))}
-          </select>
-        </label>
+          </div>
+        </div>
         <label className="block">
           <span className="text-xs text-slate-500 dark:text-slate-400">Длительность, мин</span>
           <input
@@ -155,28 +173,17 @@ export default function Constructor({
             onChange={(e) => setDuration(Number(e.target.value) || 15)}
           />
         </label>
-        <label className="block">
-          <span className="text-xs text-slate-500 dark:text-slate-400">Интенсивность</span>
-          <select
-            className="mt-1 w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded px-2 py-2 text-sm text-slate-900 dark:text-white"
-            value={intensity}
-            onChange={(e) => setIntensity(e.target.value)}
-          >
-            <option value="low">Низкая</option>
-            <option value="medium">Средняя</option>
-            <option value="high">Высокая</option>
-          </select>
-        </label>
-        <label className="block">
-          <span className="text-xs text-slate-500 dark:text-slate-400">Имя (необязательно)</span>
-          <input
-            className="mt-1 w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded px-2 py-2 text-sm text-slate-900 dark:text-white"
-            placeholder="авто: протокол · тема"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-        </label>
       </div>
+
+      <label className="block mb-6">
+        <span className="text-xs text-slate-500 dark:text-slate-400">Имя (необязательно)</span>
+        <input
+          className="mt-1 w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded px-2 py-2 text-sm text-slate-900 dark:text-white"
+          placeholder="авто: протокол · тема"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
+      </label>
 
       <div className="grid grid-cols-4 gap-2 mb-6">
         {Object.keys(THEME_LABELS).map((t) => (

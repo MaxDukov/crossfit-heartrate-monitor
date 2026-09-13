@@ -12,3 +12,7 @@ __pycache__/
 backend/.venv/
 *.db
 __pycache__/
+
+# Playwright session artifacts
+.playwright-mcp/
+/*.png
