@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../../lib/api";
 import type { Movement } from "../../types";
-import { THEME_LABELS, THEME_ICONS, FORMAT_LABELS, LEVEL_LABELS } from "../../types";
+import { THEME_LABELS, THEME_ICONS, FORMAT_LABELS, LEVEL_LABELS, INTENSITY_LABELS } from "../../types";
 import ExercisePicker from "./ExercisePicker";
 
 interface Row {
@@ -13,8 +13,6 @@ interface Row {
 }
 
 const EMPTY_ROW: Row = { movement_key: "", movement_name: "", reps: "", weight_male: "", weight_female: "" };
-
-const INTENSITY_LABELS: Record<string, string> = { low: "Низкая", medium: "Средняя", high: "Высокая" };
 
 const chip = (active: boolean) =>
   `px-2.5 py-1 rounded text-xs transition-colors ${
@@ -190,11 +188,7 @@ export default function Constructor({
           <button
             key={t}
             onClick={() => setTheme(t)}
-            className={`rounded-lg px-2 py-2 text-xs font-medium transition-colors ${
-              theme === t
-                ? "bg-emerald-600 text-white"
-                : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300"
-            }`}
+            className={chip(theme === t)}
           >
             {THEME_ICONS[t]} {THEME_LABELS[t]}
           </button>

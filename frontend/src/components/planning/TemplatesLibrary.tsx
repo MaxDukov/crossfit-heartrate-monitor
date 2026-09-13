@@ -2,9 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../../lib/api";
 import type { WodTemplateItem, TemplateDeleteConflict } from "../../types";
-import { THEME_LABELS, FORMAT_LABELS, MOVEMENT_MODALITY_LABELS } from "../../types";
-
-const INTENSITY_LABELS: Record<string, string> = { low: "Низкая", medium: "Средняя", high: "Высокая" };
+import { THEME_LABELS, FORMAT_LABELS, MOVEMENT_MODALITY_LABELS, INTENSITY_LABELS } from "../../types";
 
 const chip = (active: boolean) =>
   `px-2.5 py-1 rounded text-xs transition-colors ${
@@ -85,7 +83,7 @@ export default function TemplatesLibrary({
 
   return (
     <div className="max-w-4xl mx-auto p-6">
-      <div className="flex gap-3 mb-4">
+      <div className="mb-4">
       <input
         className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded px-3 py-2 text-sm text-slate-900 dark:text-white mb-3"
         placeholder="Поиск по названию…"
@@ -96,8 +94,8 @@ export default function TemplatesLibrary({
       {(
         [
           ["Тема", Object.entries(THEME_LABELS), theme, setTheme] as const,
-          ["Тип тренировки", Object.entries(FORMAT_LABELS), format, setFormat] as const,
-          ["Модальность движений", Object.entries(MOVEMENT_MODALITY_LABELS), modality, setModality] as const,
+          ["Протокол", Object.entries(FORMAT_LABELS), format, setFormat] as const,
+          ["Модальность", Object.entries(MOVEMENT_MODALITY_LABELS), modality, setModality] as const,
           ["Интенсивность", Object.entries(INTENSITY_LABELS), intensity, setIntensity] as const,
         ]
       ).map(([label, entries, current, set]) => (
@@ -169,7 +167,7 @@ export default function TemplatesLibrary({
             <div className="font-bold text-slate-900 dark:text-white mb-1">{t.name}</div>
             <div className="text-sm text-slate-500 dark:text-slate-400 mb-2">
               {FORMAT_LABELS[t.format] || t.format} · {t.duration_min} мин ·{" "}
-              {t.intensity === "low" ? "Низкая" : t.intensity === "high" ? "Высокая" : "Средняя"}
+              {INTENSITY_LABELS[t.intensity] || t.intensity}
             </div>
             {t.description && (
               <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">{t.description}</p>

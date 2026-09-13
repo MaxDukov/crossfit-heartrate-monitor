@@ -146,6 +146,12 @@ export const THEME_ICONS: Record<string, string> = {
   full_body: "🎯",
 };
 
+export const INTENSITY_LABELS: Record<string, string> = {
+  low: "Низкая",
+  medium: "Средняя",
+  high: "Высокая",
+};
+
 export const LEVEL_LABELS: Record<string, string> = {
   beginner: "Начальный",
   intermediate: "Средний",
