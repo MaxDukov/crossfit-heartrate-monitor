@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "../../lib/api";
 import type { Movement } from "../../types";
 import { THEME_LABELS, THEME_ICONS, FORMAT_LABELS, LEVEL_LABELS } from "../../types";
+import ExercisePicker from "./ExercisePicker";
 
 interface Row {
   movement_key: string;
@@ -35,6 +36,7 @@ export default function Constructor({
   const [saved, setSaved] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [level, setLevel] = useState("intermediate");
+  const [pickerRow, setPickerRow] = useState<number | null>(null);
 
   useEffect(() => {
     api.movements.list().then(setMovements).catch(() => setMovements([]));
@@ -207,13 +209,20 @@ export default function Constructor({
         <div className="space-y-2">
           {rows.map((r, i) => (
             <div key={i} className="relative flex gap-2">
-              <div className="flex-1 relative">
+              <div className="flex-1 relative flex gap-1.5">
                 <input
-                  className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded px-3 py-2 text-sm text-slate-900 dark:text-white"
+                  className="flex-1 min-w-0 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded px-3 py-2 text-sm text-slate-900 dark:text-white"
                   placeholder="Упражнение (начните вводить)"
                   value={r.movement_name}
                   onChange={(e) => setRow(i, { movement_name: e.target.value, movement_key: "" })}
                 />
+                <button
+                  className="whitespace-nowrap text-xs border border-slate-300 dark:border-slate-700 rounded px-2 text-slate-500 dark:text-slate-300 hover:border-emerald-400 dark:hover:border-emerald-500/50 transition-colors"
+                  onClick={() => setPickerRow(i)}
+                  title="Выбрать из каталога с фильтрами"
+                >
+                  Каталог…
+                </button>
                 {r.movement_name && !r.movement_key && suggestions(r).length > 0 && (
                   <div className="absolute z-10 left-0 right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded shadow-lg overflow-hidden">
                     {suggestions(r).map((m) => (
@@ -344,6 +353,17 @@ export default function Constructor({
           </select>
         </span>
       </div>
+
+      {pickerRow != null && (
+        <ExercisePicker
+          movements={movements}
+          onClose={() => setPickerRow(null)}
+          onPick={(m) => {
+            setRow(pickerRow, { movement_key: m.key, movement_name: m.name });
+            setPickerRow(null);
+          }}
+        />
+      )}
     </div>
   );
 }
